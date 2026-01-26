@@ -1,0 +1,114 @@
+---
+import { getImage } from 'astro:assets';
+// Define the props interface
+interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  description: string;
+  basePrice: number;
+  images: string[];
+  variants: Array<{
+    id: string;
+    color: string;
+    pattern: string;
+    stock: number;
+    additionalPrice: number;
+    sku: string;
+    isAvailable: boolean;
+  }>;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Extract the product prop
+const { product } = Astro.props;
+
+// Calculate the minimum price for the product
+const minPrice = Math.min(...product.variants.map(v => product.basePrice + v.additionalPrice));
+const maxPrice = Math.max(...product.variants.map(v => product.basePrice + v.additionalPrice));
+
+// Get all available colors
+const availableColors = product.variants.filter(v => v.isAvailable).map(v => v.color);
+const uniqueColors = [...new Set(availableColors)];
+
+// Get the first available variant
+const firstAvailableVariant = product.variants.find(v => v.isAvailable) || product.variants[0];
+const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} - ₹${maxPrice}`;
+---
+
+<div class="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105">
+  <!-- Product Image -->
+  <div class="relative">
+    <a href={`/products/${product.slug}`}>
+      <img 
+        src={product.images[0]} 
+        alt={product.name}
+        class="w-full h-64 object-cover"
+        loading="lazy"
+      />
+    </a>
+    
+    {/* In Stock Badge */}
+    <div class="absolute top-2 right-2">
+      {firstAvailableVariant?.stock > 0 ? (
+        <span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full">In Stock</span>
+      ) : (
+        <span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full">Out of Stock</span>
+      )}
+    </div>
+  </div>
+
+  <!-- Product Info -->
+  <div class="p-4">
+    <div class="mb-2">
+      <h3 class="text-lg font-semibold text-gray-800 truncate">{product.name}</h3>
+      <p class="text-sm text-gray-600 line-clamp-2">{product.description}</p>
+    </div>
+
+    {/* Color Options */}
+    {uniqueColors.length > 0 && (
+      <div class="flex items-center gap-1 mb-3">
+        <span class="text-xs text-gray-500 mr-1">Colors:</span>
+        {uniqueColors.slice(0, 4).map(color => (
+          <span 
+            key={color} 
+            class={`w-5 h-5 rounded-full border border-gray-300 ${
+              color.toLowerCase().includes('red') ? 'bg-red-500' :
+              color.toLowerCase().includes('blue') ? 'bg-blue-500' :
+              color.toLowerCase().includes('green') ? 'bg-green-500' :
+              color.toLowerCase().includes('yellow') ? 'bg-yellow-500' :
+              color.toLowerCase().includes('purple') ? 'bg-purple-500' :
+              color.toLowerCase().includes('pink') ? 'bg-pink-500' :
+              color.toLowerCase().includes('maroon') ? 'bg-red-800' :
+              color.toLowerCase().includes('multi') ? 'bg-gray-400' :
+              'bg-gray-400'
+            }`}
+            title={color}
+          ></span>
+        ))}
+        {uniqueColors.length > 4 && (
+          <span class="text-xs text-gray-500">+{uniqueColors.length - 4}</span>
+        )}
+      </div>
+    )}
+
+    <div class="flex justify-between items-center">
+      <div>
+        <span class="text-lg font-bold text-gray-900">{priceDisplay}</span>
+      </div>
+      <button 
+        class={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+          firstAvailableVariant?.stock > 0
+            ? 'bg-gray-900 text-white hover:bg-black'
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+        }`}
+        disabled={!firstAvailableVariant?.stock > 0}
+      >
+        {firstAvailableVariant?.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
+      </button>
+    </div>
+  </div>
+</div>

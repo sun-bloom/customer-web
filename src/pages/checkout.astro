@@ -1,0 +1,510 @@
+---
+import Layout from '../layouts/Layout.astro';
+import settingsData from '../data/settings.json';
+import deliverySettingsData from '../data/delivery-settings.json';
+import ordersData from '../data/orders.json';
+import productsData from '../data/products.json';
+
+// Get site settings
+const { site, upi } = settingsData;
+---
+
+<Layout title="Checkout - Fashion Store">
+  <!-- Hidden data for JavaScript access -->
+  <script id="products-data" type="application/json">{JSON.stringify(productsData)}</script>
+  <script id="orders-data" type="application/json">{JSON.stringify(ordersData)}</script>
+  <script id="delivery-settings-data" type="application/json">{JSON.stringify(deliverySettingsData)}</script>
+  <script id="upi-details" type="application/json">{JSON.stringify(upi)}</script>
+  
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+      <h1 class="text-3xl font-bold mb-8">Checkout</h1>
+      
+      <!-- Empty Cart State -->
+      <div id="checkout-empty-cart" class="bg-white rounded-lg shadow-md p-8 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        </svg>
+        <h2 class="text-xl font-medium text-gray-900 mb-2">Your cart is empty</h2>
+        <p class="text-gray-500 mb-6">Looks like you haven't added anything to your cart yet.</p>
+        <a href="/products" class="inline-block bg-gray-900 text-white py-2 px-6 rounded-md font-medium hover:bg-black transition-colors">
+          Continue Shopping
+        </a>
+      </div>
+      
+      <!-- Checkout Form and Cart Summary (hidden when cart is empty) -->
+      <div id="checkout-cart-container" class="hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Checkout Form -->
+          <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+              <h2 class="text-xl font-semibold mb-6">Customer Information</h2>
+              
+              <form id="checkout-form">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label for="customer-name" class="block text-sm font-medium text-gray-700 mb-1">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="customer-name"
+                      name="customer-name"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label for="customer-phone" class="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      id="customer-phone"
+                      name="customer-phone"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label for="customer-email" class="block text-sm font-medium text-gray-700 mb-1">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      id="customer-email"
+                      name="customer-email"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label for="pincode" class="block text-sm font-medium text-gray-700 mb-1">
+                      Pincode *
+                    </label>
+                    <input
+                      type="text"
+                      id="pincode"
+                      name="pincode"
+                      required
+                      maxlength="6"
+                      pattern="[0-9]{6}"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                    />
+                    <div id="pincode-status"></div>
+                  </div>
+                </div>
+                
+                <div class="mt-6">
+                  <label for="delivery-address" class="block text-sm font-medium text-gray-700 mb-1">
+                    Delivery Address *
+                  </label>
+                  <textarea
+                    id="delivery-address"
+                    name="delivery-address"
+                    rows="3"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                  ></textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  <div>
+                    <label for="city" class="block text-sm font-medium text-gray-700 mb-1">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      id="city"
+                      name="city"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label for="state" class="block text-sm font-medium text-gray-700 mb-1">
+                      State *
+                    </label>
+                    <input
+                      type="text"
+                      id="state"
+                      name="state"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                    />
+                  </div>
+                </div>
+                
+                <div class="mt-8">
+                  <h3 class="text-lg font-semibold mb-4">Payment Method</h3>
+                  
+                  <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center mb-4">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-900 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      <div>
+                        <h4 class="font-medium text-gray-900">UPI Payment</h4>
+                        <p class="text-sm text-gray-600">Complete your payment using UPI</p>
+                      </div>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                      <div class="w-32 h-32 bg-white rounded-lg p-2 flex items-center justify-center">
+                        <img id="upi-qr-code" src="/images/upi-qr-code.png" alt="UPI QR Code" class="max-w-full max-h-full" />
+                      </div>
+                      
+                      <div>
+                        <p class="text-sm font-medium text-gray-700 mb-2">UPI ID:</p>
+                        <p id="upi-vpa" class="font-mono font-bold text-gray-900 mb-2">{upi.vpa}</p>
+                        <p class="text-xs text-gray-600">Scan QR code or send money to UPI ID above</p>
+                      </div>
+                    </div>
+                    
+                    <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                      <p class="text-sm text-yellow-800">
+                        <strong>Note:</strong> After payment, you'll be redirected to an order confirmation page. 
+                        In a real application, you would receive payment confirmation automatically.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="mt-8 flex justify-between">
+                  <a href="/cart" class="inline-flex items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                    Back to Cart
+                  </a>
+                  
+                  <button
+                    type="submit"
+                    class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-gray-900 hover:bg-black transition-colors"
+                  >
+                    Place Order
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+          
+          <!-- Order Summary -->
+          <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow-md p-6 sticky top-6">
+              <h2 class="text-xl font-semibold mb-4">Order Summary</h2>
+              
+              <div id="checkout-cart-items" class="space-y-3 mb-4">
+                <!-- Cart items will be inserted here by JavaScript -->
+              </div>
+              
+              <div class="space-y-3 pt-4 border-t">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Subtotal</span>
+                  <span id="checkout-subtotal" class="font-medium">₹0</span>
+                </div>
+                
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Shipping</span>
+                  <span id="checkout-shipping" class="font-medium">₹50</span>
+                </div>
+              </div>
+              
+              <div class="pt-4 border-t">
+                <div class="flex justify-between items-center mb-4">
+                  <span class="text-lg font-semibold">Total</span>
+                  <span id="checkout-total" class="text-xl font-bold text-gray-900">₹0</span>
+                </div>
+                
+                <div id="free-shipping-notice" class="hidden text-sm text-green-600 mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  You've qualified for free shipping!
+                </div>
+                
+                <div id="shipping-charge-notice" class="text-sm text-gray-600 mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Add ₹1500 more for free shipping
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script type="module">
+    // Checkout page functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      let cartItems = [];
+      let subtotal = 0;
+      let shippingCharge = 50; // Default shipping charge
+      let totalAmount = 0;
+      
+      // Get all necessary data
+      const productsData = JSON.parse(document.getElementById('products-data').textContent);
+      const ordersData = JSON.parse(document.getElementById('orders-data').textContent);
+      const deliverySettingsData = JSON.parse(document.getElementById('delivery-settings-data').textContent);
+      const upiDetails = JSON.parse(document.getElementById('upi-details').textContent);
+      
+      // Load cart from localStorage
+      function loadCart() {
+        try {
+          const cart = localStorage.getItem('cart');
+          if (cart) {
+            cartItems = JSON.parse(cart);
+            updateCartDisplay();
+            checkFreeShipping();
+          }
+        } catch (error) {
+          console.error('Error loading cart:', error);
+        }
+      }
+      
+      // Update cart display
+      function updateCartDisplay() {
+        const cartContainer = document.getElementById('checkout-cart-container');
+        const emptyCart = document.getElementById('checkout-empty-cart');
+        
+        if (cartItems.length === 0) {
+          cartContainer.classList.add('hidden');
+          emptyCart.classList.remove('hidden');
+          return;
+        }
+        
+        cartContainer.classList.remove('hidden');
+        emptyCart.classList.add('hidden');
+        
+        // Clear existing items
+        const cartItemsContainer = document.getElementById('checkout-cart-items');
+        cartItemsContainer.innerHTML = '';
+        
+        // Calculate totals and populate cart
+        subtotal = 0;
+        
+        cartItems.forEach((item) => {
+          // Find product
+          const product = productsData.products.find(p => p.id === item.productId);
+          if (!product) return;
+          
+          // Find variant
+          const variant = product.variants.find(v => v.id === item.variantId);
+          if (!variant) return;
+          
+          // Add to subtotal
+          const itemTotal = item.quantity * item.unitPrice;
+          subtotal += itemTotal;
+          
+          // Create cart item element
+          const cartItemElement = document.createElement('div');
+          cartItemElement.className = 'flex items-center space-x-4 py-3 border-b';
+          cartItemElement.innerHTML = `
+            <div class="w-16 h-16 flex-shrink-0">
+              <img src="${item.productImage}" alt="${item.productName}" class="w-full h-full object-cover rounded-md">
+            </div>
+            
+            <div class="flex-1 min-w-0">
+              <h3 class="text-sm font-medium text-gray-900 truncate">${item.productName}</h3>
+              <p class="text-xs text-gray-500">${item.color} / ${item.pattern} × ${item.quantity}</p>
+              <p class="text-sm font-medium text-gray-900">₹${itemTotal}</p>
+            </div>
+          `;
+          
+          cartItemsContainer.appendChild(cartItemElement);
+        });
+        
+        // Calculate totals
+        totalAmount = subtotal + shippingCharge;
+        
+        // Update totals
+        document.getElementById('checkout-subtotal').textContent = `₹${subtotal}`;
+        document.getElementById('checkout-shipping').textContent = shippingCharge === 0 ? 'FREE' : `₹${shippingCharge}`;
+        document.getElementById('checkout-total').textContent = `₹${totalAmount}`;
+      }
+      
+      // Check if eligible for free shipping
+      function checkFreeShipping() {
+        if (subtotal >= 1500) {
+          shippingCharge = 0;
+          totalAmount = subtotal;
+          
+          document.getElementById('checkout-shipping').textContent = 'FREE';
+          document.getElementById('checkout-total').textContent = `₹${totalAmount}`;
+          
+          document.getElementById('free-shipping-notice').classList.remove('hidden');
+          document.getElementById('shipping-charge-notice').classList.add('hidden');
+        } else {
+          shippingCharge = 50;
+          totalAmount = subtotal + shippingCharge;
+          
+          document.getElementById('checkout-shipping').textContent = `₹${shippingCharge}`;
+          document.getElementById('checkout-total').textContent = `₹${totalAmount}`;
+          
+          document.getElementById('free-shipping-notice').classList.add('hidden');
+          document.getElementById('shipping-charge-notice').classList.remove('hidden');
+        }
+      }
+      
+      // Check delivery availability based on pincode
+      function checkPincode() {
+        const pincode = document.getElementById('pincode').value;
+        
+        if (!pincode || pincode.length !== 6) {
+          document.getElementById('pincode-status').innerHTML = '';
+          document.getElementById('pincode-status').className = '';
+          return;
+        }
+        
+        // Check if pincode is in any of the regions
+        let available = false;
+        let charge = 0;
+        let days = 0;
+        
+        const pincodeNum = parseInt(pincode);
+        
+        for (const region of deliverySettingsData.regions) {
+          if (!region.isEnabled) continue;
+          
+          const start = parseInt(region.pincodeStart);
+          const end = parseInt(region.pincodeEnd);
+          
+          if (pincodeNum >= start && pincodeNum <= end) {
+            available = true;
+            charge = region.deliveryCharge;
+            days = region.estimatedDays;
+            break;
+          }
+        }
+        
+        const statusElement = document.getElementById('pincode-status');
+        
+        if (available) {
+          shippingCharge = charge;
+          totalAmount = subtotal + shippingCharge;
+          
+          document.getElementById('checkout-shipping').textContent = shippingCharge === 0 ? 'FREE' : `₹${shippingCharge}`;
+          document.getElementById('checkout-total').textContent = `₹${totalAmount}`;
+          
+          statusElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg> Delivery available in ${days} days`;
+          statusElement.className = 'text-green-600 text-sm mt-1';
+        } else {
+          statusElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg> Delivery not available to this pincode`;
+          statusElement.className = 'text-red-600 text-sm mt-1';
+        }
+      }
+      
+      // Generate order number
+      function generateOrderNumber() {
+        return ordersData.nextOrderNumber;
+      }
+      
+      // Place order
+      function placeOrder(e) {
+        e.preventDefault();
+        
+        // Get form values
+        const customerName = document.getElementById('customer-name').value;
+        const customerPhone = document.getElementById('customer-phone').value;
+        const customerEmail = document.getElementById('customer-email').value;
+        const deliveryAddress = document.getElementById('delivery-address').value;
+        const city = document.getElementById('city').value;
+        const state = document.getElementById('state').value;
+        const pincode = document.getElementById('pincode').value;
+        const paymentMethod = 'upi'; // Currently only UPI is supported
+        
+        // Validate form
+        if (!customerName || !customerPhone || !customerEmail || !deliveryAddress || !city || !state || !pincode) {
+          alert('Please fill in all the required fields');
+          return;
+        }
+        
+        // Create order object
+        const order = {
+          orderNumber: generateOrderNumber(),
+          customerName,
+          customerPhone,
+          customerEmail,
+          deliveryAddress,
+          city,
+          state,
+          pincode,
+          items: cartItems.map(item => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            productName: item.productName,
+            color: item.color,
+            pattern: item.pattern,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice
+          })),
+          subtotal,
+          shippingCharge,
+          totalAmount,
+          paymentMethod,
+          paymentStatus: 'pending',
+          paymentScreenshot: '',
+          upiTransactionId: '',
+          paidAt: null,
+          orderStatus: 'pending',
+          trackingCarrier: '',
+          trackingNumber: '',
+          trackingUrl: '',
+          shippedAt: null,
+          deliveredAt: null,
+          notes: '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        // Save order to localStorage (in a real app, this would be saved to a database)
+        let orders = [];
+        try {
+          const ordersJson = localStorage.getItem('orders');
+          if (ordersJson) {
+            orders = JSON.parse(ordersJson);
+          }
+        } catch (e) {
+          console.error('Error reading orders from localStorage:', e);
+        }
+        
+        orders.push(order);
+        localStorage.setItem('orders', JSON.stringify(orders));
+        
+        // Update next order number (in a real app, this would be updated in database)
+        localStorage.setItem('nextOrderNumber', (parseInt(ordersData.nextOrderNumber) + 1).toString());
+        
+        // Clear cart
+        localStorage.removeItem('cart');
+        
+        // Update cart badge if it exists
+        const cartBadge = document.getElementById('cart-badge');
+        if (cartBadge) {
+          cartBadge.textContent = '0';
+        }
+        
+        // Store order details for confirmation page
+        sessionStorage.setItem('lastOrder', JSON.stringify(order));
+        
+        // Redirect to order confirmation page
+        window.location.href = `/order/${order.orderNumber}`;
+      }
+      
+      // Initialize event listeners
+      document.getElementById('pincode').addEventListener('blur', checkPincode);
+      document.getElementById('checkout-form').addEventListener('submit', placeOrder);
+      
+      // Load cart on page load
+      loadCart();
+    });
+  </script>
+</Layout>

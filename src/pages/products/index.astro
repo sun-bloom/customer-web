@@ -1,0 +1,130 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import FilterBar from '../../components/FilterBar.tsx';
+import productsData from '../../data/products.json';
+
+// Get URL parameters for filtering
+const url = new URL(Astro.request.url);
+const categoryParam = url.searchParams.get('category') || '';
+const colorParam = url.searchParams.get('color') || '';
+const minPriceParam = url.searchParams.get('minPrice') || '';
+const maxPriceParam = url.searchParams.get('maxPrice') || '';
+
+// Get all products
+const allProducts = productsData.products.filter(product => product.isActive);
+
+// Apply filters
+let filteredProducts = allProducts;
+
+if (categoryParam) {
+  filteredProducts = filteredProducts.filter(product => 
+    product.category === categoryParam
+  );
+}
+
+if (colorParam) {
+  filteredProducts = filteredProducts.filter(product =>
+    product.variants.some(variant => 
+      variant.color.toLowerCase().includes(colorParam.toLowerCase()) &&
+      variant.isAvailable
+    )
+  );
+}
+
+if (minPriceParam) {
+  const minPrice = parseInt(minPriceParam);
+  filteredProducts = filteredProducts.filter(product => {
+    const minProductPrice = Math.min(
+      ...product.variants.map(v => product.basePrice + v.additionalPrice)
+    );
+    return minProductPrice >= minPrice;
+  });
+}
+
+if (maxPriceParam) {
+  const maxPrice = parseInt(maxPriceParam);
+  filteredProducts = filteredProducts.filter(product => {
+    const maxProductPrice = Math.min(
+      ...product.variants.map(v => product.basePrice + v.additionalPrice)
+    );
+    return maxProductPrice <= maxPrice;
+  });
+}
+
+// Get available colors for filter
+const allColors = new Set<string>();
+allProducts.forEach(product => {
+  product.variants.forEach(variant => {
+    if (variant.isAvailable) {
+      allColors.add(variant.color);
+    }
+  });
+});
+
+// Get price range
+let minPriceAll = Infinity;
+let maxPriceAll = 0;
+
+allProducts.forEach(product => {
+  product.variants.forEach(variant => {
+    if (variant.isAvailable) {
+      const price = product.basePrice + variant.additionalPrice;
+      minPriceAll = Math.min(minPriceAll, price);
+      maxPriceAll = Math.max(maxPriceAll, price);
+    }
+  });
+});
+
+minPriceAll = minPriceAll === Infinity ? 0 : minPriceAll;
+---
+
+<Layout title="Products - Fashion Store">
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+      <!-- Filter Sidebar -->
+      <div class="w-full lg:w-1/4">
+        <FilterBar 
+          categories={productsData.categories}
+          colors={Array.from(allColors)}
+          minPrice={minPriceAll}
+          maxPrice={maxPriceAll}
+          activeFilters={{
+            category: categoryParam,
+            color: colorParam,
+            minPrice: minPriceParam,
+            maxPrice: maxPriceParam
+          }}
+        />
+      </div>
+
+      <!-- Product Grid -->
+      <div class="w-full lg:w-3/4">
+        <div class="flex justify-between items-center mb-6">
+          <h1 class="text-2xl font-bold">Products</h1>
+          <div class="text-gray-600">
+            Showing {filteredProducts.length} of {allProducts.length} products
+          </div>
+        </div>
+
+        {filteredProducts.length > 0 ? (
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProducts.map(product => (
+              <ProductCard product={product} />
+            ))}
+          </div>
+        ) : (
+          <div class="text-center py-12">
+            <p class="text-gray-500 text-lg">No products found matching your criteria.</p>
+            <button 
+              class="mt-4 px-6 py-2 bg-gray-900 text-white rounded-md hover:bg-black transition-colors"
+              onclick="window.location.href='/products'"
+            >
+              Clear Filters
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+</Layout>

@@ -1,0 +1,285 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getProducts } from '../utils/dataStore.ts';
+import productsData from '../data/products.json';
+
+// Get cart from localStorage - this will be handled by client-side JavaScript
+// We'll pass an empty array initially and let the client-side code handle it
+const cartItems: any[] = [];
+
+// Calculate totals - will be recalculated client-side
+let subtotal = 0;
+let shipping = 0;
+let total = 0;
+---
+
+<Layout title="Shopping Cart - Fashion Store">
+  <script is:inline>
+    // Cart functionality will be handled client-side
+    let cartItems = [];
+    let subtotal = 0;
+    let shipping = 0;
+    let total = 0;
+    
+    // Get products data for reference
+    const productsData = JSON.parse(document.getElementById('products-data').textContent);
+    
+    // Load cart from localStorage
+    function loadCart() {
+      try {
+        const cart = localStorage.getItem('cart');
+        if (cart) {
+          cartItems = JSON.parse(cart);
+          updateCartDisplay();
+        }
+      } catch (error) {
+        console.error('Error loading cart:', error);
+      }
+    }
+    
+    // Update cart display
+    function updateCartDisplay() {
+      const cartContainer = document.getElementById('cart-container');
+      const emptyCart = document.getElementById('empty-cart');
+      const cartDetails = document.getElementById('cart-details');
+      
+      if (cartItems.length === 0) {
+        cartContainer.classList.add('hidden');
+        emptyCart.classList.remove('hidden');
+        cartDetails.classList.add('hidden');
+        return;
+      }
+      
+      cartContainer.classList.remove('hidden');
+      emptyCart.classList.add('hidden');
+      cartDetails.classList.remove('hidden');
+      
+      // Clear existing items
+      const cartItemsContainer = document.getElementById('cart-items');
+      cartItemsContainer.innerHTML = '';
+      
+      // Calculate totals and populate cart
+      subtotal = 0;
+      
+      cartItems.forEach((item, index) => {
+        // Find the product
+        const product = productsData.products.find(p => p.id === item.productId);
+        if (!product) return;
+        
+        // Find the variant
+        const variant = product.variants.find(v => v.id === item.variantId);
+        if (!variant) return;
+        
+        // Add to subtotal
+        const itemTotal = item.quantity * item.unitPrice;
+        subtotal += itemTotal;
+        
+        // Create cart item element
+        const cartItemElement = document.createElement('div');
+        cartItemElement.className = 'flex items-center space-x-4 py-4 border-b';
+        cartItemElement.innerHTML = `
+          <div class="w-20 h-20 flex-shrink-0">
+            <img src="${item.productImage}" alt="${item.productName}" class="w-full h-full object-cover rounded-md">
+          </div>
+          
+          <div class="flex-1 min-w-0">
+            <h3 class="text-base font-medium text-gray-900 truncate">
+              <a href="/products/${item.productSlug}" class="hover:text-gray-900 transition-colors">
+                ${item.productName}
+              </a>
+            </h3>
+            <p class="text-sm text-gray-500">
+              ${item.color} / ${item.pattern}
+            </p>
+            <p class="text-sm font-medium text-gray-900">
+              ₹${item.unitPrice}
+            </p>
+          </div>
+          
+          <div class="flex items-center space-x-2">
+            <button 
+              onclick="updateQuantity(${index}, ${item.quantity - 1})"
+              class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
+              ${item.quantity <= 1 ? 'disabled' : ''}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+              </svg>
+            </button>
+            
+            <span class="w-8 text-center">${item.quantity}</span>
+            
+            <button 
+              onclick="updateQuantity(${index}, ${item.quantity + 1})"
+              class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          </div>
+          
+          <div class="text-right">
+            <p class="text-base font-medium text-gray-900">
+              ₹${itemTotal}
+            </p>
+            <button 
+              onclick="removeItem(${index})"
+              class="text-sm text-red-600 hover:text-red-800 transition-colors"
+            >
+              Remove
+            </button>
+          </div>
+        `;
+        
+        cartItemsContainer.appendChild(cartItemElement);
+      });
+      
+      // Calculate shipping (free shipping over ₹1500)
+      shipping = subtotal >= 1500 ? 0 : 50;
+      total = subtotal + shipping;
+      
+      // Update totals
+      document.getElementById('subtotal').textContent = `₹${subtotal}`;
+      document.getElementById('shipping').textContent = shipping === 0 ? 'FREE' : `₹${shipping}`;
+      document.getElementById('total').textContent = `₹${total}`;
+    }
+    
+    // Update quantity
+    function updateQuantity(index, newQuantity) {
+      if (newQuantity <= 0) {
+        removeItem(index);
+        return;
+      }
+      
+      cartItems[index].quantity = newQuantity;
+      cartItems[index].totalPrice = newQuantity * cartItems[index].unitPrice;
+      
+      // Save to localStorage
+      localStorage.setItem('cart', JSON.stringify(cartItems));
+      
+      // Update display
+      updateCartDisplay();
+      updateCartBadge();
+    }
+    
+    // Remove item
+    function removeItem(index) {
+      cartItems.splice(index, 1);
+      
+      // Save to localStorage
+      localStorage.setItem('cart', JSON.stringify(cartItems));
+      
+      // Update display
+      updateCartDisplay();
+      updateCartBadge();
+    }
+    
+    // Update cart badge in header
+    function updateCartBadge() {
+      const cartBadge = document.getElementById('cart-badge');
+      if (cartBadge) {
+        const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
+        cartBadge.textContent = totalItems;
+      }
+    }
+    
+    // Clear cart
+    function clearCart() {
+      cartItems = [];
+      localStorage.removeItem('cart');
+      updateCartDisplay();
+      updateCartBadge();
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadCart();
+    });
+  </script>
+  
+  <!-- Hidden products data for JavaScript access -->
+  <script id="products-data" type="application/json">
+    {JSON.stringify(productsData)}
+  </script>
+  
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-3xl font-bold mb-8">Shopping Cart</h1>
+      
+      <!-- Empty Cart State -->
+      <div id="empty-cart" class="bg-white rounded-lg shadow-md p-8 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        </svg>
+        <h2 class="text-xl font-medium text-gray-900 mb-2">Your cart is empty</h2>
+        <p class="text-gray-500 mb-6">Looks like you haven't added anything to your cart yet.</p>
+        <a href="/products" class="inline-block bg-gray-900 text-white py-2 px-6 rounded-md font-medium hover:bg-black transition-colors">
+          Continue Shopping
+        </a>
+      </div>
+      
+      <!-- Cart Items (hidden when empty) -->
+      <div id="cart-container" class="hidden">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+          <div id="cart-items" class="divide-y divide-gray-200">
+            <!-- Cart items will be inserted here by JavaScript -->
+          </div>
+        </div>
+        
+        <!-- Cart Actions -->
+        <div class="flex justify-between items-center mb-6">
+          <button 
+            onclick="clearCart()"
+            class="text-red-600 hover:text-red-800 transition-colors"
+          >
+            Clear Cart
+          </button>
+          <a 
+            href="/products"
+            class="text-gray-600 hover:text-black font-medium transition-colors"
+          >
+            Continue Shopping
+          </a>
+        </div>
+      </div>
+      
+      <!-- Cart Details (hidden when empty) -->
+      <div id="cart-details" class="hidden">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h2 class="text-lg font-semibold mb-4">Order Summary</h2>
+          
+          <div class="space-y-3 pb-4 border-b">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Subtotal</span>
+              <span id="subtotal" class="font-medium">₹0</span>
+            </div>
+            
+            <div class="flex justify-between">
+              <span class="text-gray-600">Shipping</span>
+              <span id="shipping" class="font-medium">₹0</span>
+            </div>
+          </div>
+          
+          <div class="pt-4">
+            <div class="flex justify-between items-center mb-6">
+              <span class="text-lg font-semibold">Total</span>
+              <span id="total" class="text-xl font-bold text-gray-900">₹0</span>
+            </div>
+            
+            <a 
+              href="/checkout"
+              class="w-full bg-gray-900 text-white py-3 px-6 rounded-md font-medium hover:bg-black transition-colors block text-center"
+            >
+              Proceed to Checkout
+            </a>
+            
+            <p class="text-xs text-gray-500 text-center mt-4">
+              Free shipping on orders above ₹1500
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>

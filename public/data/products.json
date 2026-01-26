@@ -1,0 +1,207 @@
+{
+    "products": [
+        {
+            "id": "crop-top-001",
+            "name": "Floral Print Crop Top",
+            "slug": "floral-print-crop-top",
+            "category": "crop_top",
+            "description": "A beautiful floral print crop top perfect for summer outings. Made from breathable cotton blend with a comfortable fit.",
+            "basePrice": 899,
+            "images": [
+                "/images/products/crop-top-001-1.jpg",
+                "/images/products/crop-top-001-2.jpg"
+            ],
+            "variants": [
+                {
+                    "id": "crop-top-001-red",
+                    "color": "Red",
+                    "pattern": "Floral",
+                    "stock": 25,
+                    "additionalPrice": 0,
+                    "sku": "CT001-RED-FL",
+                    "isAvailable": true
+                },
+                {
+                    "id": "crop-top-001-blue",
+                    "color": "Blue",
+                    "pattern": "Floral",
+                    "stock": 15,
+                    "additionalPrice": 0,
+                    "sku": "CT001-BLU-FL",
+                    "isAvailable": true
+                }
+            ],
+            "isActive": true,
+            "createdAt": "2026-01-25T00:00:00Z",
+            "updatedAt": "2026-01-25T00:00:00Z"
+        },
+        {
+            "id": "anarkali-001",
+            "name": "Royal Blue Anarkali Suit",
+            "slug": "royal-blue-anarkali-suit",
+            "category": "anarkali",
+            "description": "Elegant royal blue anarkali suit with intricate embroidery work. Perfect for weddings and special occasions.",
+            "basePrice": 2499,
+            "images": [
+                "/images/products/anarkali-001-1.jpg",
+                "/images/products/anarkali-001-2.jpg"
+            ],
+            "variants": [
+                {
+                    "id": "anarkali-001-blue",
+                    "color": "Royal Blue",
+                    "pattern": "Embroidered",
+                    "stock": 10,
+                    "additionalPrice": 0,
+                    "sku": "AN001-BLU-EM",
+                    "isAvailable": true
+                },
+                {
+                    "id": "anarkali-001-maroon",
+                    "color": "Maroon",
+                    "pattern": "Embroidered",
+                    "stock": 8,
+                    "additionalPrice": 100,
+                    "sku": "AN001-MAR-EM",
+                    "isAvailable": true
+                }
+            ],
+            "isActive": true,
+            "createdAt": "2026-01-25T00:00:00Z",
+            "updatedAt": "2026-01-25T00:00:00Z"
+        },
+        {
+            "id": "maxi-001",
+            "name": "Bohemian Maxi Dress",
+            "slug": "bohemian-maxi-dress",
+            "category": "maxi",
+            "description": "Comfortable and stylish bohemian maxi dress with vibrant colors. Perfect for beach days and casual outings.",
+            "basePrice": 1499,
+            "images": [
+                "/images/products/maxi-001-1.jpg",
+                "/images/products/maxi-001-2.jpg"
+            ],
+            "variants": [
+                {
+                    "id": "maxi-001-multicolor",
+                    "color": "Multi-color",
+                    "pattern": "Bohemian Print",
+                    "stock": 20,
+                    "additionalPrice": 0,
+                    "sku": "MX001-MUL-BO",
+                    "isAvailable": true
+                }
+            ],
+            "isActive": true,
+            "createdAt": "2026-01-25T00:00:00Z",
+            "updatedAt": "2026-01-25T00:00:00Z"
+        },
+        {
+            "id": "chudi-001",
+            "name": "Traditional Cotton Chudi Set",
+            "slug": "traditional-cotton-chudi-set",
+            "category": "chudi",
+            "description": "Comfortable cotton chudi set with traditional patterns. Ideal for daily wear and casual occasions.",
+            "basePrice": 1299,
+            "images": [
+                "/images/products/chudi-001-1.jpg",
+                "/images/products/chudi-001-2.jpg"
+            ],
+            "variants": [
+                {
+                    "id": "chudi-001-green",
+                    "color": "Green",
+                    "pattern": "Traditional",
+                    "stock": 30,
+                    "additionalPrice": 0,
+                    "sku": "CD001-GRN-TR",
+                    "isAvailable": true
+                },
+                {
+                    "id": "chudi-001-yellow",
+                    "color": "Yellow",
+                    "pattern": "Traditional",
+                    "stock": 25,
+                    "additionalPrice": 0,
+                    "sku": "CD001-YEL-TR",
+                    "isAvailable": true
+                }
+            ],
+            "isActive": true,
+            "createdAt": "2026-01-25T00:00:00Z",
+            "updatedAt": "2026-01-25T00:00:00Z"
+        },
+        {
+            "id": "panel-001",
+            "name": "Designer Panel Top",
+            "slug": "designer-panel-top",
+            "category": "panel_top",
+            "description": "Stylish designer panel top with unique color combinations. Modern and trendy design for fashion-forward women.",
+            "basePrice": 999,
+            "images": [
+                "/images/products/panel-001-1.jpg",
+                "/images/products/panel-001-2.jpg"
+            ],
+            "variants": [
+                {
+                    "id": "panel-001-pink-purple",
+                    "color": "Pink-Purple",
+                    "pattern": "Panel Design",
+                    "stock": 18,
+                    "additionalPrice": 0,
+                    "sku": "PT001-PKPU-PA",
+                    "isAvailable": true
+                },
+                {
+                    "id": "panel-001-blue-green",
+                    "color": "Blue-Green",
+                    "pattern": "Panel Design",
+                    "stock": 12,
+                    "additionalPrice": 0,
+                    "sku": "PT001-BLGR-PA",
+                    "isAvailable": true
+                }
+            ],
+            "isActive": true,
+            "createdAt": "2026-01-25T00:00:00Z",
+            "updatedAt": "2026-01-25T00:00:00Z"
+        }
+    ],
+    "categories": [
+        {
+            "id": "crop_top",
+            "name": "Crop Tops",
+            "slug": "crop-tops",
+            "description": "Trendy crop tops for modern women",
+            "image": "/images/categories/crop-tops.jpg"
+        },
+        {
+            "id": "anarkali",
+            "name": "Anarkali Suits",
+            "slug": "anarkali-suits",
+            "description": "Elegant traditional anarkali suits",
+            "image": "/images/categories/anarkali.jpg"
+        },
+        {
+            "id": "maxi",
+            "name": "Maxi Dresses",
+            "slug": "maxi-dresses",
+            "description": "Comfortable and stylish maxi dresses",
+            "image": "/images/categories/maxi.jpg"
+        },
+        {
+            "id": "chudi",
+            "name": "Chudi Sets",
+            "slug": "chudi-sets",
+            "description": "Traditional chudi sets for all occasions",
+            "image": "/images/categories/chudi.jpg"
+        },
+        {
+            "id": "panel_top",
+            "name": "Panel Tops",
+            "slug": "panel-tops",
+            "description": "Stylish panel tops with unique designs",
+            "image": "/images/categories/panel-tops.jpg"
+        }
+    ]
+}

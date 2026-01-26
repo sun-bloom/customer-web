@@ -1,0 +1,76 @@
+---
+import Layout from '../layouts/Layout.astro';
+import CategoryCard from '../components/CategoryCard.astro';
+import productsData from '../data/products.json';
+import settingsData from '../data/settings.json';
+
+const { categories } = productsData;
+const { site } = settingsData;
+---
+
+<Layout title="Home">
+	<main>
+		<!-- Hero Section -->
+		<div class="relative bg-white text-gray-900 overflow-hidden border-b border-gray-100">
+			<div class="absolute inset-0">
+				<div class="w-full h-full bg-white"></div>
+                <div class="absolute inset-0 bg-[url('/images/hero-pattern.png')] opacity-5"></div>
+			</div>
+			<div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 md:py-48 flex flex-col items-center text-center">
+				<h1 class="text-5xl md:text-8xl font-bold font-heading mb-8 tracking-tighter text-black uppercase">
+					{site.name}
+				</h1>
+				<p class="text-xl md:text-2xl text-gray-500 max-w-2xl mb-12 leading-relaxed font-light italic">
+					{site.tagline}
+				</p>
+				<div class="flex flex-col sm:flex-row gap-4">
+                    <a 
+                        href="/products" 
+                        class="inline-block bg-black text-white font-medium px-10 py-4 rounded-none hover:bg-gray-800 transition-all duration-300 tracking-widest uppercase text-sm border border-black"
+                    >
+                        Explore Collection
+                    </a>
+                    <a 
+                        href="/products?sort=new" 
+                        class="inline-block bg-white text-black font-medium px-10 py-4 rounded-none hover:bg-gray-100 transition-all duration-300 tracking-widest uppercase text-sm border border-black"
+                    >
+                        New Arrivals
+                    </a>
+                </div>
+			</div>
+		</div>
+
+		<!-- Categories Section -->
+		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+			<div class="text-center mb-20">
+				<h2 class="text-3xl md:text-5xl font-bold font-heading mb-4 text-black tracking-widest uppercase">The Collection</h2>
+				<p class="text-gray-500 font-light italic">Refined styles for every occasion</p>
+			</div>
+            
+			<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-8">
+				{categories.map((category) => (
+					<div class="h-full">
+						<CategoryCard 
+							name={category.name}
+							slug={category.slug}
+							description={category.description}
+							image={category.image}
+						/>
+					</div>
+				))}
+			</div>
+		</div>
+
+        <!-- Newsletter / Promo Section -->
+        <div class="bg-white py-24 border-t border-gray-100">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-black">
+                 <h2 class="text-3xl font-bold mb-4 font-heading tracking-widest uppercase">Stay Updated</h2>
+                 <p class="text-gray-500 mb-10 font-light italic">Subscribe to our newsletter for the latest updates and exclusive offers.</p>
+                 <div class="max-w-md mx-auto flex flex-col sm:flex-row gap-0">
+                    <input type="email" placeholder="ENTER YOUR EMAIL" class="flex-1 px-6 py-4 border border-black focus:outline-none text-sm tracking-widest bg-transparent uppercase" />
+                    <button class="bg-black text-white px-10 py-4 font-medium hover:bg-gray-800 transition-colors tracking-widest uppercase text-sm">Subscribe</button>
+                 </div>
+            </div>
+        </div>
+	</main>
+</Layout>

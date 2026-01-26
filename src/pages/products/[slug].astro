@@ -1,0 +1,375 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import productsData from '../../data/products.json';
+
+// Generate static paths for all active products
+export async function getStaticPaths() {
+  if (!productsData || !productsData.products) return [];
+  
+  return productsData.products
+    .filter(product => product.isActive)
+    .map(product => ({
+      params: { slug: product.slug },
+      props: { product }
+    }));
+}
+
+// Get the product data from props
+const { product } = Astro.props;
+
+// If product doesn't exist, render a 404 page
+if (!product || !product.isActive) {
+  return Astro.redirect('/404');
+}
+
+// Get all available variants
+const availableVariants = product.variants.filter(v => v.isAvailable);
+const firstAvailableVariant = availableVariants[0] || product.variants[0];
+
+// Get all unique colors
+const colors = [...new Set(product.variants.map(v => v.color))];
+
+// Get all unique patterns
+const patterns = [...new Set(product.variants.map(v => v.pattern))];
+
+// Calculate min and max price
+const prices = product.variants.map(v => product.basePrice + v.additionalPrice);
+const minPrice = Math.min(...prices);
+const maxPrice = Math.max(...prices);
+const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} - ₹${maxPrice}`;
+---
+
+<Layout title={`${product.name} - Fashion Store`}>
+  <script define:vars={{ product, variants: product.variants }}>
+    // State for selected variant
+    let selectedVariant = null;
+    
+    // Function to update selected variant
+    function updateVariant(color, pattern) {
+      const variant = variants.find(v => 
+        v.color === color && 
+        v.pattern === pattern &&
+        v.isAvailable
+      );
+      
+      if (variant) {
+        selectedVariant = variant;
+        updatePrice();
+        updateStockStatus();
+        updateAddToCartButton();
+      }
+    }
+    
+    // Function to update price display
+    function updatePrice() {
+      if (selectedVariant) {
+        const price = product.basePrice + selectedVariant.additionalPrice;
+        document.getElementById('price-display').textContent = `₹${price}`;
+      }
+    }
+    
+    // Function to update stock status
+    function updateStockStatus() {
+      if (selectedVariant) {
+        const stockElement = document.getElementById('stock-status');
+        const stockCount = document.getElementById('stock-count');
+        
+        if (selectedVariant.stock > 0) {
+          stockElement.className = 'text-green-600 font-medium';
+          stockElement.textContent = 'In Stock';
+          stockCount.textContent = `${selectedVariant.stock} units available`;
+        } else {
+          stockElement.className = 'text-red-600 font-medium';
+          stockElement.textContent = 'Out of Stock';
+          stockCount.textContent = '';
+        }
+      }
+    }
+    
+    // Function to update add to cart button
+    function updateAddToCartButton() {
+      const button = document.getElementById('add-to-cart-btn');
+      if (selectedVariant && selectedVariant.stock > 0) {
+        button.disabled = false;
+        button.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        button.classList.add('bg-gray-900', 'text-white', 'hover:bg-black');
+      } else {
+        button.disabled = true;
+        button.classList.remove('bg-gray-900', 'text-white', 'hover:bg-black');
+        button.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+      }
+    }
+    
+    // Function to handle image gallery
+    function showImage(index) {
+      const mainImage = document.getElementById('main-image');
+      const thumbnails = document.querySelectorAll('.thumbnail');
+      
+      if (mainImage) {
+        mainImage.src = product.images[index];
+      }
+      
+      thumbnails.forEach((thumb, i) => {
+        if (i === index) {
+          thumb.classList.add('ring-2', 'ring-gray-900');
+        } else {
+          thumb.classList.remove('ring-2', 'ring-gray-900');
+        }
+      });
+    }
+    
+    // Function to add to cart
+    function addToCart() {
+      if (!selectedVariant) {
+        // If no variant is selected, select the first available one
+        const firstAvailable = variants.find(v => v.isAvailable);
+        if (firstAvailable) {
+          selectedVariant = firstAvailable;
+        } else {
+          alert('This product is currently unavailable.');
+          return;
+        }
+      }
+      
+      // Create cart item
+      const cartItem = {
+        productId: product.id,
+        variantId: selectedVariant.id,
+        productName: product.name,
+        productSlug: product.slug,
+        productImage: product.images[0],
+        color: selectedVariant.color,
+        pattern: selectedVariant.pattern,
+        quantity: 1,
+        unitPrice: product.basePrice + selectedVariant.additionalPrice,
+        totalPrice: product.basePrice + selectedVariant.additionalPrice
+      };
+      
+      // Get existing cart from localStorage
+      let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      
+      // Check if item already exists in cart
+      const existingItemIndex = cart.findIndex(item => 
+        item.productId === cartItem.productId && item.variantId === cartItem.variantId
+      );
+      
+      if (existingItemIndex >= 0) {
+        // Update quantity if item exists
+        cart[existingItemIndex].quantity += 1;
+        cart[existingItemIndex].totalPrice = cart[existingItemIndex].quantity * cart[existingItemIndex].unitPrice;
+      } else {
+        // Add new item
+        cart.push(cartItem);
+      }
+      
+      // Save cart to localStorage
+      localStorage.setItem('cart', JSON.stringify(cart));
+      
+      // Show success message
+      const message = document.getElementById('cart-message');
+      message.textContent = 'Item added to cart!';
+      message.classList.remove('hidden');
+      
+      // Hide message after 3 seconds
+      setTimeout(() => {
+        message.classList.add('hidden');
+      }, 3000);
+      
+      // Update cart badge if it exists
+      const cartBadge = document.getElementById('cart-badge');
+      if (cartBadge) {
+        const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
+        cartBadge.textContent = totalItems;
+      }
+    }
+    
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', () => {
+      // Select the first available variant by default
+      const firstColor = colors.length > 0 ? colors[0] : null;
+      const firstPattern = patterns.length > 0 ? patterns[0] : null;
+      
+      if (firstColor && firstPattern) {
+        updateVariant(firstColor, firstPattern);
+      }
+      
+      // Set up event listeners for color and pattern selection
+      const colorButtons = document.querySelectorAll('.color-option');
+      const patternButtons = document.querySelectorAll('.pattern-option');
+      
+      colorButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const selectedColor = button.getAttribute('data-color');
+          const currentPattern = document.querySelector('.pattern-option.selected')?.getAttribute('data-pattern') || firstPattern;
+          
+          // Update selected state
+          colorButtons.forEach(btn => btn.classList.remove('selected'));
+          button.classList.add('selected');
+          
+          updateVariant(selectedColor, currentPattern);
+        });
+      });
+      
+      patternButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const selectedPattern = button.getAttribute('data-pattern');
+          const currentColor = document.querySelector('.color-option.selected')?.getAttribute('data-color') || firstColor;
+          
+          // Update selected state
+          patternButtons.forEach(btn => btn.classList.remove('selected'));
+          button.classList.add('selected');
+          
+          updateVariant(currentColor, selectedPattern);
+        });
+      });
+    });
+  </script>
+
+  <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumb Navigation -->
+    <nav class="mb-6 text-sm">
+      <ol class="flex items-center space-x-2">
+        <li><a href="/" class="text-gray-600 hover:text-black">Home</a></li>
+        <li><span class="text-gray-500">/</span></li>
+        <li><a href="/products" class="text-gray-600 hover:text-black">Products</a></li>
+        <li><span class="text-gray-500">/</span></li>
+        <li class="text-gray-700 font-medium">{product.name}</li>
+      </ol>
+    </nav>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+      <!-- Image Gallery -->
+      <div class="w-full lg:w-1/2">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+          <!-- Main Image -->
+          <div class="relative">
+            <img 
+              id="main-image"
+              src={product.images[0]} 
+              alt={product.name}
+              class="w-full h-96 object-cover"
+            />
+          </div>
+          
+          <!-- Thumbnails -->
+          {product.images.length > 1 && (
+            <div class="flex p-4 space-x-2 overflow-x-auto">
+              {product.images.map((image, index) => (
+                <img 
+                  key={index}
+                  src={image} 
+                  alt={`${product.name} view ${index + 1}`}
+                  class="thumbnail w-20 h-20 object-cover rounded cursor-pointer border-2 border-gray-200 hover:border-gray-900 transition-colors"
+                  onclick={`showImage(${index})`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <!-- Product Details -->
+      <div class="w-full lg:w-1/2">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h1 class="text-2xl font-bold mb-4">{product.name}</h1>
+          
+          <div class="mb-4">
+            <span id="price-display" class="text-2xl font-bold text-gray-900">{priceDisplay}</span>
+          </div>
+          
+          <div class="mb-6">
+            <p id="stock-status" class="text-green-600 font-medium">In Stock</p>
+            <p id="stock-count" class="text-sm text-gray-600">25 units available</p>
+          </div>
+          
+          <div class="mb-6">
+            <p class="text-gray-700">{product.description}</p>
+          </div>
+          
+          <!-- Variant Selection -->
+          <div class="mb-6">
+            {/* Color Selection */}
+            <div class="mb-4">
+              <h3 class="font-medium mb-2">Color</h3>
+              <div class="flex flex-wrap gap-2">
+                {colors.map(color => (
+                  <button 
+                    key={color}
+                    data-color={color}
+                    class={`color-option py-2 px-4 rounded-md border-2 transition-colors ${
+                      colors[0] === color ? 'selected border-gray-900 bg-gray-50' : 'border-gray-300'
+                    }`}
+                  >
+                    {color}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Pattern Selection */}
+            <div class="mb-4">
+              <h3 class="font-medium mb-2">Pattern</h3>
+              <div class="flex flex-wrap gap-2">
+                {patterns.map(pattern => (
+                  <button 
+                    key={pattern}
+                    data-pattern={pattern}
+                    class={`pattern-option py-2 px-4 rounded-md border-2 transition-colors ${
+                      patterns[0] === pattern ? 'selected border-gray-900 bg-gray-50' : 'border-gray-300'
+                    }`}
+                  >
+                    {pattern}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-4 mb-6">
+            <button 
+              id="add-to-cart-btn"
+              onclick="addToCart()"
+              class="flex-1 bg-gray-900 text-white py-3 px-6 rounded-md font-medium hover:bg-black transition-colors"
+            >
+              Add to Cart
+            </button>
+            
+            <a 
+              href="/products"
+              class="flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-md font-medium hover:bg-gray-300 transition-colors text-center"
+            >
+              Continue Shopping
+            </a>
+          </div>
+          
+          <div id="cart-message" class="hidden mb-4 p-3 bg-green-100 text-green-800 rounded-md">
+            Item added to cart!
+          </div>
+          
+          <!-- Product Details -->
+          <div class="border-t pt-6">
+            <h3 class="font-medium mb-3">Product Details</h3>
+            <ul class="space-y-2 text-sm text-gray-600">
+              <li>SKU: {firstAvailableVariant.sku}</li>
+              <li>Category: {product.category.replace('_', ' ')}</li>
+              <li>Material: Cotton blend</li>
+              <li>Care: Machine wash, gentle cycle</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Related Products -->
+    <div class="mt-12">
+      <h2 class="text-2xl font-bold mb-6">Related Products</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Related products will be loaded here in a future implementation -->
+        <div class="bg-gray-200 h-64 rounded-lg"></div>
+        <div class="bg-gray-200 h-64 rounded-lg"></div>
+        <div class="bg-gray-200 h-64 rounded-lg"></div>
+        <div class="bg-gray-200 h-64 rounded-lg"></div>
+      </div>
+    </div>
+  </div>
+</Layout>

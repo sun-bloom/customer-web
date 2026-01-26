@@ -1,0 +1,69 @@
+---
+import settingsData from '../data/settings.json';
+
+const { site, social } = settingsData;
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="bg-gray-900 text-white pt-16 pb-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+      
+      <!-- Brand -->
+      <div class="col-span-1 md:col-span-1">
+        <a href="/" class="text-2xl font-bold font-heading text-white mb-4 block">
+          Your<span class="text-gray-400">Shop</span>
+        </a>
+        <p class="text-gray-400 text-sm leading-relaxed mb-6">
+          {site.tagline}. Making fashion accessible and stylish for everyone.
+        </p>
+        <div class="flex space-x-4">
+            <!-- Social Icons would go here -->
+             <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                <span class="sr-only">Instagram</span>
+                <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772 4.902 4.902 0 011.772-1.153c.636-.247 1.363-.416 2.427-.465 1.067-.047 1.407-.06 3.808-.06zm0-2c-2.739 0-3.093.011-4.17.06-1.168.053-1.97.24-2.671.512a6.903 6.903 0 00-2.5 1.625 6.903 6.903 0 00-1.625 2.5c-.272.701-.459 1.503-.512 2.67C.863 8.356.852 8.708.852 11.439v.086c0 2.731.011 3.084.06 4.159.053 1.168.24 1.97.512 2.67a6.905 6.905 0 001.625 2.5 6.905 6.905 0 002.5 1.625c.701.272 1.503.459 2.67.512 1.075.049 1.428.06 4.159.06h.086c2.731 0 3.084-.011 4.159-.06 1.168-.053 1.97-.24 2.67-.512a6.905 6.905 0 002.5-1.625 6.905 6.905 0 001.625-2.5c.272-.701.459-1.503.512-2.67.049-1.075.06-1.428.06-4.159v-.086c0-2.731-.011-3.084-.06-4.159-.053-1.168-.24-1.97-.512-2.67a6.903 6.903 0 00-1.625-2.5 6.903 6.903 0 00-2.5-1.625c-.701-.272-1.503-.459-2.67-.512-1.076-.049-1.429-.06-4.16-.06l-.086.001zM12.315 5.86a6.115 6.115 0 100 12.23 6.115 6.115 0 000-12.23zm0 2a4.115 4.115 0 100 8.23 4.115 4.115 0 000-8.23zm6.402-2.843a1.44 1.44 0 110 2.88 1.44 1.44 0 010-2.88z" clip-rule="evenodd" /></svg>
+             </a>
+        </div>
+      </div>
+
+      <!-- Links -->
+      <div class="col-span-1">
+        <h3 class="text-white font-bold mb-4 uppercase text-sm tracking-wider">Shop</h3>
+        <ul class="space-y-3">
+            <li><a href="/products" class="text-gray-400 hover:text-white transition-colors text-sm">All Products</a></li>
+            <li><a href="/products?category=new" class="text-gray-400 hover:text-white transition-colors text-sm">New Arrivals</a></li>
+            <li><a href="/products?category=best-sellers" class="text-gray-400 hover:text-white transition-colors text-sm">Best Sellers</a></li>
+        </ul>
+      </div>
+
+      <div class="col-span-1">
+        <h3 class="text-white font-bold mb-4 uppercase text-sm tracking-wider">Support</h3>
+        <ul class="space-y-3">
+            <li><a href="/contact" class="text-gray-400 hover:text-white transition-colors text-sm">Contact Us</a></li>
+            <li><a href="/shipping" class="text-gray-400 hover:text-white transition-colors text-sm">Shipping Policy</a></li>
+            <li><a href="/returns" class="text-gray-400 hover:text-white transition-colors text-sm">Returns & Exchanges</a></li>
+            <li><a href="/faq" class="text-gray-400 hover:text-white transition-colors text-sm">FAQs</a></li>
+        </ul>
+      </div>
+
+      <div class="col-span-1">
+        <h3 class="text-white font-bold mb-4 uppercase text-sm tracking-wider">Contact</h3>
+        <ul class="space-y-3 text-sm text-gray-400">
+            <li class="flex items-start">
+               {site.address}
+            </li>
+            <li>Email: {site.contactEmail}</li>
+            <li>Phone: {site.contactPhone}</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-400">
+      <p>&copy; {currentYear} {site.name}. All rights reserved.</p>
+      <div class="flex space-x-6 mt-4 md:mt-0">
+        <a href="/privacy" class="hover:text-white transition-colors">Privacy Policy</a>
+        <a href="/terms" class="hover:text-white transition-colors">Terms of Service</a>
+      </div>
+    </div>
+  </div>
+</footer>
