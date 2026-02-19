@@ -1,11 +1,11 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import CategoryCard from '../components/CategoryCard.astro';
-import productsData from '../data/products.json';
-import settingsData from '../data/settings.json';
+import { getCategories, getSettings } from '../api/products';
 
-const { categories } = productsData;
-const { site } = settingsData;
+const categories = await getCategories();
+const settings = await getSettings();
+const site = settings?.site || { name: 'Fashion Store', tagline: 'Discover your style' };
 ---
 
 <Layout title="Home">

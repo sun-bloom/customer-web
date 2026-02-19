@@ -1,7 +1,9 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getProducts } from '../utils/dataStore.ts';
-import productsData from '../data/products.json';
+import { getAllProducts } from '../api/products';
+
+// Fetch products from API
+const products = await getAllProducts();
 
 // Get cart from localStorage - this will be handled by client-side JavaScript
 // We'll pass an empty array initially and let the client-side code handle it
@@ -11,37 +13,67 @@ const cartItems: any[] = [];
 let subtotal = 0;
 let shipping = 0;
 let total = 0;
+
+// Create raw JSON string using template literal
+const productsDataJson = JSON.stringify({ products });
 ---
 
 <Layout title="Shopping Cart - Fashion Store">
+  <!-- Hidden products data script - injected via set:html -->
+  <script id="cart-products-json" type="application/json" set:html={productsDataJson}></script>
+  
   <script is:inline>
-    // Cart functionality will be handled client-side
+    // Cart functionality - integrated with cart events system
+
     let cartItems = [];
     let subtotal = 0;
     let shipping = 0;
     let total = 0;
+    let productsCatalog = { products: [] };
     
-    // Get products data for reference
-    const productsData = JSON.parse(document.getElementById('products-data').textContent);
+    // Get products data for reference - call this after DOM is ready
+    function loadProductsData() {
+      try {
+        // Parse products data from script element
+        const productsDataElement = document.getElementById('cart-products-json');
+        if (productsDataElement) {
+          productsCatalog = JSON.parse(productsDataElement.textContent);
+          return true;
+        } else {
+          console.error('❌ Products data element not found');
+          return false;
+        }
+      } catch (error) {
+        console.error('❌ Error loading products data:', error);
+        return false;
+      }
+    }
     
     // Load cart from localStorage
     function loadCart() {
       try {
         const cart = localStorage.getItem('cart');
+        
         if (cart) {
           cartItems = JSON.parse(cart);
           updateCartDisplay();
+        } else {
         }
       } catch (error) {
-        console.error('Error loading cart:', error);
+        console.error('❌ Error loading cart:', error);
       }
     }
     
-    // Update cart display
-    function updateCartDisplay() {
+	    // Update cart display
+	    function updateCartDisplay() {
       const cartContainer = document.getElementById('cart-container');
       const emptyCart = document.getElementById('empty-cart');
       const cartDetails = document.getElementById('cart-details');
+      
+      if (!cartContainer || !emptyCart || !cartDetails) {
+        console.error('❌ Cart display elements not found');
+        return;
+      }
       
       if (cartItems.length === 0) {
         cartContainer.classList.add('hidden');
@@ -58,79 +90,74 @@ let total = 0;
       const cartItemsContainer = document.getElementById('cart-items');
       cartItemsContainer.innerHTML = '';
       
-      // Calculate totals and populate cart
-      subtotal = 0;
-      
-      cartItems.forEach((item, index) => {
-        // Find the product
-        const product = productsData.products.find(p => p.id === item.productId);
-        if (!product) return;
-        
-        // Find the variant
-        const variant = product.variants.find(v => v.id === item.variantId);
-        if (!variant) return;
-        
-        // Add to subtotal
-        const itemTotal = item.quantity * item.unitPrice;
-        subtotal += itemTotal;
+	      // Calculate totals and populate cart
+	      subtotal = 0;
+	      
+	      cartItems.forEach((item, index) => {
+	        // Find the product
+	        const product = productsCatalog.products.find(p => p.id === item.productId);
+	        if (!product) return;
+	        
+	        // Find the variant
+	        const variant = product.variants.find(v => v.id === item.variantId);
+	        if (!variant) return;
+
+	        const maxAllowed = variant.isAvailable ? Math.max(0, Math.min(10, variant.stock || 0)) : 0;
+	        if (maxAllowed > 0 && item.quantity > maxAllowed) {
+	          item.quantity = maxAllowed;
+	          item.totalPrice = item.quantity * item.unitPrice;
+	          localStorage.setItem('cart', JSON.stringify(cartItems));
+	        }
+	        
+	        // Add to subtotal
+	        const itemTotal = item.quantity * item.unitPrice;
+	        subtotal += itemTotal;
         
         // Create cart item element
         const cartItemElement = document.createElement('div');
-        cartItemElement.className = 'flex items-center space-x-4 py-4 border-b';
-        cartItemElement.innerHTML = `
-          <div class="w-20 h-20 flex-shrink-0">
-            <img src="${item.productImage}" alt="${item.productName}" class="w-full h-full object-cover rounded-md">
+        cartItemElement.className = 'p-6 grid grid-cols-1 md:grid-cols-[96px_minmax(0,1fr)_160px] gap-4 md:items-center';
+	        const decrementAction = item.quantity <= 1
+	          ? `removeItem(${index})`
+	          : `updateQuantity(${index}, ${item.quantity - 1})`;
+	        const canIncrease = maxAllowed > 0 && item.quantity < maxAllowed;
+	        const incrementAction = canIncrease ? `updateQuantity(${index}, ${item.quantity + 1})` : 'return false';
+
+	        cartItemElement.innerHTML = `
+          <div class="w-24 h-24 flex-shrink-0 bg-gray-100">
+            <img src="${item.productImage}" alt="${item.productName}" class="w-full h-full object-cover">
           </div>
           
-          <div class="flex-1 min-w-0">
-            <h3 class="text-base font-medium text-gray-900 truncate">
+          <div>
+            <h3 class="text-base font-semibold text-gray-900 truncate">
               <a href="/products/${item.productSlug}" class="hover:text-gray-900 transition-colors">
                 ${item.productName}
               </a>
             </h3>
-            <p class="text-sm text-gray-500">
-              ${item.color} / ${item.pattern}
-            </p>
-            <p class="text-sm font-medium text-gray-900">
-              ₹${item.unitPrice}
-            </p>
+            <p class="text-sm text-gray-500">${item.color} / ${item.pattern}</p>
+            <p class="text-sm font-medium text-gray-800 mt-1">₹${item.unitPrice}</p>
           </div>
-          
-          <div class="flex items-center space-x-2">
-            <button 
-              onclick="updateQuantity(${index}, ${item.quantity - 1})"
-              class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
-              ${item.quantity <= 1 ? 'disabled' : ''}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
-              </svg>
-            </button>
-            
-            <span class="w-8 text-center">${item.quantity}</span>
-            
-            <button 
-              onclick="updateQuantity(${index}, ${item.quantity + 1})"
-              class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-            </button>
-          </div>
-          
-          <div class="text-right">
-            <p class="text-base font-medium text-gray-900">
-              ₹${itemTotal}
-            </p>
-            <button 
-              onclick="removeItem(${index})"
-              class="text-sm text-red-600 hover:text-red-800 transition-colors"
-            >
-              Remove
-            </button>
-          </div>
-        `;
+
+          <div class="flex md:flex-col items-center md:items-end gap-4">
+            <div class="inline-flex items-center border border-gray-200">
+              <button 
+                onclick="${decrementAction}"
+                class="w-9 h-9 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <span class="text-lg leading-none">−</span>
+              </button>
+              <span class="w-10 text-center text-sm font-medium text-gray-900">${item.quantity}</span>
+	              <button 
+	                onclick="${incrementAction}"
+	                ${canIncrease ? '' : 'disabled'}
+	                class="w-9 h-9 flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+	              >
+	                <span class="text-lg leading-none">+</span>
+	              </button>
+	            </div>
+	            ${maxAllowed > 0 ? `<p class="text-xs text-gray-500">Max ${maxAllowed}</p>` : `<p class="text-xs text-gray-500">Unavailable</p>`}
+	            <p class="text-base font-semibold text-gray-900 md:text-right">₹${itemTotal}</p>
+	          </div>
+	        `;
         
         cartItemsContainer.appendChild(cartItemElement);
       });
@@ -145,18 +172,42 @@ let total = 0;
       document.getElementById('total').textContent = `₹${total}`;
     }
     
-    // Update quantity
-    function updateQuantity(index, newQuantity) {
-      if (newQuantity <= 0) {
-        removeItem(index);
-        return;
-      }
-      
-      cartItems[index].quantity = newQuantity;
-      cartItems[index].totalPrice = newQuantity * cartItems[index].unitPrice;
+	    // Update quantity
+	    function updateQuantity(index, newQuantity) {
+	      if (newQuantity <= 0) {
+	        removeItem(index);
+	        return;
+	      }
+
+	      const item = cartItems[index];
+	      const product = productsCatalog.products.find(p => p.id === item.productId);
+	      const variant = product?.variants?.find(v => v.id === item.variantId);
+	      const maxAllowed = variant?.isAvailable ? Math.max(0, Math.min(10, variant.stock || 0)) : 0;
+	      if (maxAllowed <= 0) {
+	        alert('This item is no longer available and will be removed from your cart.');
+	        removeItem(index);
+	        return;
+	      }
+	      if (newQuantity > maxAllowed) {
+	        alert(`Only ${maxAllowed} units available for this item.`);
+	        newQuantity = maxAllowed;
+	      }
+	      
+	      cartItems[index].quantity = newQuantity;
+	      cartItems[index].totalPrice = newQuantity * cartItems[index].unitPrice;
       
       // Save to localStorage
       localStorage.setItem('cart', JSON.stringify(cartItems));
+      
+      // Dispatch cart update event for other components
+      window.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: cartItems } }));
+      window.dispatchEvent(new CustomEvent('cart:item-quantity-changed', { 
+        detail: { 
+          productId: cartItems[index].productId,
+          variantId: cartItems[index].variantId,
+          quantity: newQuantity 
+        }
+      }));
       
       // Update display
       updateCartDisplay();
@@ -165,10 +216,20 @@ let total = 0;
     
     // Remove item
     function removeItem(index) {
+      const removedItem = cartItems[index];
       cartItems.splice(index, 1);
       
       // Save to localStorage
       localStorage.setItem('cart', JSON.stringify(cartItems));
+      
+      // Dispatch cart update event for other components
+      window.dispatchEvent(new CustomEvent('cart:updated', { detail: { cart: cartItems } }));
+      window.dispatchEvent(new CustomEvent('cart:item-removed', { 
+        detail: { 
+          productId: removedItem.productId,
+          variantId: removedItem.variantId 
+        }
+      }));
       
       // Update display
       updateCartDisplay();
@@ -188,95 +249,129 @@ let total = 0;
     function clearCart() {
       cartItems = [];
       localStorage.removeItem('cart');
+      
+      // Dispatch cart cleared event for other components
+      window.dispatchEvent(new CustomEvent('cart:cleared', { detail: { cart: [] } }));
+      
       updateCartDisplay();
       updateCartBadge();
     }
     
+    // Listen for cart updates from other components
+    function handleCartUpdate(event) {
+      loadCart();
+    }
+    
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', () => {
-      loadCart();
+      // First load products data, then load cart
+      if (loadProductsData()) {
+        loadCart();
+      } else {
+        console.error('❌ Failed to load products data, cart may not display correctly');
+        // Try to load cart anyway in case it has all needed data
+        loadCart();
+      }
+      
+      // Listen for cart events from other components
+      window.addEventListener('cart:updated', handleCartUpdate);
+      window.addEventListener('cart:item-added', handleCartUpdate);
+      window.addEventListener('cart:item-removed', handleCartUpdate);
+      window.addEventListener('cart:item-quantity-changed', handleCartUpdate);
+      window.addEventListener('cart:cleared', handleCartUpdate);
+    });
+    
+    // Cleanup event listeners
+    window.addEventListener('beforeunload', () => {
+      window.removeEventListener('cart:updated', handleCartUpdate);
+      window.removeEventListener('cart:item-added', handleCartUpdate);
+      window.removeEventListener('cart:item-removed', handleCartUpdate);
+      window.removeEventListener('cart:item-quantity-changed', handleCartUpdate);
+      window.removeEventListener('cart:cleared', handleCartUpdate);
     });
   </script>
   
-  <!-- Hidden products data for JavaScript access -->
-  <script id="products-data" type="application/json">
-    {JSON.stringify(productsData)}
-  </script>
-  
-  <div class="container mx-auto px-4 py-8">
-    <div class="max-w-4xl mx-auto">
-      <h1 class="text-3xl font-bold mb-8">Shopping Cart</h1>
+  <div class="min-h-screen bg-gray-50">
+    <div class="container mx-auto px-4 py-10">
+      <div class="max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
+          <div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">
+              Shopping Cart
+            </h1>
+            <p class="text-sm text-gray-500 mt-2">
+              Review your pieces and adjust quantities before checkout.
+            </p>
+          </div>
+          <a 
+            href="/products"
+            class="inline-flex items-center justify-center border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:text-gray-900 hover:border-gray-400 transition-colors"
+          >
+            Continue Shopping
+          </a>
+        </div>
       
       <!-- Empty Cart State -->
-      <div id="empty-cart" class="bg-white rounded-lg shadow-md p-8 text-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-        </svg>
-        <h2 class="text-xl font-medium text-gray-900 mb-2">Your cart is empty</h2>
-        <p class="text-gray-500 mb-6">Looks like you haven't added anything to your cart yet.</p>
-        <a href="/products" class="inline-block bg-gray-900 text-white py-2 px-6 rounded-md font-medium hover:bg-black transition-colors">
-          Continue Shopping
+      <div id="empty-cart" class="bg-white border border-gray-200 shadow-sm p-10 text-center">
+        <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+        <p class="text-gray-500 mb-6">Curate your next look and it will appear here.</p>
+        <a href="/products" class="inline-flex items-center justify-center bg-gray-900 text-white px-6 py-3 text-sm hover:bg-black transition-colors">
+          Explore Collection
         </a>
       </div>
       
       <!-- Cart Items (hidden when empty) -->
       <div id="cart-container" class="hidden">
-        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-          <div id="cart-items" class="divide-y divide-gray-200">
+        <div class="grid grid-cols-1 gap-8">
+          <div class="bg-white border border-gray-200 shadow-sm overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <p class="text-sm text-gray-600">Items</p>
+              
+            </div>
+            <div id="cart-items" class="divide-y divide-gray-100">
             <!-- Cart items will be inserted here by JavaScript -->
-          </div>
-        </div>
-        
-        <!-- Cart Actions -->
-        <div class="flex justify-between items-center mb-6">
-          <button 
-            onclick="clearCart()"
-            class="text-red-600 hover:text-red-800 transition-colors"
-          >
-            Clear Cart
-          </button>
-          <a 
-            href="/products"
-            class="text-gray-600 hover:text-black font-medium transition-colors"
-          >
-            Continue Shopping
-          </a>
-        </div>
-      </div>
-      
-      <!-- Cart Details (hidden when empty) -->
-      <div id="cart-details" class="hidden">
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <h2 class="text-lg font-semibold mb-4">Order Summary</h2>
-          
-          <div class="space-y-3 pb-4 border-b">
-            <div class="flex justify-between">
-              <span class="text-gray-600">Subtotal</span>
-              <span id="subtotal" class="font-medium">₹0</span>
-            </div>
-            
-            <div class="flex justify-between">
-              <span class="text-gray-600">Shipping</span>
-              <span id="shipping" class="font-medium">₹0</span>
             </div>
           </div>
-          
-          <div class="pt-4">
-            <div class="flex justify-between items-center mb-6">
-              <span class="text-lg font-semibold">Total</span>
-              <span id="total" class="text-xl font-bold text-gray-900">₹0</span>
+          <!-- Cart Details (hidden when empty) -->
+          <div id="cart-details" class="hidden">
+            <div class="bg-white border border-gray-200 shadow-sm p-6">
+              <p class="text-sm text-gray-600 mb-4">Order Summary</p>
+              
+              <div class="space-y-3 pb-4 border-b border-gray-100">
+                <div class="flex justify-between text-sm text-gray-600">
+                  <span>Subtotal</span>
+                  <span id="subtotal" class="font-medium text-gray-900">₹0</span>
+                </div>
+                
+                <div class="flex justify-between text-sm text-gray-600">
+                  <span>Shipping</span>
+                  <span id="shipping" class="font-medium text-gray-900">₹0</span>
+                </div>
+              </div>
+              
+              <div class="pt-4">
+                <div class="flex justify-between items-center mb-5">
+                  <span class="text-sm text-gray-600">Total</span>
+                  <span id="total" class="text-2xl font-semibold text-gray-900">₹0</span>
+                </div>
+                
+                <a 
+                  href="/payment"
+                  class="w-full bg-gray-900 text-white py-3 px-6 text-sm hover:bg-black transition-colors block text-center"
+                >
+                  Pay by UPI
+                </a>
+                
+                <p class="text-xs text-gray-500 text-center mt-4">
+                  Free shipping on orders above ₹1500
+                </p>
+              </div>
             </div>
-            
-            <a 
-              href="/checkout"
-              class="w-full bg-gray-900 text-white py-3 px-6 rounded-md font-medium hover:bg-black transition-colors block text-center"
-            >
-              Proceed to Checkout
-            </a>
-            
-            <p class="text-xs text-gray-500 text-center mt-4">
-              Free shipping on orders above ₹1500
-            </p>
           </div>
         </div>
       </div>

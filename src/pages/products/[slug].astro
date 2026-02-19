@@ -1,21 +1,11 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import productsData from '../../data/products.json';
+import { getProductBySlug } from '../../api/products';
 
-// Generate static paths for all active products
-export async function getStaticPaths() {
-  if (!productsData || !productsData.products) return [];
-  
-  return productsData.products
-    .filter(product => product.isActive)
-    .map(product => ({
-      params: { slug: product.slug },
-      props: { product }
-    }));
-}
+const { slug } = Astro.params;
 
-// Get the product data from props
-const { product } = Astro.props;
+// Fetch product from API
+const product = await getProductBySlug(slug as string);
 
 // If product doesn't exist, render a 404 page
 if (!product || !product.isActive) {
@@ -37,10 +27,14 @@ const prices = product.variants.map(v => product.basePrice + v.additionalPrice);
 const minPrice = Math.min(...prices);
 const maxPrice = Math.max(...prices);
 const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} - ₹${maxPrice}`;
+const categoryLabel =
+  typeof product.category === 'string'
+    ? product.category
+    : product.category?.name || '';
 ---
 
 <Layout title={`${product.name} - Fashion Store`}>
-  <script define:vars={{ product, variants: product.variants }}>
+  <script define:vars={{ product, variants: product.variants, colors, patterns }}>
     // State for selected variant
     let selectedVariant = null;
     
@@ -57,6 +51,7 @@ const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} 
         updatePrice();
         updateStockStatus();
         updateAddToCartButton();
+        updateImageForSelection(color, pattern);
       }
     }
     
@@ -68,23 +63,36 @@ const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} 
       }
     }
     
-    // Function to update stock status
-    function updateStockStatus() {
-      if (selectedVariant) {
-        const stockElement = document.getElementById('stock-status');
-        const stockCount = document.getElementById('stock-count');
-        
-        if (selectedVariant.stock > 0) {
-          stockElement.className = 'text-green-600 font-medium';
-          stockElement.textContent = 'In Stock';
-          stockCount.textContent = `${selectedVariant.stock} units available`;
-        } else {
-          stockElement.className = 'text-red-600 font-medium';
-          stockElement.textContent = 'Out of Stock';
-          stockCount.textContent = '';
-        }
-      }
-    }
+	    // Function to update stock status
+	    function updateStockStatus() {
+	      if (selectedVariant) {
+	        const stockElement = document.getElementById('stock-status');
+	        const stockCount = document.getElementById('stock-count');
+	        const quantityInput = document.getElementById('quantity-input');
+	        
+	        if (selectedVariant.stock > 0) {
+	          stockElement.className = 'text-gray-600 font-medium';
+	          stockElement.textContent = 'In Stock';
+	          stockCount.textContent = `${selectedVariant.stock} units available`;
+
+	          if (quantityInput) {
+	            const max = Math.max(1, Math.min(10, selectedVariant.stock));
+	            quantityInput.max = String(max);
+	            const current = parseInt(quantityInput.value) || 1;
+	            if (current > max) quantityInput.value = String(max);
+	          }
+	        } else {
+	          stockElement.className = 'text-gray-500 font-medium';
+	          stockElement.textContent = 'Out of Stock';
+	          stockCount.textContent = '';
+
+	          if (quantityInput) {
+	            quantityInput.max = '1';
+	            quantityInput.value = '1';
+	          }
+	        }
+	      }
+	    }
     
     // Function to update add to cart button
     function updateAddToCartButton() {
@@ -117,9 +125,34 @@ const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} 
         }
       });
     }
+
+    function updateImageForSelection(color, pattern) {
+      const mainImage = document.getElementById('main-image');
+      if (!mainImage || !product.images?.length) return;
+
+      const colorKey = String(color || '').toLowerCase();
+      const patternKey = String(pattern || '').toLowerCase();
+
+      const match = product.images.find((img) => {
+        const value = img.toLowerCase();
+        return (colorKey && value.includes(colorKey)) || (patternKey && value.includes(patternKey));
+      });
+
+      if (match) {
+        mainImage.src = match;
+        const thumbnails = document.querySelectorAll('.thumbnail');
+        thumbnails.forEach((thumb) => {
+          if (thumb.getAttribute('src') === match) {
+            thumb.classList.add('ring-2', 'ring-gray-900');
+          } else {
+            thumb.classList.remove('ring-2', 'ring-gray-900');
+          }
+        });
+      }
+    }
     
     // Function to add to cart
-    function addToCart() {
+	    function addToCart() {
       if (!selectedVariant) {
         // If no variant is selected, select the first available one
         const firstAvailable = variants.find(v => v.isAvailable);
@@ -131,6 +164,21 @@ const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} 
         }
       }
       
+	      // Get quantity from input
+	      const quantityInput = document.getElementById('quantity-input');
+	      const quantity = quantityInput ? parseInt(quantityInput.value) || 1 : 1;
+
+	      const maxAllowed = Math.max(0, Math.min(10, selectedVariant.stock || 0));
+	      if (maxAllowed <= 0) {
+	        alert('This variant is out of stock.');
+	        return;
+	      }
+	      if (quantity > maxAllowed) {
+	        alert(`Only ${maxAllowed} units available for this variant.`);
+	        if (quantityInput) quantityInput.value = String(maxAllowed);
+	        return;
+	      }
+      
       // Create cart item
       const cartItem = {
         productId: product.id,
@@ -140,9 +188,9 @@ const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} 
         productImage: product.images[0],
         color: selectedVariant.color,
         pattern: selectedVariant.pattern,
-        quantity: 1,
+        quantity: quantity,
         unitPrice: product.basePrice + selectedVariant.additionalPrice,
-        totalPrice: product.basePrice + selectedVariant.additionalPrice
+        totalPrice: (product.basePrice + selectedVariant.additionalPrice) * quantity
       };
       
       // Get existing cart from localStorage
@@ -153,17 +201,30 @@ const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} 
         item.productId === cartItem.productId && item.variantId === cartItem.variantId
       );
       
-      if (existingItemIndex >= 0) {
-        // Update quantity if item exists
-        cart[existingItemIndex].quantity += 1;
-        cart[existingItemIndex].totalPrice = cart[existingItemIndex].quantity * cart[existingItemIndex].unitPrice;
-      } else {
-        // Add new item
-        cart.push(cartItem);
-      }
+	      if (existingItemIndex >= 0) {
+	        // Update quantity if item exists
+	        const nextQty = cart[existingItemIndex].quantity + quantity;
+	        if (nextQty > maxAllowed) {
+	          alert(`Only ${maxAllowed} units available for this variant. Your cart already has ${cart[existingItemIndex].quantity}.`);
+	          return;
+	        }
+	        cart[existingItemIndex].quantity = nextQty;
+	        cart[existingItemIndex].totalPrice = cart[existingItemIndex].quantity * cart[existingItemIndex].unitPrice;
+	      } else {
+	        // Add new item
+	        cart.push(cartItem);
+	      }
       
       // Save cart to localStorage
       localStorage.setItem('cart', JSON.stringify(cart));
+      
+      // Dispatch cart update event for real-time badge updates
+      window.dispatchEvent(new CustomEvent('cart:updated', { 
+        detail: { cart, timestamp: Date.now() } 
+      }));
+      window.dispatchEvent(new CustomEvent('cart:item-added', { 
+        detail: { item: cartItem, timestamp: Date.now() } 
+      }));
       
       // Show success message
       const message = document.getElementById('cart-message');
@@ -174,13 +235,6 @@ const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} 
       setTimeout(() => {
         message.classList.add('hidden');
       }, 3000);
-      
-      // Update cart badge if it exists
-      const cartBadge = document.getElementById('cart-badge');
-      if (cartBadge) {
-        const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
-        cartBadge.textContent = totalItems;
-      }
     }
     
     // Initialize the page
@@ -197,14 +251,38 @@ const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} 
       const colorButtons = document.querySelectorAll('.color-option');
       const patternButtons = document.querySelectorAll('.pattern-option');
       
+      const setSelectedButton = (buttons, selectedButton) => {
+        buttons.forEach((btn) => {
+          btn.classList.remove('selected', 'border-gray-900', 'bg-gray-50');
+          btn.classList.add('border-gray-300');
+        });
+        if (selectedButton) {
+          selectedButton.classList.add('selected', 'border-gray-900', 'bg-gray-50');
+          selectedButton.classList.remove('border-gray-300');
+        }
+      };
+
+      if (colorButtons.length > 0) {
+        const initialColorButton = Array.from(colorButtons).find((btn) =>
+          btn.getAttribute('data-color') === firstColor
+        );
+        setSelectedButton(colorButtons, initialColorButton || colorButtons[0]);
+      }
+
+      if (patternButtons.length > 0) {
+        const initialPatternButton = Array.from(patternButtons).find((btn) =>
+          btn.getAttribute('data-pattern') === firstPattern
+        );
+        setSelectedButton(patternButtons, initialPatternButton || patternButtons[0]);
+      }
+
       colorButtons.forEach(button => {
         button.addEventListener('click', () => {
           const selectedColor = button.getAttribute('data-color');
           const currentPattern = document.querySelector('.pattern-option.selected')?.getAttribute('data-pattern') || firstPattern;
           
           // Update selected state
-          colorButtons.forEach(btn => btn.classList.remove('selected'));
-          button.classList.add('selected');
+          setSelectedButton(colorButtons, button);
           
           updateVariant(selectedColor, currentPattern);
         });
@@ -216,16 +294,61 @@ const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} 
           const currentColor = document.querySelector('.color-option.selected')?.getAttribute('data-color') || firstColor;
           
           // Update selected state
-          patternButtons.forEach(btn => btn.classList.remove('selected'));
-          button.classList.add('selected');
+          setSelectedButton(patternButtons, button);
           
           updateVariant(currentColor, selectedPattern);
         });
+      });
+      
+      // Set up Add to Cart button event listener
+      const addToCartBtn = document.getElementById('add-to-cart-btn');
+      if (addToCartBtn) {
+        addToCartBtn.addEventListener('click', addToCart);
+      }
+      
+      // Set up quantity controls
+      const quantityInput = document.getElementById('quantity-input');
+      const decreaseBtn = document.getElementById('decrease-qty');
+      const increaseBtn = document.getElementById('increase-qty');
+      
+      if (decreaseBtn && quantityInput) {
+        decreaseBtn.addEventListener('click', () => {
+          const currentValue = parseInt(quantityInput.value) || 1;
+          if (currentValue > 1) {
+            quantityInput.value = currentValue - 1;
+          }
+        });
+      }
+      
+      if (increaseBtn && quantityInput) {
+        increaseBtn.addEventListener('click', () => {
+          const currentValue = parseInt(quantityInput.value) || 1;
+          const maxValue = parseInt(quantityInput.max) || 10;
+          if (currentValue < maxValue) {
+            quantityInput.value = currentValue + 1;
+          }
+        });
+      }
+      
+      // Set up thumbnail click listeners
+      const thumbnails = document.querySelectorAll('.thumbnail');
+      thumbnails.forEach((thumb, index) => {
+        thumb.addEventListener('click', () => showImage(index));
       });
     });
   </script>
 
   <div class="container mx-auto px-4 py-8">
+    <style>
+      input[type='number']::-webkit-outer-spin-button,
+      input[type='number']::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type='number'] {
+        -moz-appearance: textfield;
+      }
+    </style>
     <!-- Breadcrumb Navigation -->
     <nav class="mb-6 text-sm">
       <ol class="flex items-center space-x-2">
@@ -255,12 +378,14 @@ const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} 
           {product.images.length > 1 && (
             <div class="flex p-4 space-x-2 overflow-x-auto">
               {product.images.map((image, index) => (
-                <img 
+                <img
                   key={index}
-                  src={image} 
+                  src={image}
                   alt={`${product.name} view ${index + 1}`}
                   class="thumbnail w-20 h-20 object-cover rounded cursor-pointer border-2 border-gray-200 hover:border-gray-900 transition-colors"
-                  onclick={`showImage(${index})`}
+                  data-index={index}
+                  loading="lazy"
+                  decoding="async"
                 />
               ))}
             </div>
@@ -278,8 +403,8 @@ const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} 
           </div>
           
           <div class="mb-6">
-            <p id="stock-status" class="text-green-600 font-medium">In Stock</p>
-            <p id="stock-count" class="text-sm text-gray-600">25 units available</p>
+            <p id="stock-status" class="text-gray-600 font-medium">In Stock</p>
+            <p id="stock-count" class="text-sm text-gray-600">{firstAvailableVariant?.stock || product.variants[0]?.stock || 0} units available</p>
           </div>
           
           <div class="mb-6">
@@ -325,10 +450,40 @@ const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} 
             </div>
           </div>
           
+          <!-- Quantity Selector -->
+          <div class="mb-6">
+            <h3 class="font-medium mb-2">Quantity</h3>
+            <div class="flex items-center space-x-3">
+              <button 
+                id="decrease-qty"
+                class="w-10 h-10 rounded-md border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                </svg>
+              </button>
+              <input 
+                id="quantity-input"
+                type="number" 
+                min="1" 
+                max="10"
+                value="1"
+                class="w-20 text-center border-2 border-gray-300 rounded-md py-2 font-medium focus:outline-none focus:border-gray-900"
+              />
+              <button 
+                id="increase-qty"
+                class="w-10 h-10 rounded-md border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          
           <div class="flex flex-col sm:flex-row gap-4 mb-6">
             <button 
               id="add-to-cart-btn"
-              onclick="addToCart()"
               class="flex-1 bg-gray-900 text-white py-3 px-6 rounded-md font-medium hover:bg-black transition-colors"
             >
               Add to Cart
@@ -351,7 +506,7 @@ const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} 
             <h3 class="font-medium mb-3">Product Details</h3>
             <ul class="space-y-2 text-sm text-gray-600">
               <li>SKU: {firstAvailableVariant.sku}</li>
-              <li>Category: {product.category.replace('_', ' ')}</li>
+              <li>Category: {categoryLabel.replace('_', ' ')}</li>
               <li>Material: Cotton blend</li>
               <li>Care: Machine wash, gentle cycle</li>
             </ul>

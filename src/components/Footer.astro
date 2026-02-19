@@ -1,7 +1,14 @@
 ---
-import settingsData from '../data/settings.json';
+import { getSettings } from '../api/products';
 
-const { site, social } = settingsData;
+const settings = await getSettings();
+const site = settings?.site || { 
+  name: 'Fashion Store', 
+  tagline: 'Discover your style',
+  address: '123 Fashion Street, Style City',
+  contactEmail: 'support@example.com',
+  contactPhone: '+91 98765 43210'
+};
 const currentYear = new Date().getFullYear();
 ---
 
@@ -31,8 +38,17 @@ const currentYear = new Date().getFullYear();
         <h3 class="text-white font-bold mb-4 uppercase text-sm tracking-wider">Shop</h3>
         <ul class="space-y-3">
             <li><a href="/products" class="text-gray-400 hover:text-white transition-colors text-sm">All Products</a></li>
-            <li><a href="/products?category=new" class="text-gray-400 hover:text-white transition-colors text-sm">New Arrivals</a></li>
+            <li><a href="/products?sort=new" class="text-gray-400 hover:text-white transition-colors text-sm">New Arrivals</a></li>
             <li><a href="/products?category=best-sellers" class="text-gray-400 hover:text-white transition-colors text-sm">Best Sellers</a></li>
+        </ul>
+      </div>
+
+      <!-- Account -->
+      <div class="col-span-1">
+        <h3 class="text-white font-bold mb-4 uppercase text-sm tracking-wider">Account</h3>
+        <ul class="space-y-3">
+            <li><a href="/orders" class="text-gray-400 hover:text-white transition-colors text-sm">My Orders</a></li>
+            <li><a href="/cart" class="text-gray-400 hover:text-white transition-colors text-sm">Shopping Cart</a></li>
         </ul>
       </div>
 

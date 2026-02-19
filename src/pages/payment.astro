@@ -1,0 +1,752 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getAllProducts, getSettings, getDeliverySettings } from '../api/products';
+
+// Fetch data from API
+const products = await getAllProducts();
+const settings = await getSettings();
+const deliverySettings = await getDeliverySettings();
+
+const upi = settings?.upi || { id: '', name: '' };
+
+// Create safe JSON strings for injection
+const productsJsonString = JSON.stringify({ products });
+const ordersJsonString = JSON.stringify({ orders: [] });
+const deliverySettingsJsonString = JSON.stringify(deliverySettings);
+const upiJsonString = JSON.stringify(upi);
+---
+
+<Layout title="Payment - Fashion Store">
+  <!-- Data injection using script tags (same as cart page) -->
+  <script id="payment-products-json" type="application/json" set:html={productsJsonString}></script>
+  <script id="payment-orders-json" type="application/json" set:html={ordersJsonString}></script>
+  <script id="payment-delivery-settings-json" type="application/json" set:html={deliverySettingsJsonString}></script>
+  <script id="payment-upi-json" type="application/json" set:html={upiJsonString}></script>
+
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-3xl font-bold mb-8">Complete Payment</h1>
+      
+      <div id="payment-empty-cart" class="bg-white rounded-lg shadow-md p-8 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        </svg>
+        <h2 class="text-xl font-medium text-gray-900 mb-2">Your cart is empty</h2>
+        <p class="text-gray-500 mb-6">Looks like you haven't added anything to your cart yet.</p>
+        <a href="/products" class="inline-block bg-gray-900 text-white py-2 px-6 rounded-md font-medium hover:bg-black transition-colors">
+          Continue Shopping
+        </a>
+      </div>
+      
+      <div id="payment-cart-container" class="hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div class="space-y-6">
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h2 class="text-xl font-semibold mb-6">Your Details</h2>
+              <form id="payment-form">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label for="customer-name" class="block text-sm font-medium text-gray-700 mb-1">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="customer-name"
+                      name="customer-name"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label for="customer-phone" class="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      id="customer-phone"
+                      name="customer-phone"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label for="customer-email" class="block text-sm font-medium text-gray-700 mb-1">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      id="customer-email"
+                      name="customer-email"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label for="pincode" class="block text-sm font-medium text-gray-700 mb-1">
+                      Pincode *
+                    </label>
+                    <input
+                      type="text"
+                      id="pincode"
+                      name="pincode"
+                      required
+                      maxlength="6"
+                      pattern="[0-9]{6}"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                    />
+                    <div id="pincode-status"></div>
+                  </div>
+                </div>
+                
+                <div class="mt-4">
+                  <label for="delivery-address" class="block text-sm font-medium text-gray-700 mb-1">
+                    Delivery Address *
+                  </label>
+                  <textarea
+                    id="delivery-address"
+                    name="delivery-address"
+                    rows="3"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                  ></textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label for="city" class="block text-sm font-medium text-gray-700 mb-1">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      id="city"
+                      name="city"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label for="state" class="block text-sm font-medium text-gray-700 mb-1">
+                      State *
+                    </label>
+                    <input
+                      type="text"
+                      id="state"
+                      name="state"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
+                    />
+                  </div>
+                </div>
+              </form>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h2 class="text-xl font-semibold mb-4">Payment Method</h2>
+              
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                <div class="flex items-center mb-6">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-900 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <div>
+                    <h4 class="font-medium text-gray-900">UPI Payment</h4>
+                    <p class="text-sm text-gray-600">Complete your payment using UPI</p>
+                  </div>
+                </div>
+                
+                <div id="desktop-payment" class="hidden">
+                  <div class="flex flex-col items-center">
+                    <div class="w-48 h-48 bg-white rounded-lg p-2 flex items-center justify-center border border-gray-200 shadow-sm mb-4">
+                      <img id="upi-qr-code" src={upi.qrCode} alt="UPI QR Code" class="max-w-full max-h-full" />
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">Scan QR Code to Pay</p>
+                    <div class="text-center mb-6">
+                      <p class="text-sm font-medium text-gray-700 mb-1">UPI ID:</p>
+                      <div class="flex items-center justify-center">
+                        <code id="upi-vpa" class="font-mono font-bold text-gray-900 bg-gray-100 px-3 py-2 rounded">{upi.vpa}</code>
+                        <button type="button" id="copy-upi" class="ml-2 text-sm text-blue-600 hover:underline">Copy</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div id="mobile-payment" class="hidden">
+                  <div class="space-y-4">
+                    <p class="text-sm text-gray-600 text-center">Tap to pay with your preferred UPI app:</p>
+                    <div class="grid grid-cols-3 gap-3">
+                      <a id="gpay-link" href="#" class="flex flex-col items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-2">
+                          <span class="text-white font-bold text-sm">G</span>
+                        </div>
+                        <span class="text-xs font-medium text-gray-700">GPay</span>
+                      </a>
+                      <a id="phonepe-link" href="#" class="flex flex-col items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-2">
+                          <span class="text-white font-bold text-sm">P</span>
+                        </div>
+                        <span class="text-xs font-medium text-gray-700">PhonePe</span>
+                      </a>
+                      <a id="paytm-link" href="#" class="flex flex-col items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mb-2">
+                          <span class="text-white font-bold text-sm">P</span>
+                        </div>
+                        <span class="text-xs font-medium text-gray-700">Paytm</span>
+                      </a>
+                    </div>
+                    <div class="text-center mt-4">
+                      <p class="text-sm text-gray-600">Or copy UPI ID:</p>
+                      <div class="flex items-center justify-center mt-2">
+                        <code id="upi-vpa-mobile" class="font-mono font-bold text-gray-900 bg-gray-100 px-3 py-2 rounded">{upi.vpa}</code>
+                        <button type="button" id="copy-upi-mobile" class="ml-2 text-sm text-blue-600 hover:underline">Copy</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="w-full space-y-3 mt-6">
+                  <label class="block text-sm font-medium text-gray-700">
+                    Upload Payment Screenshot *
+                  </label>
+                  <div class="flex items-center justify-center w-full">
+                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50">
+                      <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                        <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                        </svg>
+                        <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                        <p id="file-name-display" class="text-xs text-gray-500 uppercase">PNG, JPG or PDF</p>
+                      </div>
+                      <input id="payment-screenshot" type="file" class="hidden" accept="image/*" required />
+                    </label>
+                  </div>
+                </div>
+                
+                <div class="mt-6 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p class="text-xs text-yellow-800">
+                    <strong>Important:</strong> Your order will be processed after we verify the payment from your screenshot.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="bg-white rounded-lg shadow-md p-6 sticky top-6">
+              <h2 class="text-xl font-semibold mb-4">Order Summary</h2>
+              
+              <div id="payment-cart-items" class="space-y-3 mb-4">
+              </div>
+              
+              <div class="space-y-3 pb-4 border-b">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Subtotal</span>
+                  <span id="payment-subtotal" class="font-medium">₹0</span>
+                </div>
+                
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Shipping</span>
+                  <span id="payment-shipping" class="font-medium">₹50</span>
+                </div>
+              </div>
+              
+              <div class="pt-4">
+                <div class="flex justify-between items-center mb-6">
+                  <span class="text-lg font-semibold">Total</span>
+                  <span id="payment-total" class="text-xl font-bold text-gray-900">₹0</span>
+                </div>
+                
+                <div id="free-shipping-notice" class="hidden text-sm text-green-600 mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  You've qualified for free shipping!
+                </div>
+                
+                <div id="shipping-charge-notice" class="text-sm text-gray-600 mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Add ₹1500 more for free shipping
+                </div>
+                
+                <button
+                  type="submit"
+                  id="submit-order-btn"
+                  class="w-full bg-gray-900 text-white py-3 px-6 rounded-md font-medium hover:bg-black transition-colors"
+                >
+                  Place Order
+                </button>
+                
+                <a href="/cart" class="block text-center text-gray-600 hover:text-black mt-4">
+                  Back to Cart
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script type="module">
+    document.addEventListener('DOMContentLoaded', function() {
+      let cartItems = [];
+      let subtotal = 0;
+      let shippingCharge = 50;
+      let totalAmount = 0;
+      let screenshotBase64 = '';
+      let isMobile = false;
+
+      // Load data from script tags (exact same approach as cart page)
+      let productsCatalog, ordersData, deliverySettingsData, upiDetails;
+
+      // Load products data
+      try {
+        const productsElement = document.getElementById('payment-products-json');
+        if (productsElement && productsElement.textContent) {
+          productsCatalog = JSON.parse(productsElement.textContent);
+        } else {
+          console.error('❌ Products data element not found or empty');
+          productsCatalog = { products: [] };
+        }
+      } catch (error) {
+        console.error('❌ Error loading products data:', error);
+        console.error('❌ Script content:', productsElement?.textContent);
+        productsCatalog = { products: [] };
+      }
+
+      // Load orders data
+      try {
+        const ordersElement = document.getElementById('payment-orders-json');
+        if (ordersElement && ordersElement.textContent) {
+          ordersData = JSON.parse(ordersElement.textContent);
+        } else {
+          console.error('❌ Orders data element not found or empty');
+          ordersData = { nextOrderNumber: 1001 };
+        }
+      } catch (error) {
+        console.error('❌ Error loading orders data:', error);
+        ordersData = { nextOrderNumber: 1001 };
+      }
+
+      // Load delivery settings
+      try {
+        const deliveryElement = document.getElementById('payment-delivery-settings-json');
+        if (deliveryElement && deliveryElement.textContent) {
+          deliverySettingsData = JSON.parse(deliveryElement.textContent);
+        } else {
+          console.error('❌ Delivery settings element not found or empty');
+          deliverySettingsData = { regions: [] };
+        }
+      } catch (error) {
+        console.error('❌ Error loading delivery settings:', error);
+        deliverySettingsData = { regions: [] };
+      }
+
+      // Load UPI details
+      try {
+        const upiElement = document.getElementById('payment-upi-json');
+        if (upiElement && upiElement.textContent) {
+          upiDetails = JSON.parse(upiElement.textContent);
+        } else {
+          console.error('❌ UPI details element not found or empty');
+          upiDetails = { vpa: '', name: '', qrCode: '' };
+        }
+      } catch (error) {
+        console.error('❌ Error loading UPI details:', error);
+        upiDetails = { vpa: '', name: '', qrCode: '' };
+      }
+      
+      if (productsCatalog.products && productsCatalog.products.length > 0) {
+      } else {
+      }
+      
+      isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                 /Windows Phone|Kindle|Silk|Opera Mini/i.test(navigator.userAgent) ||
+                 (navigator.maxTouchPoints > 0 && /Mobile|Android|webOS/i.test(navigator.userAgent));
+      
+      const desktopPayment = document.getElementById('desktop-payment');
+      const mobilePayment = document.getElementById('mobile-payment');
+      
+      if (isMobile) {
+        mobilePayment.classList.remove('hidden');
+        desktopPayment.classList.add('hidden');
+      } else {
+        desktopPayment.classList.remove('hidden');
+        mobilePayment.classList.add('hidden');
+      }
+      
+      function loadCart() {
+        try {
+          const cart = localStorage.getItem('cart');
+          
+          if (cart) {
+            cartItems = JSON.parse(cart);
+            updateCartDisplay();
+            checkFreeShipping();
+          }
+        } catch (error) {
+          console.error('❌ Error loading cart:', error);
+        }
+      }
+      
+      function updateCartDisplay() {
+        const cartContainer = document.getElementById('payment-cart-container');
+        const emptyCart = document.getElementById('payment-empty-cart');
+        
+        if (!cartContainer || !emptyCart) {
+          console.error('❌ Cart display elements not found');
+          return;
+        }
+        
+        if (cartItems.length === 0) {
+          cartContainer.classList.add('hidden');
+          emptyCart.classList.remove('hidden');
+          return;
+        }
+        
+        cartContainer.classList.remove('hidden');
+        emptyCart.classList.add('hidden');
+        
+        const cartItemsContainer = document.getElementById('payment-cart-items');
+        cartItemsContainer.innerHTML = '';
+        
+        subtotal = 0;
+        
+        cartItems.forEach((item) => {
+          const product = productsCatalog.products.find(p => p.id === item.productId);
+          if (!product) {
+            return;
+          }
+          
+          const variant = product.variants.find(v => v.id === item.variantId);
+          if (!variant) {
+            return;
+          }
+          
+          const itemTotal = item.quantity * item.unitPrice;
+          subtotal += itemTotal;
+          
+          const cartItemElement = document.createElement('div');
+          cartItemElement.className = 'flex items-center space-x-4 py-3 border-b';
+          cartItemElement.innerHTML = `
+            <div class="w-16 h-16 flex-shrink-0">
+              <img src="${item.productImage}" alt="${item.productName}" class="w-full h-full object-cover rounded-md">
+            </div>
+            
+            <div class="flex-1 min-w-0">
+              <h3 class="text-sm font-medium text-gray-900 truncate">${item.productName}</h3>
+              <p class="text-xs text-gray-500">${item.color} / ${item.pattern} × ${item.quantity}</p>
+              <p class="text-sm font-medium text-gray-900">₹${itemTotal}</p>
+            </div>
+          `;
+          
+          cartItemsContainer.appendChild(cartItemElement);
+        });
+        
+        totalAmount = subtotal + shippingCharge;
+        
+        document.getElementById('payment-subtotal').textContent = `₹${subtotal}`;
+        document.getElementById('payment-shipping').textContent = shippingCharge === 0 ? 'FREE' : `₹${shippingCharge}`;
+        document.getElementById('payment-total').textContent = `₹${totalAmount}`;
+
+        updateQRCode();
+      }
+      
+      function updateQRCode() {
+        const qrCodeElement = document.getElementById('upi-qr-code');
+        const qrData = `upi://pay?pa=${upiDetails.vpa}&pn=${encodeURIComponent(upiDetails.name)}&am=${totalAmount}&cu=INR&tn=${encodeURIComponent('Order payment')}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
+        
+        if (qrCodeElement) {
+          qrCodeElement.src = qrUrl;
+        }
+        
+        const upiLink = qrData;
+        const gpayLink = document.getElementById('gpay-link');
+        const phonepeLink = document.getElementById('phonepe-link');
+        const paytmLink = document.getElementById('paytm-link');
+        
+        if (gpayLink) {
+          gpayLink.href = upiLink;
+        }
+        if (phonepeLink) {
+          phonepeLink.href = upiLink;
+        }
+        if (paytmLink) {
+          paytmLink.href = upiLink;
+        }
+      }
+      
+      function checkFreeShipping() {
+        if (subtotal >= 1500) {
+          shippingCharge = 0;
+          totalAmount = subtotal;
+          
+          document.getElementById('payment-shipping').textContent = 'FREE';
+          document.getElementById('payment-total').textContent = `₹${totalAmount}`;
+          
+          document.getElementById('free-shipping-notice').classList.remove('hidden');
+          document.getElementById('shipping-charge-notice').classList.add('hidden');
+        } else {
+          shippingCharge = 50;
+          totalAmount = subtotal + shippingCharge;
+          
+          document.getElementById('payment-shipping').textContent = `₹${shippingCharge}`;
+          document.getElementById('payment-total').textContent = `₹${totalAmount}`;
+          
+          document.getElementById('free-shipping-notice').classList.add('hidden');
+          document.getElementById('shipping-charge-notice').classList.remove('hidden');
+        }
+        updateQRCode();
+      }
+      
+      function checkPincode() {
+        const pincode = document.getElementById('pincode').value;
+        
+        if (!pincode || pincode.length !== 6) {
+          document.getElementById('pincode-status').innerHTML = '';
+          document.getElementById('pincode-status').className = '';
+          return;
+        }
+        
+        let available = false;
+        let charge = 0;
+        let days = 0;
+        
+        const pincodeNum = parseInt(pincode);
+        
+        for (const region of deliverySettingsData.regions) {
+          if (!region.isEnabled) continue;
+          
+          const start = parseInt(region.pincodeStart);
+          const end = parseInt(region.pincodeEnd);
+          
+          if (pincodeNum >= start && pincodeNum <= end) {
+            available = true;
+            charge = region.deliveryCharge;
+            days = region.estimatedDays;
+            break;
+          }
+        }
+        
+        const statusElement = document.getElementById('pincode-status');
+        
+        if (available) {
+          shippingCharge = charge;
+          totalAmount = subtotal + shippingCharge;
+          
+          document.getElementById('payment-shipping').textContent = shippingCharge === 0 ? 'FREE' : `₹${shippingCharge}`;
+          document.getElementById('payment-total').textContent = `₹${totalAmount}`;
+          updateQRCode();
+          
+          statusElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg> Delivery available in ${days} days`;
+          statusElement.className = 'text-green-600 text-sm mt-1';
+        } else {
+          statusElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg> Delivery not available to this pincode`;
+          statusElement.className = 'text-red-600 text-sm mt-1';
+        }
+      }
+      
+      function generateOrderNumber() {
+        return ordersData.nextOrderNumber;
+      }
+      
+      const screenshotInput = document.getElementById('payment-screenshot');
+      const fileNameDisplay = document.getElementById('file-name-display');
+      
+      if (screenshotInput) {
+        screenshotInput.addEventListener('change', function(e) {
+          const file = e.target.files[0];
+          if (file) {
+            fileNameDisplay.textContent = file.name;
+            fileNameDisplay.className = 'text-xs text-green-600 font-bold uppercase';
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+              screenshotBase64 = event.target.result;
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      }
+      
+      const copyBtn = document.getElementById('copy-upi');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', function() {
+          navigator.clipboard.writeText(upiDetails.vpa).then(() => {
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => copyBtn.textContent = originalText, 2000);
+          });
+        });
+      }
+      
+      const copyBtnMobile = document.getElementById('copy-upi-mobile');
+      if (copyBtnMobile) {
+        copyBtnMobile.addEventListener('click', function() {
+          navigator.clipboard.writeText(upiDetails.vpa).then(() => {
+            const originalText = copyBtnMobile.textContent;
+            copyBtnMobile.textContent = 'Copied!';
+            setTimeout(() => copyBtnMobile.textContent = originalText, 2000);
+          });
+        });
+      }
+      
+	      async function placeOrder(e) {
+	        e.preventDefault();
+        
+        const customerName = document.getElementById('customer-name').value;
+        const customerPhone = document.getElementById('customer-phone').value;
+        const customerEmail = document.getElementById('customer-email').value;
+        const deliveryAddress = document.getElementById('delivery-address').value;
+        const city = document.getElementById('city').value;
+        const state = document.getElementById('state').value;
+        const pincode = document.getElementById('pincode').value;
+        
+        if (!customerName || !customerPhone || !customerEmail || !deliveryAddress || !city || !state || !pincode) {
+          alert('Please fill in all the required fields');
+          return;
+        }
+        
+	        if (!screenshotBase64) {
+	          alert('Please upload a payment screenshot');
+	          return;
+	        }
+
+	        // Validate stock before placing order
+	        const stockIssues = [];
+	        for (const item of cartItems) {
+	          const product = productsCatalog.products.find(p => p.id === item.productId);
+	          const variant = product?.variants?.find(v => v.id === item.variantId);
+	          const maxAllowed = variant?.isAvailable ? Math.max(0, Math.min(10, variant.stock || 0)) : 0;
+	          if (!variant || maxAllowed <= 0) {
+	            stockIssues.push(`${item.productName} (${item.color}/${item.pattern}) is unavailable`);
+	          } else if (item.quantity > maxAllowed) {
+	            stockIssues.push(`${item.productName} (${item.color}/${item.pattern}) only has ${maxAllowed} available`);
+	          }
+	        }
+
+	        if (stockIssues.length > 0) {
+	          alert(`Please update your cart:\n\n- ${stockIssues.join('\n- ')}`);
+	          window.location.href = '/cart';
+	          return;
+	        }
+        
+        const submitBtn = document.getElementById('submit-order-btn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Placing Order...';
+        
+        try {
+          const orderData = {
+            customer: {
+              name: customerName,
+              email: customerEmail,
+              phone: customerPhone,
+              address: deliveryAddress,
+              city: city,
+              state: state,
+              pincode: pincode
+            },
+            items: cartItems.map(item => ({
+              variantId: item.variantId,
+              quantity: item.quantity,
+              price: item.unitPrice
+            })),
+            totalAmount: totalAmount,
+            paymentMethod: 'upi',
+            paymentStatus: 'pending',
+            status: 'pending'
+          };
+          
+	          const API_URL = window.location.origin.includes('localhost') || window.location.hostname === '127.0.0.1'
+	            ? 'http://localhost:3001'
+	            : '';
+	          const response = await fetch(`${API_URL}/api/orders`, {
+	            method: 'POST',
+	            headers: { 'Content-Type': 'application/json' },
+	            body: JSON.stringify(orderData)
+	          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to create order');
+          }
+          
+          const savedOrder = await response.json();
+          
+          const localOrder = {
+            ...savedOrder,
+            customerName,
+            customerPhone,
+            customerEmail,
+            deliveryAddress,
+            city,
+            state,
+            pincode,
+            items: cartItems,
+            subtotal,
+            shippingCharge,
+            paymentScreenshot: screenshotBase64
+          };
+          
+          // Safely store order data with error handling
+          try {
+            let orders = [];
+            try {
+              const ordersJson = localStorage.getItem('orders');
+              if (ordersJson) {
+                orders = JSON.parse(ordersJson);
+              }
+            } catch (e) {
+              console.warn('Could not read existing orders, starting fresh:', e);
+            }
+            
+            orders.push(localOrder);
+            localStorage.setItem('orders', JSON.stringify(orders));
+          } catch (storageError) {
+            console.warn('Could not save to localStorage (possibly private mode):', storageError);
+            // Continue - order is already saved in database
+          }
+          
+          // Clear cart
+          try {
+            localStorage.removeItem('cart');
+            const cartBadge = document.getElementById('cart-badge');
+            if (cartBadge) {
+              cartBadge.textContent = '0';
+            }
+          } catch (e) {
+            console.warn('Could not clear cart:', e);
+          }
+          
+          // Save to sessionStorage for immediate access
+          try {
+            sessionStorage.setItem('lastOrder', JSON.stringify(localOrder));
+          } catch (e) {
+            console.warn('Could not save to sessionStorage:', e);
+          }
+          
+          window.location.href = `/order/${savedOrder.orderNumber}`;
+        } catch (error) {
+          console.error('Order error:', error);
+          alert('Failed to place order. Please try again.');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Place Order';
+        }
+      }
+      
+      document.getElementById('pincode').addEventListener('blur', checkPincode);
+      document.getElementById('submit-order-btn').addEventListener('click', placeOrder);
+      
+      loadCart();
+    });
+  </script>
+</Layout>

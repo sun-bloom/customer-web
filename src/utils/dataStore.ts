@@ -40,7 +40,6 @@ const writeFile = async (filename: string, data: any) => {
   try {
     // In production (static build), we can't write files, so just log the data
     if (!isDev) {
-      console.log(`Would write to ${filename}:`, data);
       return true;
     }
     

@@ -1,4 +1,6 @@
 ---
+import { Image } from 'astro:assets';
+
 interface Props {
   name: string;
   slug: string;
@@ -11,11 +13,14 @@ const { name, slug, description, image } = Astro.props;
 
 <a href={`/products?category=${slug}`} class="group relative overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 block h-full">
   <div class="aspect-[4/5] overflow-hidden bg-gray-100">
-    <img 
-      src={image} 
-      alt={name} 
+    <Image
+      src={image}
+      alt={name}
+      width={300}
+      height={375}
       class="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
       loading="lazy"
+      decoding="async"
     />
     <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60 group-hover:opacity-70 transition-opacity"></div>
   </div>

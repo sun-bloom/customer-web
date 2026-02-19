@@ -1,19 +1,7 @@
 ---
+import { Image } from 'astro:assets';
 import CartBadge from './CartBadge.tsx';
 import CartDrawer from './CartDrawer.tsx';
-import settingsData from '../data/settings.json';
-import productsData from '../data/products.json';
-
-const { site } = settingsData;
-
-const navLinks = [
-  { name: 'Home', href: '/' },
-  { name: 'Shop All', href: '/products' },
-  { name: 'New Arrivals', href: '/products?sort=new' },
-];
-
-// Get categories for dropdown
-const categories = productsData.categories;
 ---
 
 <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 transition-all duration-300">
@@ -28,49 +16,70 @@ const categories = productsData.categories;
       </div>
 
       <!-- Desktop Nav -->
-      <nav class="hidden md:flex space-x-8">
-        {navLinks.map((link) => (
-          <a
-            href={link.href}
-            class="text-gray-600 hover:text-gray-900 font-medium transition-colors text-sm uppercase tracking-wide"
-          >
-            {link.name}
-          </a>
-        ))}
+      <nav class="hidden md:flex items-center space-x-6">
+        <a
+          href="/"
+          class="text-gray-600 hover:text-gray-900 font-medium transition-colors text-sm uppercase tracking-wide"
+        >
+          Home
+        </a>
         
-        <!-- Categories Dropdown -->
-        <div class="relative group">
-          <button class="text-gray-600 hover:text-gray-900 font-medium transition-colors text-sm uppercase tracking-wide flex items-center">
-            Categories
-            <svg xmlns="http://www.w3.org/2000/svg" class="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          
-          <div class="absolute z-10 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right">
-            <div class="py-1">
-              {categories.map((category) => (
-                <a
-                  href={`/products?category=${category.slug}`}
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                >
-                  {category.name}
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
+        <a
+          href="/products"
+          class="text-gray-600 hover:text-gray-900 font-medium transition-colors text-sm uppercase tracking-wide"
+        >
+          Shop All
+        </a>
+        
+        <a
+          href="/products?sort=new"
+          class="text-gray-600 hover:text-gray-900 font-medium transition-colors text-sm uppercase tracking-wide"
+        >
+          New Arrivals
+        </a>
       </nav>
 
       <!-- Right Actions -->
       <div class="flex items-center space-x-4">
-        <!-- Search Icon (Optional) -->
-        <button class="p-2 text-gray-500 hover:text-gray-900 transition-colors">
+        <!-- Search -->
+        <div class="relative">
+          <button 
+            id="search-button"
+            class="p-2 text-gray-500 hover:text-gray-900 transition-colors"
+            onclick="toggleSearch()"
+          >
             <span class="sr-only">Search</span>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
-        </button>
+          </button>
+          
+          <!-- Search Dropdown -->
+          <div id="search-dropdown" class="absolute right-0 top-full mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 hidden z-50">
+            <div class="p-4">
+              <div class="relative">
+                <input 
+                  type="text"
+                  id="search-input"
+                  placeholder="Search products..."
+                  class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                  oninput="handleSearch(this.value)"
+                  onkeydown="handleSearchKeydown(event)"
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 absolute left-3 top-2.5 text-gray-400">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+              </div>
+              
+              <!-- Search Results -->
+              <div id="search-results" class="mt-4 max-h-96 overflow-y-auto">
+                <div class="text-center text-gray-500 py-4">
+                  Type to search products
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Cart Island -->
         <CartBadge client:load />
@@ -79,7 +88,12 @@ const categories = productsData.categories;
         <CartDrawer client:load />
 
         <!-- Mobile Menu Button -->
-        <button type="button" class="md:hidden p-2 text-gray-500" aria-label="Menu">
+        <button 
+          type="button" 
+          class="md:hidden p-2 text-gray-500 hover:text-gray-900 transition-colors"
+          aria-label="Menu"
+          onclick="toggleMobileMenu()"
+        >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
@@ -87,4 +101,265 @@ const categories = productsData.categories;
       </div>
     </div>
   </div>
+
+  <!-- Mobile Menu Overlay -->
+  <div id="mobile-menu" class="fixed inset-0 z-50 hidden">
+    <!-- Backdrop -->
+    <div 
+      class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
+      onclick="closeMobileMenu()"
+    ></div>
+    <!-- Menu Panel -->
+    <div class="absolute right-0 top-0 h-full w-80 max-w-[85vw] bg-white shadow-xl transform transition-transform duration-300 translate-x-full" id="mobile-menu-panel">
+      <div class="p-6">
+        <!-- Close Button -->
+        <div class="flex justify-end mb-6">
+          <button 
+            onclick="closeMobileMenu()"
+            class="p-2 text-gray-500 hover:text-gray-900"
+            aria-label="Close menu"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <!-- Mobile Nav Links -->
+        <nav class="space-y-4">
+          <a 
+            href="/"
+            class="block text-lg font-medium text-gray-900 hover:text-gray-600 transition-colors py-2 border-b border-gray-100"
+            onclick="closeMobileMenu()"
+          >
+            Home
+          </a>
+          <a 
+            href="/products"
+            class="block text-lg font-medium text-gray-900 hover:text-gray-600 transition-colors py-2 border-b border-gray-100"
+            onclick="closeMobileMenu()"
+          >
+            Shop All
+          </a>
+          <a 
+            href="/products?sort=new"
+            class="block text-lg font-medium text-gray-900 hover:text-gray-600 transition-colors py-2 border-b border-gray-100"
+            onclick="closeMobileMenu()"
+          >
+            New Arrivals
+          </a>
+          <a 
+            href="/cart"
+            class="block text-lg font-medium text-gray-900 hover:text-gray-600 transition-colors py-2 border-b border-gray-100"
+            onclick="closeMobileMenu()"
+          >
+            Cart
+          </a>
+          <a 
+            href="/orders"
+            class="block text-lg font-medium text-gray-900 hover:text-gray-600 transition-colors py-2 border-b border-gray-100"
+            onclick="closeMobileMenu()"
+          >
+            My Orders
+          </a>
+        </nav>
+
+        <!-- Contact Info -->
+        <div class="mt-8 pt-6 border-t border-gray-100">
+          <p class="text-sm text-gray-500">Fashion Store</p>
+          <p class="text-sm text-gray-400 mt-1">Discover your style</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </header>
+
+<script is:inline>
+  // Search functionality
+  let searchTimeout;
+  let productsData = null;
+  let isLoadingProducts = false;
+  
+  // Load products data from API
+  async function loadProductsData() {
+    if (!productsData && !isLoadingProducts) {
+      isLoadingProducts = true;
+      try {
+        const API_URL = window.location.origin.includes('localhost') ? 'http://localhost:3001' : '';
+        const response = await fetch(`${API_URL}/api/products`);
+        if (response.ok) {
+          productsData = await response.json();
+        }
+      } catch (error) {
+        console.error('Failed to load products:', error);
+        productsData = { products: [] };
+      }
+      isLoadingProducts = false;
+    }
+    return productsData;
+  }
+  
+  // Toggle search dropdown
+  async function toggleSearch() {
+    const dropdown = document.getElementById('search-dropdown');
+    const input = document.getElementById('search-input');
+    
+    if (dropdown.classList.contains('hidden')) {
+      dropdown.classList.remove('hidden');
+      await loadProductsData();
+      input.focus();
+    } else {
+      closeSearch();
+    }
+  }
+  
+  // Close search dropdown
+  function closeSearch() {
+    const dropdown = document.getElementById('search-dropdown');
+    const input = document.getElementById('search-input');
+    const results = document.getElementById('search-results');
+    
+    dropdown.classList.add('hidden');
+    input.value = '';
+    results.innerHTML = '<div class="text-center text-gray-500 py-4">Type to search products</div>';
+  }
+  
+  // Handle search input
+  async function handleSearch(query) {
+    clearTimeout(searchTimeout);
+    
+    const resultsContainer = document.getElementById('search-results');
+    
+    if (!query || query.trim().length < 2) {
+      resultsContainer.innerHTML = '<div class="text-center text-gray-500 py-4">Type to search products</div>';
+      return;
+    }
+    
+    searchTimeout = setTimeout(async () => {
+      const data = await loadProductsData();
+      const searchQuery = query.toLowerCase().trim();
+      
+      // Search through products
+      const results = data.products.filter(product => {
+        if (!product.isActive) return false;
+        
+        const nameMatch = product.name.toLowerCase().includes(searchQuery);
+        const descMatch = product.description.toLowerCase().includes(searchQuery);
+        const categoryMatch = product.category.toLowerCase().includes(searchQuery);
+        
+        return nameMatch || descMatch || categoryMatch;
+      });
+      
+      if (results.length === 0) {
+        resultsContainer.innerHTML = `
+          <div class="text-center text-gray-500 py-8">
+            <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p>No products found for "${query}"</p>
+          </div>
+        `;
+      } else {
+        resultsContainer.innerHTML = results.slice(0, 8).map(product => {
+          const minPrice = Math.min(...product.variants.map(v => product.basePrice + v.additionalPrice));
+          const maxPrice = Math.max(...product.variants.map(v => product.basePrice + v.additionalPrice));
+          const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} - ₹${maxPrice}`;
+
+          return `
+            <a
+              href="/products/${product.slug}"
+              class="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-md transition-colors"
+              onclick="closeSearch()"
+            >
+              <img
+                src="${product.images[0]}"
+                alt="${product.name}"
+                class="w-16 h-16 object-cover rounded-md bg-gray-100"
+                loading="lazy"
+                decoding="async"
+              />
+              <div class="flex-1 min-w-0">
+                <h4 class="font-medium text-gray-900 truncate">${product.name}</h4>
+                <p class="text-sm text-gray-500 truncate">${product.description}</p>
+                <p class="text-sm font-semibold text-gray-900 mt-1">${priceDisplay}</p>
+              </div>
+            </a>
+          `;
+        }).join('');
+        
+        if (results.length > 8) {
+          resultsContainer.innerHTML += `
+            <div class="text-center pt-2 border-t border-gray-100">
+              <a 
+                href="/products?search=${encodeURIComponent(query)}"
+                class="text-gray-600 hover:text-gray-900 text-sm"
+                onclick="closeSearch()"
+              >
+                View all ${results.length} results
+              </a>
+            </div>
+          `;
+        }
+      }
+    }, 300);
+  }
+  
+  // Handle search keydown
+  function handleSearchKeydown(event) {
+    if (event.key === 'Escape') {
+      closeSearch();
+    }
+  }
+  
+  // Close search when clicking outside
+  document.addEventListener('click', (event) => {
+    const dropdown = document.getElementById('search-dropdown');
+    const button = document.getElementById('search-button');
+    
+    if (dropdown && !dropdown.contains(event.target) && !button.contains(event.target)) {
+      closeSearch();
+    }
+  });
+
+  // Mobile Menu Functions
+  function toggleMobileMenu() {
+    const menu = document.getElementById('mobile-menu');
+    const panel = document.getElementById('mobile-menu-panel');
+    
+    if (menu.classList.contains('hidden')) {
+      menu.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => {
+        panel.classList.remove('translate-x-full');
+      }, 10);
+    } else {
+      closeMobileMenu();
+    }
+  }
+  
+  function closeMobileMenu() {
+    const menu = document.getElementById('mobile-menu');
+    const panel = document.getElementById('mobile-menu-panel');
+    
+    panel.classList.add('translate-x-full');
+    setTimeout(() => {
+      menu.classList.add('hidden');
+      document.body.style.overflow = '';
+    }, 300);
+  }
+  
+  // Close mobile menu on escape key
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      const menu = document.getElementById('mobile-menu');
+      if (!menu.classList.contains('hidden')) {
+        closeMobileMenu();
+      }
+    }
+  });
+</script>
+
+<!-- Hidden products data for search functionality - loaded from API -->
+<script id="products-data" type="application/json">
+  {"products": []}
+</script>
