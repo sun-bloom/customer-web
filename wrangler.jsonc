@@ -1,0 +1,8 @@
+  {
+    "name": "customer-web",
+    "compatibility_date": "2026-02-22",
+    "assets": {
+      "directory": "./dist"
+    }
+  }
+
