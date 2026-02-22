@@ -1,28 +1,10 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getAllProducts } from '../api/products';
-
-// Fetch products from API
-const products = await getAllProducts();
-
-// Get cart from localStorage - this will be handled by client-side JavaScript
-// We'll pass an empty array initially and let the client-side code handle it
-const cartItems: any[] = [];
-
-// Calculate totals - will be recalculated client-side
-let subtotal = 0;
-let shipping = 0;
-let total = 0;
-
-// Create raw JSON string using template literal
-const productsDataJson = JSON.stringify({ products });
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
 ---
 
 <Layout title="Shopping Cart - Fashion Store">
-  <!-- Hidden products data script - injected via set:html -->
-  <script id="cart-products-json" type="application/json" set:html={productsDataJson}></script>
-  
-  <script is:inline>
+  <script is:inline define:vars={{ apiUrl }}>
     // Cart functionality - integrated with cart events system
 
     let cartItems = [];
@@ -32,17 +14,16 @@ const productsDataJson = JSON.stringify({ products });
     let productsCatalog = { products: [] };
     
     // Get products data for reference - call this after DOM is ready
-    function loadProductsData() {
+    async function loadProductsData() {
       try {
-        // Parse products data from script element
-        const productsDataElement = document.getElementById('cart-products-json');
-        if (productsDataElement) {
-          productsCatalog = JSON.parse(productsDataElement.textContent);
-          return true;
-        } else {
-          console.error('❌ Products data element not found');
+        const response = await fetch(`${apiUrl}/api/products`);
+        if (!response.ok) {
+          console.error(`❌ Products API error: ${response.status}`);
           return false;
         }
+        const data = await response.json();
+        productsCatalog = { products: (data.products || []).filter((p) => p.isActive) };
+        return true;
       } catch (error) {
         console.error('❌ Error loading products data:', error);
         return false;
@@ -263,9 +244,9 @@ const productsDataJson = JSON.stringify({ products });
     }
     
     // Initialize on page load
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       // First load products data, then load cart
-      if (loadProductsData()) {
+      if (await loadProductsData()) {
         loadCart();
       } else {
         console.error('❌ Failed to load products data, cart may not display correctly');

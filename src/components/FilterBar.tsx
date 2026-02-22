@@ -30,6 +30,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
     ? initialCategory.split(',').map((c) => c.trim()).filter(Boolean)
     : [];
   const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCategories);
+  const [categoryList, setCategoryList] = useState<Category[]>(categories);
+  const [priceBounds, setPriceBounds] = useState({ min: minPrice, max: maxPrice });
   const [priceRange, setPriceRange] = useState({
     min: initialMinPrice || minPrice.toString(),
     max: initialMaxPrice || maxPrice.toString(),
@@ -45,13 +47,31 @@ const FilterBar: React.FC<FilterBarProps> = ({
       const next = Array.isArray(incoming) ? incoming : [incoming];
       setSelectedCategories(next.filter(Boolean));
       setPriceRange({
-        min: e.detail.minPrice?.toString() || minPrice.toString(),
-        max: e.detail.maxPrice?.toString() || maxPrice.toString(),
+        min: e.detail.minPrice?.toString() || priceBounds.min.toString(),
+        max: e.detail.maxPrice?.toString() || priceBounds.max.toString(),
       });
     };
     window.addEventListener('filter-change', handleFilterChange as EventListener);
     return () => window.removeEventListener('filter-change', handleFilterChange as EventListener);
-  }, []);
+  }, [priceBounds.min, priceBounds.max]);
+
+  useEffect(() => {
+    const handleData = (e: CustomEvent) => {
+      const detail = e.detail || {};
+      if (Array.isArray(detail.categories)) {
+        setCategoryList(detail.categories);
+      }
+      if (typeof detail.minPrice === 'number' && typeof detail.maxPrice === 'number') {
+        setPriceBounds({ min: detail.minPrice, max: detail.maxPrice });
+        setPriceRange({
+          min: initialMinPrice || detail.minPrice.toString(),
+          max: initialMaxPrice || detail.maxPrice.toString(),
+        });
+      }
+    };
+    window.addEventListener('filters:data', handleData as EventListener);
+    return () => window.removeEventListener('filters:data', handleData as EventListener);
+  }, [initialMinPrice, initialMaxPrice]);
 
   const emitFilterChange = (filters: { categories: string[]; minPrice: number | null; maxPrice: number | null }) => {
     window.dispatchEvent(new CustomEvent('filter-change', { detail: filters }));
@@ -91,7 +111,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
 
   const handleClearFilters = () => {
     setSelectedCategories([]);
-    setPriceRange({ min: minPrice.toString(), max: maxPrice.toString() });
+    setPriceRange({ min: priceBounds.min.toString(), max: priceBounds.max.toString() });
     emitFilterChange({ categories: [], minPrice: null, maxPrice: null });
   };
 
@@ -127,7 +147,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
 
         {expandedSections.categories && (
           <div className="space-y-2">
-            {categories.map((category) => (
+            {categoryList.map((category) => (
               <label key={category.id} className="flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -167,8 +187,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
               <input
                 type="range"
                 id="minPrice"
-                min={minPrice}
-                max={maxPrice}
+                min={priceBounds.min}
+                max={priceBounds.max}
                 value={priceRange.min}
                 onChange={(e) => handleMinPriceChange(e.target.value)}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
@@ -185,8 +205,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
               <input
                 type="range"
                 id="maxPrice"
-                min={minPrice}
-                max={maxPrice}
+                min={priceBounds.min}
+                max={priceBounds.max}
                 value={priceRange.max}
                 onChange={(e) => handleMaxPriceChange(e.target.value)}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"

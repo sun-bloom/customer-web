@@ -1,17 +1,22 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+  return [{ params: { id: '__fallback__' } }];
+}
+
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
 ---
 
 <Layout title='Order Details'>
-  <script is:inline>
+  <script is:inline define:vars={{ apiUrl }}>
     // Load order details - try sessionStorage first, then API
     let order = null;
     let siteSettings = null;
     
     async function loadSettings() {
       try {
-        const API_URL = 'http://localhost:3001';
-        const response = await fetch(`${API_URL}/api/settings`);
+        const response = await fetch(`${apiUrl}/api/public/settings`);
         if (response.ok) {
           siteSettings = await response.json();
         }
@@ -20,6 +25,21 @@ import Layout from '../../layouts/Layout.astro';
       }
     }
     
+    function showLoading() {
+      document.getElementById('order-loading')?.classList.remove('hidden');
+      document.getElementById('order-not-found')?.classList.add('hidden');
+      document.getElementById('order-content')?.classList.add('hidden');
+    }
+
+    function hideLoading() {
+      document.getElementById('order-loading')?.classList.add('hidden');
+    }
+
+    function showContent() {
+      document.getElementById('order-content')?.classList.remove('hidden');
+      document.getElementById('order-not-found')?.classList.add('hidden');
+    }
+
     async function loadOrder() {
       try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -28,12 +48,13 @@ import Layout from '../../layouts/Layout.astro';
         
         // Always fetch fresh data from API if phone is provided
         if (phone && orderNumber) {
-          const API_URL = 'http://localhost:3001';
-          const response = await fetch(`${API_URL}/api/orders/track?phone=${encodeURIComponent(phone)}&orderNumber=${encodeURIComponent(orderNumber)}`);
+          const response = await fetch(`${apiUrl}/api/orders/track?phone=${encodeURIComponent(phone)}&orderNumber=${encodeURIComponent(orderNumber)}`);
           
           if (response.ok) {
             order = await response.json();
             displayOrder(order);
+            hideLoading();
+            showContent();
             return;
           }
         }
@@ -43,6 +64,8 @@ import Layout from '../../layouts/Layout.astro';
         if (sessionData) {
           order = JSON.parse(sessionData);
           displayOrder(order);
+          hideLoading();
+          showContent();
           return;
         }
         
@@ -52,15 +75,19 @@ import Layout from '../../layouts/Layout.astro';
           order = orders.find(o => o.orderNumber === orderNumber);
           if (order) {
             displayOrder(order);
+            hideLoading();
+            showContent();
             return;
           }
         }
         
         // Order not found
+        hideLoading();
         document.getElementById('order-not-found')?.classList.remove('hidden');
         document.getElementById('order-content')?.classList.add('hidden');
       } catch (error) {
         console.error('Error loading order:', error);
+        hideLoading();
         document.getElementById('order-not-found')?.classList.remove('hidden');
         document.getElementById('order-content')?.classList.add('hidden');
       }
@@ -229,6 +256,7 @@ import Layout from '../../layouts/Layout.astro';
 
     // Load order when DOM is ready
     async function init() {
+      showLoading();
       await loadSettings();
       await loadOrder();
     }
@@ -242,6 +270,13 @@ import Layout from '../../layouts/Layout.astro';
 
   <main class="min-h-screen bg-gray-50 py-8 md:py-12">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Loading State -->
+      <div id="order-loading" class="bg-white rounded-lg shadow-sm p-12 text-center">
+        <div class="mx-auto h-12 w-12 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin mb-4"></div>
+        <h2 class="text-lg font-semibold text-gray-900 mb-2">Loading your order</h2>
+        <p class="text-gray-500">Please wait a moment.</p>
+      </div>
+
       <!-- Order Not Found Message -->
       <div id="order-not-found" class="hidden bg-white rounded-lg shadow-sm p-12 text-center">
         <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
