@@ -2,12 +2,12 @@ import { defineMiddleware } from 'astro/middleware';
 
 export const onRequest = defineMiddleware((context, next) => {
   const url = new URL(context.request.url);
-  if (url.pathname.startsWith('/order/') && !url.pathname.startsWith('/order/__fallback__')) {
-    url.pathname = '/order/__fallback__';
+  if (url.pathname.startsWith('/order/') && !url.pathname.startsWith('/__fallback__/order')) {
+    url.pathname = '/__fallback__/order';
     return context.rewrite(url);
   }
-  if (url.pathname.startsWith('/products/') && !url.pathname.startsWith('/products/__fallback__')) {
-    url.pathname = '/products/__fallback__';
+  if (url.pathname.startsWith('/products/') && !url.pathname.startsWith('/__fallback__/products')) {
+    url.pathname = '/__fallback__/products';
     return context.rewrite(url);
   }
   return next();
