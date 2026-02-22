@@ -1,8 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import ProductCard from '../../components/ProductCard.astro';
 import FilterBar from '../../components/FilterBar.tsx';
-import { getAllProducts, getCategories } from '../../api/products';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
 
 const searchParams = Astro.url.searchParams;
 const initialCategory = searchParams.get('category') || '';
@@ -13,28 +12,6 @@ const initialPage = parseInt(searchParams.get('page') || '1');
 
 const ITEMS_PER_PAGE = 9;
 
-// Fetch data from API
-const allProducts = await getAllProducts();
-const categories = await getCategories();
-
-let minPriceAll = Infinity;
-let maxPriceAll = 0;
-
-allProducts.forEach((product) => {
-  product.variants.forEach((variant) => {
-    if (variant.isAvailable) {
-      const price = product.basePrice + variant.additionalPrice;
-      minPriceAll = Math.min(minPriceAll, price);
-      maxPriceAll = Math.max(maxPriceAll, price);
-    }
-  });
-});
-
-minPriceAll = minPriceAll === Infinity ? 0 : minPriceAll;
-maxPriceAll = maxPriceAll === 0 ? 5000 : maxPriceAll;
-
-const productsJson = JSON.stringify(allProducts);
-const categoriesJson = JSON.stringify(categories);
 const itemsPerPage = ITEMS_PER_PAGE;
 ---
 
@@ -44,9 +21,9 @@ const itemsPerPage = ITEMS_PER_PAGE;
       <div class="w-full lg:w-1/4">
         <FilterBar
           client:load
-          categories={categories}
-          minPrice={minPriceAll}
-          maxPrice={maxPriceAll}
+          categories={[]}
+          minPrice={0}
+          maxPrice={5000}
           initialCategory={initialCategory}
           initialMinPrice={initialMinPrice}
           initialMaxPrice={initialMaxPrice}
@@ -60,7 +37,7 @@ const itemsPerPage = ITEMS_PER_PAGE;
           <h1 id="page-title" class="text-2xl font-bold">{initialSearch ? `Search: "${initialSearch}"` : 'Products'}</h1>
           <div class="flex items-center gap-4">
             <div id="product-count" class="text-gray-600">
-              Showing {allProducts.length} products
+              Showing 0 products
             </div>
             <div class="relative">
               <select
@@ -91,7 +68,6 @@ const itemsPerPage = ITEMS_PER_PAGE;
         </div>
 
         <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {allProducts.slice(0, ITEMS_PER_PAGE).map((product) => <ProductCard product={product} />)}
         </div>
 
         <!-- Pagination -->
@@ -154,9 +130,9 @@ const itemsPerPage = ITEMS_PER_PAGE;
     </div>
   </div>
 
-  <script is:inline define:vars={{ productsJson, categoriesJson, initialCategory, initialMinPrice, initialMaxPrice, initialSearch, itemsPerPage }}>
-    const products = JSON.parse(productsJson);
-    const categories = JSON.parse(categoriesJson);
+  <script is:inline define:vars={{ apiUrl, initialCategory, initialMinPrice, initialMaxPrice, initialSearch, itemsPerPage }}>
+    let products = [];
+    let categories = [];
     
     const NEW_DAYS = 30;
     const newThresholdDate = new Date();
@@ -173,6 +149,51 @@ const itemsPerPage = ITEMS_PER_PAGE;
     
     let currentPage = 1;
     let currentSort = new URLSearchParams(window.location.search).get('sort') || '';
+
+    async function fetchJson(endpoint) {
+      const response = await fetch(`${apiUrl}${endpoint}`);
+      if (!response.ok) return null;
+      return response.json();
+    }
+
+    function calculatePriceBounds(products) {
+      let min = Infinity;
+      let max = 0;
+
+      products.forEach((product) => {
+        product.variants.forEach((variant) => {
+          if (variant.isAvailable) {
+            const price = product.basePrice + variant.additionalPrice;
+            min = Math.min(min, price);
+            max = Math.max(max, price);
+          }
+        });
+      });
+
+      return {
+        min: min === Infinity ? 0 : min,
+        max: max === 0 ? 5000 : max
+      };
+    }
+
+    async function loadProductsData() {
+      const [productsData, categoriesData] = await Promise.all([
+        fetchJson('/api/products'),
+        fetchJson('/api/categories')
+      ]);
+
+      products = (productsData?.products || []).filter((p) => p.isActive);
+      categories = categoriesData?.categories || [];
+
+      const bounds = calculatePriceBounds(products);
+      window.dispatchEvent(new CustomEvent('filters:data', {
+        detail: {
+          categories,
+          minPrice: bounds.min,
+          maxPrice: bounds.max
+        }
+      }));
+    }
     
 	    function isNewProduct(product) {
 	      const productDate = new Date(product.createdAt);
@@ -384,9 +405,10 @@ const itemsPerPage = ITEMS_PER_PAGE;
       window.history.replaceState({}, '', newUrl);
     }
     
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       // Set sort dropdown to current URL value
       document.getElementById('sort-select').value = currentSort;
+      await loadProductsData();
       filterAndRenderProducts();
       
       document.getElementById('sort-select')?.addEventListener('change', (e) => {

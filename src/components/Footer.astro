@@ -1,8 +1,6 @@
 ---
-import { getSettings } from '../api/products';
-
-const settings = await getSettings();
-const site = settings?.site || { 
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
+const site = { 
   name: 'Fashion Store', 
   tagline: 'Discover your style',
   address: '123 Fashion Street, Style City',
@@ -18,10 +16,10 @@ const currentYear = new Date().getFullYear();
       
       <!-- Brand -->
       <div class="col-span-1 md:col-span-1">
-        <a href="/" class="text-2xl font-bold font-heading text-white mb-4 block">
-          Your<span class="text-gray-400">Shop</span>
+        <a href="/" id="footer-brand" class="text-2xl font-bold font-heading text-white mb-4 block">
+          {site.name}
         </a>
-        <p class="text-gray-400 text-sm leading-relaxed mb-6">
+        <p id="footer-tagline" class="text-gray-400 text-sm leading-relaxed mb-6">
           {site.tagline}. Making fashion accessible and stylish for everyone.
         </p>
         <div class="flex space-x-4">
@@ -66,16 +64,16 @@ const currentYear = new Date().getFullYear();
         <h3 class="text-white font-bold mb-4 uppercase text-sm tracking-wider">Contact</h3>
         <ul class="space-y-3 text-sm text-gray-400">
             <li class="flex items-start">
-               {site.address}
+               <span id="footer-address">{site.address}</span>
             </li>
-            <li>Email: {site.contactEmail}</li>
-            <li>Phone: {site.contactPhone}</li>
+            <li>Email: <span id="footer-email">{site.contactEmail}</span></li>
+            <li>Phone: <span id="footer-phone">{site.contactPhone}</span></li>
         </ul>
       </div>
     </div>
     
     <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-400">
-      <p>&copy; {currentYear} {site.name}. All rights reserved.</p>
+      <p>&copy; {currentYear} <span id="footer-site-name">{site.name}</span>. All rights reserved.</p>
       <div class="flex space-x-6 mt-4 md:mt-0">
         <a href="/privacy" class="hover:text-white transition-colors">Privacy Policy</a>
         <a href="/terms" class="hover:text-white transition-colors">Terms of Service</a>
@@ -83,3 +81,35 @@ const currentYear = new Date().getFullYear();
     </div>
   </div>
 </footer>
+
+<script is:inline define:vars={{ apiUrl }}>
+  async function loadFooterSettings() {
+    try {
+      const response = await fetch(`${apiUrl}/api/public/settings`);
+      if (!response.ok) return;
+      const settings = await response.json();
+      const site = settings?.site;
+      if (!site) return;
+
+      const brand = document.getElementById('footer-brand');
+      const tagline = document.getElementById('footer-tagline');
+      const address = document.getElementById('footer-address');
+      const email = document.getElementById('footer-email');
+      const phone = document.getElementById('footer-phone');
+      const siteName = document.getElementById('footer-site-name');
+
+      if (brand && site.name) brand.textContent = site.name;
+      if (tagline && site.tagline) tagline.textContent = `${site.tagline}. Making fashion accessible and stylish for everyone.`;
+      if (address && site.address) address.textContent = site.address;
+      if (email && site.contactEmail) email.textContent = site.contactEmail;
+      if (phone && site.contactPhone) phone.textContent = site.contactPhone;
+      if (siteName && site.name) siteName.textContent = site.name;
+    } catch (error) {
+      console.error('Footer settings fetch failed', error);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadFooterSettings();
+  });
+</script>

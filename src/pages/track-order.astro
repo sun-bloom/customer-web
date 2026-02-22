@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
 ---
 
 <Layout title="Track Order - Fashion Store">
@@ -234,8 +235,8 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </main>
 
-  <script type="module">
-    const API_BASE_URL = 'http://localhost:3001';
+  <script type="module" define:vars={{ apiUrl }}>
+    const API_BASE_URL = apiUrl;
     const form = document.getElementById('track-order-form');
     const trackBtn = document.getElementById('track-btn');
     const loadingState = document.getElementById('loading-state');

@@ -1,28 +1,9 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getAllProducts, getSettings, getDeliverySettings } from '../api/products';
-
-// Fetch data from API
-const products = await getAllProducts();
-const settings = await getSettings();
-const deliverySettings = await getDeliverySettings();
-
-const upi = settings?.upi || { id: '', name: '' };
-
-// Create safe JSON strings for injection
-const productsJsonString = JSON.stringify({ products });
-const ordersJsonString = JSON.stringify({ orders: [] });
-const deliverySettingsJsonString = JSON.stringify(deliverySettings);
-const upiJsonString = JSON.stringify(upi);
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
 ---
 
 <Layout title="Payment - Fashion Store">
-  <!-- Data injection using script tags (same as cart page) -->
-  <script id="payment-products-json" type="application/json" set:html={productsJsonString}></script>
-  <script id="payment-orders-json" type="application/json" set:html={ordersJsonString}></script>
-  <script id="payment-delivery-settings-json" type="application/json" set:html={deliverySettingsJsonString}></script>
-  <script id="payment-upi-json" type="application/json" set:html={upiJsonString}></script>
-
   <div class="container mx-auto px-4 py-8">
     <div class="max-w-4xl mx-auto">
       <h1 class="text-3xl font-bold mb-8">Complete Payment</h1>
@@ -161,13 +142,13 @@ const upiJsonString = JSON.stringify(upi);
                 <div id="desktop-payment" class="hidden">
                   <div class="flex flex-col items-center">
                     <div class="w-48 h-48 bg-white rounded-lg p-2 flex items-center justify-center border border-gray-200 shadow-sm mb-4">
-                      <img id="upi-qr-code" src={upi.qrCode} alt="UPI QR Code" class="max-w-full max-h-full" />
+                      <img id="upi-qr-code" src="" alt="UPI QR Code" class="max-w-full max-h-full hidden" />
                     </div>
                     <p class="text-sm text-gray-600 mb-2">Scan QR Code to Pay</p>
                     <div class="text-center mb-6">
                       <p class="text-sm font-medium text-gray-700 mb-1">UPI ID:</p>
                       <div class="flex items-center justify-center">
-                        <code id="upi-vpa" class="font-mono font-bold text-gray-900 bg-gray-100 px-3 py-2 rounded">{upi.vpa}</code>
+                        <code id="upi-vpa" class="font-mono font-bold text-gray-900 bg-gray-100 px-3 py-2 rounded">-</code>
                         <button type="button" id="copy-upi" class="ml-2 text-sm text-blue-600 hover:underline">Copy</button>
                       </div>
                     </div>
@@ -200,7 +181,7 @@ const upiJsonString = JSON.stringify(upi);
                     <div class="text-center mt-4">
                       <p class="text-sm text-gray-600">Or copy UPI ID:</p>
                       <div class="flex items-center justify-center mt-2">
-                        <code id="upi-vpa-mobile" class="font-mono font-bold text-gray-900 bg-gray-100 px-3 py-2 rounded">{upi.vpa}</code>
+                        <code id="upi-vpa-mobile" class="font-mono font-bold text-gray-900 bg-gray-100 px-3 py-2 rounded">-</code>
                         <button type="button" id="copy-upi-mobile" class="ml-2 text-sm text-blue-600 hover:underline">Copy</button>
                       </div>
                     </div>
@@ -292,8 +273,8 @@ const upiJsonString = JSON.stringify(upi);
     </div>
   </div>
   
-  <script type="module">
-    document.addEventListener('DOMContentLoaded', function() {
+  <script type="module" define:vars={{ apiUrl }}>
+    document.addEventListener('DOMContentLoaded', async function() {
       let cartItems = [];
       let subtotal = 0;
       let shippingCharge = 50;
@@ -301,65 +282,52 @@ const upiJsonString = JSON.stringify(upi);
       let screenshotBase64 = '';
       let isMobile = false;
 
-      // Load data from script tags (exact same approach as cart page)
-      let productsCatalog, ordersData, deliverySettingsData, upiDetails;
+      let productsCatalog = { products: [] };
+      let ordersData = { nextOrderNumber: 1001 };
+      let deliverySettingsData = { regions: [] };
+      let upiDetails = { vpa: '', name: '', qrCode: '' };
 
-      // Load products data
-      try {
-        const productsElement = document.getElementById('payment-products-json');
-        if (productsElement && productsElement.textContent) {
-          productsCatalog = JSON.parse(productsElement.textContent);
-        } else {
-          console.error('❌ Products data element not found or empty');
-          productsCatalog = { products: [] };
+      async function fetchJson(endpoint) {
+        const response = await fetch(`${apiUrl}${endpoint}`);
+        if (!response.ok) {
+          console.error(`❌ API error: ${response.status} for ${endpoint}`);
+          return null;
         }
-      } catch (error) {
-        console.error('❌ Error loading products data:', error);
-        console.error('❌ Script content:', productsElement?.textContent);
-        productsCatalog = { products: [] };
+        return response.json();
       }
 
-      // Load orders data
-      try {
-        const ordersElement = document.getElementById('payment-orders-json');
-        if (ordersElement && ordersElement.textContent) {
-          ordersData = JSON.parse(ordersElement.textContent);
-        } else {
-          console.error('❌ Orders data element not found or empty');
-          ordersData = { nextOrderNumber: 1001 };
+      async function loadRemoteData() {
+        try {
+          const [productsData, settingsData, deliveryData] = await Promise.all([
+            fetchJson('/api/products'),
+            fetchJson('/api/public/settings'),
+            fetchJson('/api/delivery')
+          ]);
+
+          productsCatalog = { products: (productsData?.products || []).filter((p) => p.isActive) };
+          deliverySettingsData = deliveryData || { regions: [] };
+          const settings = settingsData || {};
+          upiDetails = settings?.upi || { vpa: '', name: '', qrCode: '' };
+
+          const upiCode = document.getElementById('upi-vpa');
+          const upiCodeMobile = document.getElementById('upi-vpa-mobile');
+          const upiQr = document.getElementById('upi-qr-code');
+          if (upiCode) upiCode.textContent = upiDetails.vpa || '-';
+          if (upiCodeMobile) upiCodeMobile.textContent = upiDetails.vpa || '-';
+          if (upiQr) {
+            if (upiDetails.qrCode) {
+              upiQr.src = upiDetails.qrCode;
+              upiQr.classList.remove('hidden');
+            } else {
+              upiQr.classList.add('hidden');
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error loading payment data:', error);
         }
-      } catch (error) {
-        console.error('❌ Error loading orders data:', error);
-        ordersData = { nextOrderNumber: 1001 };
       }
 
-      // Load delivery settings
-      try {
-        const deliveryElement = document.getElementById('payment-delivery-settings-json');
-        if (deliveryElement && deliveryElement.textContent) {
-          deliverySettingsData = JSON.parse(deliveryElement.textContent);
-        } else {
-          console.error('❌ Delivery settings element not found or empty');
-          deliverySettingsData = { regions: [] };
-        }
-      } catch (error) {
-        console.error('❌ Error loading delivery settings:', error);
-        deliverySettingsData = { regions: [] };
-      }
-
-      // Load UPI details
-      try {
-        const upiElement = document.getElementById('payment-upi-json');
-        if (upiElement && upiElement.textContent) {
-          upiDetails = JSON.parse(upiElement.textContent);
-        } else {
-          console.error('❌ UPI details element not found or empty');
-          upiDetails = { vpa: '', name: '', qrCode: '' };
-        }
-      } catch (error) {
-        console.error('❌ Error loading UPI details:', error);
-        upiDetails = { vpa: '', name: '', qrCode: '' };
-      }
+      await loadRemoteData();
       
       if (productsCatalog.products && productsCatalog.products.length > 0) {
       } else {
@@ -667,10 +635,7 @@ const upiJsonString = JSON.stringify(upi);
             status: 'pending'
           };
           
-	          const API_URL = window.location.origin.includes('localhost') || window.location.hostname === '127.0.0.1'
-	            ? 'http://localhost:3001'
-	            : '';
-	          const response = await fetch(`${API_URL}/api/orders`, {
+          const response = await fetch(`${apiUrl}/api/orders`, {
 	            method: 'POST',
 	            headers: { 'Content-Type': 'application/json' },
 	            body: JSON.stringify(orderData)

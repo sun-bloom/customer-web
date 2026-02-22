@@ -42,8 +42,12 @@ export async function getAllProducts(): Promise<Product[]> {
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | undefined> {
-  const products = await getAllProducts();
-  return products.find((p) => p.slug === slug);
+  try {
+    const product = await fetchFromAPI(`/api/products/slug/${slug}`);
+    return product;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function getProductById(id: string): Promise<Product | undefined> {

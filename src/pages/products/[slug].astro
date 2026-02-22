@@ -1,102 +1,80 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { getProductBySlug } from '../../api/products';
 
-const { slug } = Astro.params;
-
-// Fetch product from API
-const product = await getProductBySlug(slug as string);
-
-// If product doesn't exist, render a 404 page
-if (!product || !product.isActive) {
-  return Astro.redirect('/404');
+export async function getStaticPaths() {
+  return [{ params: { slug: '__fallback__' } }];
 }
 
-// Get all available variants
-const availableVariants = product.variants.filter(v => v.isAvailable);
-const firstAvailableVariant = availableVariants[0] || product.variants[0];
-
-// Get all unique colors
-const colors = [...new Set(product.variants.map(v => v.color))];
-
-// Get all unique patterns
-const patterns = [...new Set(product.variants.map(v => v.pattern))];
-
-// Calculate min and max price
-const prices = product.variants.map(v => product.basePrice + v.additionalPrice);
-const minPrice = Math.min(...prices);
-const maxPrice = Math.max(...prices);
-const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} - ₹${maxPrice}`;
-const categoryLabel =
-  typeof product.category === 'string'
-    ? product.category
-    : product.category?.name || '';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
 ---
 
-<Layout title={`${product.name} - Fashion Store`}>
-  <script define:vars={{ product, variants: product.variants, colors, patterns }}>
-    // State for selected variant
+<Layout title="Product - Fashion Store">
+  <script define:vars={{ apiUrl }}>
+    let product = null;
+    let variants = [];
+    let colors = [];
+    let patterns = [];
     let selectedVariant = null;
-    
-    // Function to update selected variant
-    function updateVariant(color, pattern) {
-      const variant = variants.find(v => 
-        v.color === color && 
-        v.pattern === pattern &&
-        v.isAvailable
-      );
-      
-      if (variant) {
-        selectedVariant = variant;
-        updatePrice();
-        updateStockStatus();
-        updateAddToCartButton();
-        updateImageForSelection(color, pattern);
-      }
+
+    function getSlugFromPath() {
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      return parts[1] || '';
     }
-    
-    // Function to update price display
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function setImage(id, src, alt) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.src = src || '';
+      el.alt = alt || '';
+    }
+
     function updatePrice() {
-      if (selectedVariant) {
-        const price = product.basePrice + selectedVariant.additionalPrice;
-        document.getElementById('price-display').textContent = `₹${price}`;
+      if (!selectedVariant || !product) return;
+      const price = product.basePrice + selectedVariant.additionalPrice;
+      setText('price-display', `₹${price}`);
+    }
+
+    function updateStockStatus() {
+      if (!selectedVariant) return;
+      const stockElement = document.getElementById('stock-status');
+      const stockCount = document.getElementById('stock-count');
+      const quantityInput = document.getElementById('quantity-input');
+
+      if (selectedVariant.stock > 0) {
+        if (stockElement) {
+          stockElement.className = 'text-gray-600 font-medium';
+          stockElement.textContent = 'In Stock';
+        }
+        if (stockCount) stockCount.textContent = `${selectedVariant.stock} units available`;
+
+        if (quantityInput) {
+          const max = Math.max(1, Math.min(10, selectedVariant.stock));
+          quantityInput.max = String(max);
+          const current = parseInt(quantityInput.value) || 1;
+          if (current > max) quantityInput.value = String(max);
+        }
+      } else {
+        if (stockElement) {
+          stockElement.className = 'text-gray-500 font-medium';
+          stockElement.textContent = 'Out of Stock';
+        }
+        if (stockCount) stockCount.textContent = '';
+
+        if (quantityInput) {
+          quantityInput.max = '1';
+          quantityInput.value = '1';
+        }
       }
     }
-    
-	    // Function to update stock status
-	    function updateStockStatus() {
-	      if (selectedVariant) {
-	        const stockElement = document.getElementById('stock-status');
-	        const stockCount = document.getElementById('stock-count');
-	        const quantityInput = document.getElementById('quantity-input');
-	        
-	        if (selectedVariant.stock > 0) {
-	          stockElement.className = 'text-gray-600 font-medium';
-	          stockElement.textContent = 'In Stock';
-	          stockCount.textContent = `${selectedVariant.stock} units available`;
 
-	          if (quantityInput) {
-	            const max = Math.max(1, Math.min(10, selectedVariant.stock));
-	            quantityInput.max = String(max);
-	            const current = parseInt(quantityInput.value) || 1;
-	            if (current > max) quantityInput.value = String(max);
-	          }
-	        } else {
-	          stockElement.className = 'text-gray-500 font-medium';
-	          stockElement.textContent = 'Out of Stock';
-	          stockCount.textContent = '';
-
-	          if (quantityInput) {
-	            quantityInput.max = '1';
-	            quantityInput.value = '1';
-	          }
-	        }
-	      }
-	    }
-    
-    // Function to update add to cart button
     function updateAddToCartButton() {
       const button = document.getElementById('add-to-cart-btn');
+      if (!button) return;
       if (selectedVariant && selectedVariant.stock > 0) {
         button.disabled = false;
         button.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
@@ -107,16 +85,14 @@ const categoryLabel =
         button.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
       }
     }
-    
-    // Function to handle image gallery
+
     function showImage(index) {
+      if (!product?.images?.length) return;
       const mainImage = document.getElementById('main-image');
       const thumbnails = document.querySelectorAll('.thumbnail');
-      
-      if (mainImage) {
-        mainImage.src = product.images[index];
-      }
-      
+
+      if (mainImage) mainImage.src = product.images[index] || '';
+
       thumbnails.forEach((thumb, i) => {
         if (i === index) {
           thumb.classList.add('ring-2', 'ring-gray-900');
@@ -126,215 +102,258 @@ const categoryLabel =
       });
     }
 
-    function updateImageForSelection(color, pattern) {
-      const mainImage = document.getElementById('main-image');
-      if (!mainImage || !product.images?.length) return;
+    function updateVariant(color, pattern) {
+      const variant = variants.find((v) =>
+        v.color === color &&
+        v.pattern === pattern &&
+        v.isAvailable
+      );
 
-      const colorKey = String(color || '').toLowerCase();
-      const patternKey = String(pattern || '').toLowerCase();
+      if (variant) {
+        selectedVariant = variant;
+        updatePrice();
+        updateStockStatus();
+        updateAddToCartButton();
+      }
+    }
 
-      const match = product.images.find((img) => {
-        const value = img.toLowerCase();
-        return (colorKey && value.includes(colorKey)) || (patternKey && value.includes(patternKey));
+    function setSelectedButton(buttons, selectedButton) {
+      buttons.forEach((btn) => {
+        btn.classList.remove('selected', 'border-gray-900', 'bg-gray-50');
+        btn.classList.add('border-gray-300');
+      });
+      if (selectedButton) {
+        selectedButton.classList.add('selected', 'border-gray-900', 'bg-gray-50');
+        selectedButton.classList.remove('border-gray-300');
+      }
+    }
+
+    function renderNotFound() {
+      const content = document.getElementById('product-content');
+      const notFound = document.getElementById('product-not-found');
+      if (content) content.classList.add('hidden');
+      if (notFound) notFound.classList.remove('hidden');
+    }
+
+    function renderProduct(productData) {
+      product = productData;
+      variants = product.variants || [];
+      colors = [...new Set(variants.map((v) => v.color))];
+      patterns = [...new Set(variants.map((v) => v.pattern))];
+
+      const prices = variants.map((v) => product.basePrice + v.additionalPrice);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} - ₹${maxPrice}`;
+      const categoryLabel = typeof product.category === 'string'
+        ? product.category
+        : product.category?.name || '';
+
+      document.title = `${product.name} - Fashion Store`;
+      setText('product-breadcrumb-name', product.name);
+      setText('product-name', product.name);
+      setText('price-display', priceDisplay);
+      setText('product-description', product.description || '');
+      setText('product-category', categoryLabel.replace('_', ' '));
+      setText('product-sku', variants[0]?.sku || '-');
+      setImage('main-image', product.images?.[0] || '', product.name);
+
+      const thumbnails = document.getElementById('image-thumbnails');
+      if (thumbnails) {
+        thumbnails.innerHTML = (product.images || []).map((image, index) => `
+          <img
+            src="${image}"
+            alt="${product.name} view ${index + 1}"
+            class="thumbnail w-20 h-20 object-cover rounded cursor-pointer border-2 border-gray-200 hover:border-gray-900 transition-colors"
+            data-index="${index}"
+            loading="lazy"
+            decoding="async"
+          />
+        `).join('');
+
+        thumbnails.querySelectorAll('.thumbnail').forEach((thumb) => {
+          thumb.addEventListener('click', () => showImage(parseInt(thumb.dataset.index)));
+        });
+      }
+
+      const colorsWrap = document.getElementById('color-options');
+      if (colorsWrap) {
+        colorsWrap.innerHTML = colors.map((color, idx) => `
+          <button
+            type="button"
+            data-color="${color}"
+            class="color-option py-2 px-4 rounded-md border-2 transition-colors ${idx === 0 ? 'selected border-gray-900 bg-gray-50' : 'border-gray-300'}"
+          >
+            ${color}
+          </button>
+        `).join('');
+      }
+
+      const patternsWrap = document.getElementById('pattern-options');
+      if (patternsWrap) {
+        patternsWrap.innerHTML = patterns.map((pattern, idx) => `
+          <button
+            type="button"
+            data-pattern="${pattern}"
+            class="pattern-option py-2 px-4 rounded-md border-2 transition-colors ${idx === 0 ? 'selected border-gray-900 bg-gray-50' : 'border-gray-300'}"
+          >
+            ${pattern}
+          </button>
+        `).join('');
+      }
+
+      const firstAvailable = variants.find((v) => v.isAvailable) || variants[0];
+      selectedVariant = firstAvailable || null;
+
+      updatePrice();
+      updateStockStatus();
+      updateAddToCartButton();
+
+      const colorButtons = document.querySelectorAll('.color-option');
+      const patternButtons = document.querySelectorAll('.pattern-option');
+
+      if (colorButtons.length > 0) {
+        const initialColor = colors[0];
+        const initialColorButton = Array.from(colorButtons).find((btn) =>
+          btn.getAttribute('data-color') === initialColor
+        );
+        setSelectedButton(colorButtons, initialColorButton || colorButtons[0]);
+      }
+
+      if (patternButtons.length > 0) {
+        const initialPattern = patterns[0];
+        const initialPatternButton = Array.from(patternButtons).find((btn) =>
+          btn.getAttribute('data-pattern') === initialPattern
+        );
+        setSelectedButton(patternButtons, initialPatternButton || patternButtons[0]);
+      }
+
+      colorButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const selectedColor = button.getAttribute('data-color');
+          const currentPattern = document.querySelector('.pattern-option.selected')?.getAttribute('data-pattern') || patterns[0];
+          setSelectedButton(colorButtons, button);
+          if (selectedColor && currentPattern) updateVariant(selectedColor, currentPattern);
+        });
       });
 
-      if (match) {
-        mainImage.src = match;
-        const thumbnails = document.querySelectorAll('.thumbnail');
-        thumbnails.forEach((thumb) => {
-          if (thumb.getAttribute('src') === match) {
-            thumb.classList.add('ring-2', 'ring-gray-900');
-          } else {
-            thumb.classList.remove('ring-2', 'ring-gray-900');
-          }
+      patternButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const selectedPattern = button.getAttribute('data-pattern');
+          const currentColor = document.querySelector('.color-option.selected')?.getAttribute('data-color') || colors[0];
+          setSelectedButton(patternButtons, button);
+          if (selectedPattern && currentColor) updateVariant(currentColor, selectedPattern);
+        });
+      });
+
+      const addToCartBtn = document.getElementById('add-to-cart-btn');
+      if (addToCartBtn) addToCartBtn.addEventListener('click', addToCart);
+
+      const quantityInput = document.getElementById('quantity-input');
+      const decreaseBtn = document.getElementById('decrease-qty');
+      const increaseBtn = document.getElementById('increase-qty');
+
+      if (decreaseBtn && quantityInput) {
+        decreaseBtn.addEventListener('click', () => {
+          const currentValue = parseInt(quantityInput.value) || 1;
+          if (currentValue > 1) quantityInput.value = currentValue - 1;
+        });
+      }
+
+      if (increaseBtn && quantityInput) {
+        increaseBtn.addEventListener('click', () => {
+          const currentValue = parseInt(quantityInput.value) || 1;
+          const maxValue = parseInt(quantityInput.max) || 10;
+          if (currentValue < maxValue) quantityInput.value = currentValue + 1;
         });
       }
     }
-    
-    // Function to add to cart
-	    function addToCart() {
-      if (!selectedVariant) {
-        // If no variant is selected, select the first available one
-        const firstAvailable = variants.find(v => v.isAvailable);
-        if (firstAvailable) {
-          selectedVariant = firstAvailable;
-        } else {
-          alert('This product is currently unavailable.');
-          return;
-        }
-      }
-      
-	      // Get quantity from input
-	      const quantityInput = document.getElementById('quantity-input');
-	      const quantity = quantityInput ? parseInt(quantityInput.value) || 1 : 1;
 
-	      const maxAllowed = Math.max(0, Math.min(10, selectedVariant.stock || 0));
-	      if (maxAllowed <= 0) {
-	        alert('This variant is out of stock.');
-	        return;
-	      }
-	      if (quantity > maxAllowed) {
-	        alert(`Only ${maxAllowed} units available for this variant.`);
-	        if (quantityInput) quantityInput.value = String(maxAllowed);
-	        return;
-	      }
-      
-      // Create cart item
+    function addToCart() {
+      if (!product || !selectedVariant) {
+        alert('This product is currently unavailable.');
+        return;
+      }
+
+      const quantityInput = document.getElementById('quantity-input');
+      const quantity = quantityInput ? parseInt(quantityInput.value) || 1 : 1;
+
+      const maxAllowed = Math.max(0, Math.min(10, selectedVariant.stock || 0));
+      if (maxAllowed <= 0) {
+        alert('This variant is out of stock.');
+        return;
+      }
+      if (quantity > maxAllowed) {
+        alert(`Only ${maxAllowed} units available for this variant.`);
+        if (quantityInput) quantityInput.value = String(maxAllowed);
+        return;
+      }
+
       const cartItem = {
         productId: product.id,
         variantId: selectedVariant.id,
         productName: product.name,
         productSlug: product.slug,
-        productImage: product.images[0],
+        productImage: product.images?.[0] || '',
         color: selectedVariant.color,
         pattern: selectedVariant.pattern,
         quantity: quantity,
         unitPrice: product.basePrice + selectedVariant.additionalPrice,
         totalPrice: (product.basePrice + selectedVariant.additionalPrice) * quantity
       };
-      
-      // Get existing cart from localStorage
+
       let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-      
-      // Check if item already exists in cart
-      const existingItemIndex = cart.findIndex(item => 
+
+      const existingItemIndex = cart.findIndex((item) =>
         item.productId === cartItem.productId && item.variantId === cartItem.variantId
       );
-      
-	      if (existingItemIndex >= 0) {
-	        // Update quantity if item exists
-	        const nextQty = cart[existingItemIndex].quantity + quantity;
-	        if (nextQty > maxAllowed) {
-	          alert(`Only ${maxAllowed} units available for this variant. Your cart already has ${cart[existingItemIndex].quantity}.`);
-	          return;
-	        }
-	        cart[existingItemIndex].quantity = nextQty;
-	        cart[existingItemIndex].totalPrice = cart[existingItemIndex].quantity * cart[existingItemIndex].unitPrice;
-	      } else {
-	        // Add new item
-	        cart.push(cartItem);
-	      }
-      
-      // Save cart to localStorage
-      localStorage.setItem('cart', JSON.stringify(cart));
-      
-      // Dispatch cart update event for real-time badge updates
-      window.dispatchEvent(new CustomEvent('cart:updated', { 
-        detail: { cart, timestamp: Date.now() } 
-      }));
-      window.dispatchEvent(new CustomEvent('cart:item-added', { 
-        detail: { item: cartItem, timestamp: Date.now() } 
-      }));
-      
-      // Show success message
-      const message = document.getElementById('cart-message');
-      message.textContent = 'Item added to cart!';
-      message.classList.remove('hidden');
-      
-      // Hide message after 3 seconds
-      setTimeout(() => {
-        message.classList.add('hidden');
-      }, 3000);
-    }
-    
-    // Initialize the page
-    document.addEventListener('DOMContentLoaded', () => {
-      // Select the first available variant by default
-      const firstColor = colors.length > 0 ? colors[0] : null;
-      const firstPattern = patterns.length > 0 ? patterns[0] : null;
-      
-      if (firstColor && firstPattern) {
-        updateVariant(firstColor, firstPattern);
-      }
-      
-      // Set up event listeners for color and pattern selection
-      const colorButtons = document.querySelectorAll('.color-option');
-      const patternButtons = document.querySelectorAll('.pattern-option');
-      
-      const setSelectedButton = (buttons, selectedButton) => {
-        buttons.forEach((btn) => {
-          btn.classList.remove('selected', 'border-gray-900', 'bg-gray-50');
-          btn.classList.add('border-gray-300');
-        });
-        if (selectedButton) {
-          selectedButton.classList.add('selected', 'border-gray-900', 'bg-gray-50');
-          selectedButton.classList.remove('border-gray-300');
+
+      if (existingItemIndex >= 0) {
+        const nextQty = cart[existingItemIndex].quantity + quantity;
+        if (nextQty > maxAllowed) {
+          alert(`Only ${maxAllowed} units available for this variant. Your cart already has ${cart[existingItemIndex].quantity}.`);
+          return;
         }
-      };
-
-      if (colorButtons.length > 0) {
-        const initialColorButton = Array.from(colorButtons).find((btn) =>
-          btn.getAttribute('data-color') === firstColor
-        );
-        setSelectedButton(colorButtons, initialColorButton || colorButtons[0]);
+        cart[existingItemIndex].quantity = nextQty;
+        cart[existingItemIndex].totalPrice = cart[existingItemIndex].quantity * cart[existingItemIndex].unitPrice;
+      } else {
+        cart.push(cartItem);
       }
 
-      if (patternButtons.length > 0) {
-        const initialPatternButton = Array.from(patternButtons).find((btn) =>
-          btn.getAttribute('data-pattern') === firstPattern
-        );
-        setSelectedButton(patternButtons, initialPatternButton || patternButtons[0]);
-      }
+      localStorage.setItem('cart', JSON.stringify(cart));
 
-      colorButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          const selectedColor = button.getAttribute('data-color');
-          const currentPattern = document.querySelector('.pattern-option.selected')?.getAttribute('data-pattern') || firstPattern;
-          
-          // Update selected state
-          setSelectedButton(colorButtons, button);
-          
-          updateVariant(selectedColor, currentPattern);
-        });
-      });
-      
-      patternButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          const selectedPattern = button.getAttribute('data-pattern');
-          const currentColor = document.querySelector('.color-option.selected')?.getAttribute('data-color') || firstColor;
-          
-          // Update selected state
-          setSelectedButton(patternButtons, button);
-          
-          updateVariant(currentColor, selectedPattern);
-        });
-      });
-      
-      // Set up Add to Cart button event listener
-      const addToCartBtn = document.getElementById('add-to-cart-btn');
-      if (addToCartBtn) {
-        addToCartBtn.addEventListener('click', addToCart);
+      window.dispatchEvent(new CustomEvent('cart:updated', {
+        detail: { cart, timestamp: Date.now() }
+      }));
+      window.dispatchEvent(new CustomEvent('cart:item-added', {
+        detail: { item: cartItem, timestamp: Date.now() }
+      }));
+
+      const message = document.getElementById('cart-message');
+      if (message) {
+        message.textContent = 'Item added to cart!';
+        message.classList.remove('hidden');
+        setTimeout(() => message.classList.add('hidden'), 3000);
       }
-      
-      // Set up quantity controls
-      const quantityInput = document.getElementById('quantity-input');
-      const decreaseBtn = document.getElementById('decrease-qty');
-      const increaseBtn = document.getElementById('increase-qty');
-      
-      if (decreaseBtn && quantityInput) {
-        decreaseBtn.addEventListener('click', () => {
-          const currentValue = parseInt(quantityInput.value) || 1;
-          if (currentValue > 1) {
-            quantityInput.value = currentValue - 1;
-          }
-        });
+    }
+
+    async function loadProduct() {
+      const slug = getSlugFromPath();
+      if (!slug) return renderNotFound();
+      try {
+        const response = await fetch(`${apiUrl}/api/products/slug/${encodeURIComponent(slug)}`);
+        if (!response.ok) return renderNotFound();
+        const found = await response.json();
+        if (!found || !found.isActive) return renderNotFound();
+        renderProduct(found);
+      } catch (error) {
+        console.error('Product fetch failed', error);
+        renderNotFound();
       }
-      
-      if (increaseBtn && quantityInput) {
-        increaseBtn.addEventListener('click', () => {
-          const currentValue = parseInt(quantityInput.value) || 1;
-          const maxValue = parseInt(quantityInput.max) || 10;
-          if (currentValue < maxValue) {
-            quantityInput.value = currentValue + 1;
-          }
-        });
-      }
-      
-      // Set up thumbnail click listeners
-      const thumbnails = document.querySelectorAll('.thumbnail');
-      thumbnails.forEach((thumb, index) => {
-        thumb.addEventListener('click', () => showImage(index));
-      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProduct();
     });
   </script>
 
@@ -349,112 +368,65 @@ const categoryLabel =
         -moz-appearance: textfield;
       }
     </style>
-    <!-- Breadcrumb Navigation -->
     <nav class="mb-6 text-sm">
       <ol class="flex items-center space-x-2">
         <li><a href="/" class="text-gray-600 hover:text-black">Home</a></li>
         <li><span class="text-gray-500">/</span></li>
         <li><a href="/products" class="text-gray-600 hover:text-black">Products</a></li>
         <li><span class="text-gray-500">/</span></li>
-        <li class="text-gray-700 font-medium">{product.name}</li>
+        <li id="product-breadcrumb-name" class="text-gray-700 font-medium">Product</li>
       </ol>
     </nav>
 
-    <div class="flex flex-col lg:flex-row gap-8">
-      <!-- Image Gallery -->
+    <div id="product-content" class="flex flex-col lg:flex-row gap-8">
       <div class="w-full lg:w-1/2">
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
-          <!-- Main Image -->
           <div class="relative">
-            <img 
+            <img
               id="main-image"
-              src={product.images[0]} 
-              alt={product.name}
+              src=""
+              alt=""
               class="w-full h-96 object-cover"
             />
           </div>
-          
-          <!-- Thumbnails -->
-          {product.images.length > 1 && (
-            <div class="flex p-4 space-x-2 overflow-x-auto">
-              {product.images.map((image, index) => (
-                <img
-                  key={index}
-                  src={image}
-                  alt={`${product.name} view ${index + 1}`}
-                  class="thumbnail w-20 h-20 object-cover rounded cursor-pointer border-2 border-gray-200 hover:border-gray-900 transition-colors"
-                  data-index={index}
-                  loading="lazy"
-                  decoding="async"
-                />
-              ))}
-            </div>
-          )}
+
+          <div id="image-thumbnails" class="flex p-4 space-x-2 overflow-x-auto"></div>
         </div>
       </div>
 
-      <!-- Product Details -->
       <div class="w-full lg:w-1/2">
         <div class="bg-white rounded-lg shadow-md p-6">
-          <h1 class="text-2xl font-bold mb-4">{product.name}</h1>
-          
+          <h1 id="product-name" class="text-2xl font-bold mb-4">Product</h1>
+
           <div class="mb-4">
-            <span id="price-display" class="text-2xl font-bold text-gray-900">{priceDisplay}</span>
+            <span id="price-display" class="text-2xl font-bold text-gray-900">₹0</span>
           </div>
-          
+
           <div class="mb-6">
             <p id="stock-status" class="text-gray-600 font-medium">In Stock</p>
-            <p id="stock-count" class="text-sm text-gray-600">{firstAvailableVariant?.stock || product.variants[0]?.stock || 0} units available</p>
+            <p id="stock-count" class="text-sm text-gray-600">0 units available</p>
           </div>
-          
+
           <div class="mb-6">
-            <p class="text-gray-700">{product.description}</p>
+            <p id="product-description" class="text-gray-700"></p>
           </div>
-          
-          <!-- Variant Selection -->
+
           <div class="mb-6">
-            {/* Color Selection */}
             <div class="mb-4">
               <h3 class="font-medium mb-2">Color</h3>
-              <div class="flex flex-wrap gap-2">
-                {colors.map(color => (
-                  <button 
-                    key={color}
-                    data-color={color}
-                    class={`color-option py-2 px-4 rounded-md border-2 transition-colors ${
-                      colors[0] === color ? 'selected border-gray-900 bg-gray-50' : 'border-gray-300'
-                    }`}
-                  >
-                    {color}
-                  </button>
-                ))}
-              </div>
+              <div id="color-options" class="flex flex-wrap gap-2"></div>
             </div>
-            
-            {/* Pattern Selection */}
+
             <div class="mb-4">
               <h3 class="font-medium mb-2">Pattern</h3>
-              <div class="flex flex-wrap gap-2">
-                {patterns.map(pattern => (
-                  <button 
-                    key={pattern}
-                    data-pattern={pattern}
-                    class={`pattern-option py-2 px-4 rounded-md border-2 transition-colors ${
-                      patterns[0] === pattern ? 'selected border-gray-900 bg-gray-50' : 'border-gray-300'
-                    }`}
-                  >
-                    {pattern}
-                  </button>
-                ))}
-              </div>
+              <div id="pattern-options" class="flex flex-wrap gap-2"></div>
             </div>
           </div>
-          
-          <!-- Quantity Selector -->
+
           <div class="mb-6">
             <h3 class="font-medium mb-2">Quantity</h3>
             <div class="flex items-center space-x-3">
-              <button 
+              <button
                 id="decrease-qty"
                 class="w-10 h-10 rounded-md border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
               >
@@ -462,15 +434,15 @@ const categoryLabel =
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
                 </svg>
               </button>
-              <input 
+              <input
                 id="quantity-input"
-                type="number" 
-                min="1" 
+                type="number"
+                min="1"
                 max="10"
                 value="1"
                 class="w-20 text-center border-2 border-gray-300 rounded-md py-2 font-medium focus:outline-none focus:border-gray-900"
               />
-              <button 
+              <button
                 id="increase-qty"
                 class="w-10 h-10 rounded-md border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
               >
@@ -480,33 +452,32 @@ const categoryLabel =
               </button>
             </div>
           </div>
-          
+
           <div class="flex flex-col sm:flex-row gap-4 mb-6">
-            <button 
+            <button
               id="add-to-cart-btn"
               class="flex-1 bg-gray-900 text-white py-3 px-6 rounded-md font-medium hover:bg-black transition-colors"
             >
               Add to Cart
             </button>
-            
-            <a 
+
+            <a
               href="/products"
               class="flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-md font-medium hover:bg-gray-300 transition-colors text-center"
             >
               Continue Shopping
             </a>
           </div>
-          
+
           <div id="cart-message" class="hidden mb-4 p-3 bg-green-100 text-green-800 rounded-md">
             Item added to cart!
           </div>
-          
-          <!-- Product Details -->
+
           <div class="border-t pt-6">
             <h3 class="font-medium mb-3">Product Details</h3>
             <ul class="space-y-2 text-sm text-gray-600">
-              <li>SKU: {firstAvailableVariant.sku}</li>
-              <li>Category: {categoryLabel.replace('_', ' ')}</li>
+              <li>SKU: <span id="product-sku">-</span></li>
+              <li>Category: <span id="product-category">-</span></li>
               <li>Material: Cotton blend</li>
               <li>Care: Machine wash, gentle cycle</li>
             </ul>
@@ -514,16 +485,14 @@ const categoryLabel =
         </div>
       </div>
     </div>
-    
-    <!-- Related Products -->
-    <div class="mt-12">
-      <h2 class="text-2xl font-bold mb-6">Related Products</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Related products will be loaded here in a future implementation -->
-        <div class="bg-gray-200 h-64 rounded-lg"></div>
-        <div class="bg-gray-200 h-64 rounded-lg"></div>
-        <div class="bg-gray-200 h-64 rounded-lg"></div>
-        <div class="bg-gray-200 h-64 rounded-lg"></div>
+
+    <div id="product-not-found" class="hidden">
+      <div class="bg-white border border-gray-200 p-8 text-center">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-2">Product not found</h2>
+        <p class="text-gray-600 mb-6">This product may be unavailable or removed.</p>
+        <a href="/products" class="inline-flex items-center justify-center bg-gray-900 text-white px-6 py-3 text-sm hover:bg-black transition-colors">
+          Browse Products
+        </a>
       </div>
     </div>
   </div>

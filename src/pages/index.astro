@@ -1,11 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import CategoryCard from '../components/CategoryCard.astro';
-import { getCategories, getSettings } from '../api/products';
-
-const categories = await getCategories();
-const settings = await getSettings();
-const site = settings?.site || { name: 'Fashion Store', tagline: 'Discover your style' };
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
+const site = { name: 'Fashion Store', tagline: 'Discover your style' };
 ---
 
 <Layout title="Home">
@@ -17,10 +13,10 @@ const site = settings?.site || { name: 'Fashion Store', tagline: 'Discover your 
                 <div class="absolute inset-0 bg-[url('/images/hero-pattern.png')] opacity-5"></div>
 			</div>
 			<div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 md:py-48 flex flex-col items-center text-center">
-				<h1 class="text-5xl md:text-8xl font-bold font-heading mb-8 tracking-tighter text-black uppercase">
+				<h1 id="home-site-name" class="text-5xl md:text-8xl font-bold font-heading mb-8 tracking-tighter text-black uppercase">
 					{site.name}
 				</h1>
-				<p class="text-xl md:text-2xl text-gray-500 max-w-2xl mb-12 leading-relaxed font-light italic">
+				<p id="home-site-tagline" class="text-xl md:text-2xl text-gray-500 max-w-2xl mb-12 leading-relaxed font-light italic">
 					{site.tagline}
 				</p>
 				<div class="flex flex-col sm:flex-row gap-4">
@@ -48,17 +44,9 @@ const site = settings?.site || { name: 'Fashion Store', tagline: 'Discover your 
 			</div>
             
 			<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-8">
-				{categories.map((category) => (
-					<div class="h-full">
-						<CategoryCard 
-							name={category.name}
-							slug={category.slug}
-							description={category.description}
-							image={category.image}
-						/>
-					</div>
-				))}
+				<div id="categories-grid" class="contents"></div>
 			</div>
+			<p id="categories-empty" class="hidden text-center text-gray-500 mt-8">No categories found.</p>
 		</div>
 
         <!-- Newsletter / Promo Section -->
@@ -74,3 +62,71 @@ const site = settings?.site || { name: 'Fashion Store', tagline: 'Discover your 
         </div>
 	</main>
 </Layout>
+
+<script is:inline define:vars={{ apiUrl }}>
+  async function fetchJson(endpoint) {
+    const response = await fetch(`${apiUrl}${endpoint}`);
+    if (!response.ok) return null;
+    return response.json();
+  }
+
+  function renderCategories(categories) {
+    const grid = document.getElementById('categories-grid');
+    const empty = document.getElementById('categories-empty');
+    if (!grid) return;
+    if (!Array.isArray(categories) || categories.length === 0) {
+      grid.innerHTML = '';
+      if (empty) empty.classList.remove('hidden');
+      return;
+    }
+    if (empty) empty.classList.add('hidden');
+
+    grid.innerHTML = categories.map((category) => `
+      <div class="h-full">
+        <a href="/products?category=${category.slug}" class="group relative overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 block h-full">
+          <div class="aspect-[4/5] overflow-hidden bg-gray-100">
+            <img
+              src="${category.image}"
+              alt="${category.name}"
+              class="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+              decoding="async"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60 group-hover:opacity-70 transition-opacity"></div>
+          </div>
+          <div class="absolute bottom-0 left-0 right-0 p-6 text-white transform translate-y-2 group-hover:translate-y-0 transition-transform">
+            <h3 class="text-2xl font-bold font-heading mb-1">${category.name}</h3>
+            <p class="text-sm text-gray-200 opacity-0 group-hover:opacity-100 transition-opacity duration-300">${category.description || ''}</p>
+            <div class="mt-4 inline-flex items-center text-sm font-medium text-white group-hover:underline decoration-2 underline-offset-4">
+              Shop Collection
+              <span class="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    `).join('');
+  }
+
+  async function loadHomeData() {
+    const [settings, categoriesData] = await Promise.all([
+      fetchJson('/api/public/settings'),
+      fetchJson('/api/categories')
+    ]);
+
+    const site = settings?.site;
+    if (site?.name) {
+      const nameEl = document.getElementById('home-site-name');
+      if (nameEl) nameEl.textContent = site.name;
+    }
+    if (site?.tagline) {
+      const taglineEl = document.getElementById('home-site-tagline');
+      if (taglineEl) taglineEl.textContent = site.tagline;
+    }
+
+    renderCategories(categoriesData?.categories || []);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadHomeData();
+  });
+</script>
