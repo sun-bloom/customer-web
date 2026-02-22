@@ -1,2 +1,2 @@
-/products/* /products/__fallback__/index.html 200
-/order/* /order/__fallback__/index.html 200
+/products/* /__fallback__/products/index.html 200
+/order/* /__fallback__/order/index.html 200
