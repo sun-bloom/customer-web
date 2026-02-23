@@ -2,10 +2,6 @@
 import Layout from '../../layouts/Layout.astro';
 import ProductDetailPage from '../../components/ProductDetailPage.astro';
 
-export async function getStaticPaths() {
-  return [];
-}
-
 const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
 ---
 
