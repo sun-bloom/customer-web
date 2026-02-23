@@ -2,5 +2,5 @@
   "name": "customer-web",
   "compatibility_date": "2026-02-22",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "./dist/_worker.js/index.js"
+  "pages_build_output_dir": "./dist"
 }

@@ -9,6 +9,9 @@ export default defineConfig({
   output: 'server',
   adapter: cloudflare({
     imageService: 'compile',
+    platform: {
+      type: 'pages',
+    },
   }),
   integrations: [react()],
 
