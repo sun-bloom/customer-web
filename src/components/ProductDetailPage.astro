@@ -345,9 +345,13 @@ const { apiUrl } = Astro.props;
       }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    console.log('ProductDetailPage: DOM readyState:', document.readyState);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadProduct);
+    } else {
+      console.log('ProductDetailPage: DOM already loaded, calling loadProduct immediately');
       loadProduct();
-    });
+    }
   </script>
 
   <div class="container mx-auto px-4 py-8">
