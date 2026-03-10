@@ -4,11 +4,79 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
 ---
 
 <Layout title="Payment - Fashion Store">
+  <style>
+    @keyframes shimmer {
+      0%   { background-position: -800px 0; }
+      100% { background-position: 800px 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 800px 100%;
+      animation: shimmer 1.4s infinite linear;
+      border-radius: 4px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid #ffffff40;
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+  </style>
+
   <div class="container mx-auto px-4 py-8">
     <div class="max-w-4xl mx-auto">
       <h1 class="text-3xl font-bold mb-8">Complete Payment</h1>
-      
-      <div id="payment-empty-cart" class="bg-white rounded-lg shadow-md p-8 text-center">
+
+      <!-- Skeleton loader -->
+      <div id="payment-skeleton">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div class="bg-white rounded-lg shadow-md p-6 space-y-4">
+            <div class="skeleton h-6 w-40 mb-6"></div>
+            <div class="grid grid-cols-2 gap-4">
+              {[1,2,3,4].map(() => (
+                <div class="space-y-1">
+                  <div class="skeleton h-4 w-24"></div>
+                  <div class="skeleton h-10 w-full rounded-md"></div>
+                </div>
+              ))}
+            </div>
+            <div class="space-y-1">
+              <div class="skeleton h-4 w-32"></div>
+              <div class="skeleton h-20 w-full rounded-md"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              {[1,2].map(() => (
+                <div class="space-y-1">
+                  <div class="skeleton h-4 w-16"></div>
+                  <div class="skeleton h-10 w-full rounded-md"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="skeleton h-6 w-36 mb-4"></div>
+            {[1,2,3].map(() => (
+              <div class="flex items-center gap-3 py-3 border-b border-gray-100">
+                <div class="skeleton w-16 h-16 rounded-md flex-shrink-0"></div>
+                <div class="flex-1 space-y-2">
+                  <div class="skeleton h-4 w-full"></div>
+                  <div class="skeleton h-3 w-24"></div>
+                  <div class="skeleton h-4 w-16"></div>
+                </div>
+              </div>
+            ))}
+            <div class="skeleton h-12 w-full rounded-md mt-6"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty cart -->
+      <div id="payment-empty-cart" class="hidden bg-white rounded-lg shadow-md p-8 text-center">
         <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
         </svg>
@@ -18,700 +86,454 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
           Continue Shopping
         </a>
       </div>
-      
+
+      <!-- Payment content -->
       <div id="payment-cart-container" class="hidden">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+          <!-- Left: Customer details -->
           <div class="space-y-6">
             <div class="bg-white rounded-lg shadow-md p-6">
               <h2 class="text-xl font-semibold mb-6">Your Details</h2>
-              <form id="payment-form">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label for="customer-name" class="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      id="customer-name"
-                      name="customer-name"
-                      required
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label for="customer-phone" class="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      id="customer-phone"
-                      name="customer-phone"
-                      required
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label for="customer-email" class="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      id="customer-email"
-                      name="customer-email"
-                      required
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label for="pincode" class="block text-sm font-medium text-gray-700 mb-1">
-                      Pincode *
-                    </label>
-                    <input
-                      type="text"
-                      id="pincode"
-                      name="pincode"
-                      required
-                      maxlength="6"
-                      pattern="[0-9]{6}"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                    />
-                    <div id="pincode-status"></div>
-                  </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="customer-name" class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                  <input type="text" id="customer-name" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-gray-900" />
                 </div>
-                
-                <div class="mt-4">
-                  <label for="delivery-address" class="block text-sm font-medium text-gray-700 mb-1">
-                    Delivery Address *
-                  </label>
-                  <textarea
-                    id="delivery-address"
-                    name="delivery-address"
-                    rows="3"
-                    required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                  ></textarea>
+                <div>
+                  <label for="customer-phone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                  <input type="tel" id="customer-phone" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-gray-900" />
                 </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <label for="city" class="block text-sm font-medium text-gray-700 mb-1">
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      id="city"
-                      name="city"
-                      required
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label for="state" class="block text-sm font-medium text-gray-700 mb-1">
-                      State *
-                    </label>
-                    <input
-                      type="text"
-                      id="state"
-                      name="state"
-                      required
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                    />
-                  </div>
+                <div>
+                  <label for="customer-email" class="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+                  <input type="email" id="customer-email" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-gray-900" />
                 </div>
-              </form>
-            </div>
-            
-            <div class="bg-white rounded-lg shadow-md p-6">
-              <h2 class="text-xl font-semibold mb-4">Payment Method</h2>
-              
-              <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                <div class="flex items-center mb-6">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-900 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <div>
-                    <h4 class="font-medium text-gray-900">UPI Payment</h4>
-                    <p class="text-sm text-gray-600">Complete your payment using UPI</p>
-                  </div>
+                <div>
+                  <label for="pincode" class="block text-sm font-medium text-gray-700 mb-1">Pincode *</label>
+                  <input type="text" id="pincode" required maxlength="6" pattern="[0-9]{6}"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-gray-900" />
+                  <div id="pincode-status" class="mt-1"></div>
                 </div>
-                
-                <div id="desktop-payment" class="hidden">
-                  <div class="flex flex-col items-center">
-                    <div class="w-48 h-48 bg-white rounded-lg p-2 flex items-center justify-center border border-gray-200 shadow-sm mb-4">
-                      <img id="upi-qr-code" src="" alt="UPI QR Code" class="max-w-full max-h-full hidden" />
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">Scan QR Code to Pay</p>
-                    <div class="text-center mb-6">
-                      <p class="text-sm font-medium text-gray-700 mb-1">UPI ID:</p>
-                      <div class="flex items-center justify-center">
-                        <code id="upi-vpa" class="font-mono font-bold text-gray-900 bg-gray-100 px-3 py-2 rounded">-</code>
-                        <button type="button" id="copy-upi" class="ml-2 text-sm text-blue-600 hover:underline">Copy</button>
-                      </div>
-                    </div>
-                  </div>
+              </div>
+              <div class="mt-4">
+                <label for="delivery-address" class="block text-sm font-medium text-gray-700 mb-1">Delivery Address *</label>
+                <textarea id="delivery-address" rows="3" required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-gray-900"></textarea>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label for="city" class="block text-sm font-medium text-gray-700 mb-1">City *</label>
+                  <input type="text" id="city" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-gray-900" />
                 </div>
-                
-                <div id="mobile-payment" class="hidden">
-                  <div class="space-y-4">
-                    <p class="text-sm text-gray-600 text-center">Tap to pay with your preferred UPI app:</p>
-                    <div class="grid grid-cols-3 gap-3">
-                      <a id="gpay-link" href="#" class="flex flex-col items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-2">
-                          <span class="text-white font-bold text-sm">G</span>
-                        </div>
-                        <span class="text-xs font-medium text-gray-700">GPay</span>
-                      </a>
-                      <a id="phonepe-link" href="#" class="flex flex-col items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-2">
-                          <span class="text-white font-bold text-sm">P</span>
-                        </div>
-                        <span class="text-xs font-medium text-gray-700">PhonePe</span>
-                      </a>
-                      <a id="paytm-link" href="#" class="flex flex-col items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mb-2">
-                          <span class="text-white font-bold text-sm">P</span>
-                        </div>
-                        <span class="text-xs font-medium text-gray-700">Paytm</span>
-                      </a>
-                    </div>
-                    <div class="text-center mt-4">
-                      <p class="text-sm text-gray-600">Or copy UPI ID:</p>
-                      <div class="flex items-center justify-center mt-2">
-                        <code id="upi-vpa-mobile" class="font-mono font-bold text-gray-900 bg-gray-100 px-3 py-2 rounded">-</code>
-                        <button type="button" id="copy-upi-mobile" class="ml-2 text-sm text-blue-600 hover:underline">Copy</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="w-full space-y-3 mt-6">
-                  <label class="block text-sm font-medium text-gray-700">
-                    Upload Payment Screenshot *
-                  </label>
-                  <div class="flex items-center justify-center w-full">
-                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50">
-                      <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                        <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                        </svg>
-                        <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
-                        <p id="file-name-display" class="text-xs text-gray-500 uppercase">PNG, JPG or PDF</p>
-                      </div>
-                      <input id="payment-screenshot" type="file" class="hidden" accept="image/*" required />
-                    </label>
-                  </div>
-                </div>
-                
-                <div class="mt-6 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <p class="text-xs text-yellow-800">
-                    <strong>Important:</strong> Your order will be processed after we verify the payment from your screenshot.
-                  </p>
+                <div>
+                  <label for="state" class="block text-sm font-medium text-gray-700 mb-1">State *</label>
+                  <input type="text" id="state" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-gray-900" />
                 </div>
               </div>
             </div>
           </div>
-          
+
+          <!-- Right: Order summary + UPI -->
           <div>
             <div class="bg-white rounded-lg shadow-md p-6 sticky top-6">
               <h2 class="text-xl font-semibold mb-4">Order Summary</h2>
-              
-              <div id="payment-cart-items" class="space-y-3 mb-4">
-              </div>
-              
-              <div class="space-y-3 pb-4 border-b">
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Subtotal</span>
-                  <span id="payment-subtotal" class="font-medium">₹0</span>
+
+              <div id="payment-cart-items" class="space-y-3 mb-4"></div>
+
+              <div class="space-y-2 pb-4 border-b">
+                <div class="flex justify-between text-sm text-gray-600">
+                  <span>Subtotal</span>
+                  <span id="payment-subtotal" class="font-medium text-gray-900">₹0</span>
                 </div>
-                
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Shipping</span>
-                  <span id="payment-shipping" class="font-medium">₹50</span>
+                <div class="flex justify-between text-sm text-gray-600">
+                  <span>Shipping</span>
+                  <span id="payment-shipping" class="font-medium text-gray-900">₹50</span>
                 </div>
               </div>
-              
-              <div class="pt-4">
-                <div class="flex justify-between items-center mb-6">
-                  <span class="text-lg font-semibold">Total</span>
-                  <span id="payment-total" class="text-xl font-bold text-gray-900">₹0</span>
-                </div>
-                
-                <div id="free-shipping-notice" class="hidden text-sm text-green-600 mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  You've qualified for free shipping!
-                </div>
-                
-                <div id="shipping-charge-notice" class="text-sm text-gray-600 mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Add ₹1500 more for free shipping
-                </div>
-                
-                <button
-                  type="submit"
-                  id="submit-order-btn"
-                  class="w-full bg-gray-900 text-white py-3 px-6 rounded-md font-medium hover:bg-black transition-colors"
-                >
-                  Place Order
-                </button>
-                
-                <a href="/cart" class="block text-center text-gray-600 hover:text-black mt-4">
-                  Back to Cart
-                </a>
+
+              <div class="pt-4 flex justify-between items-center mb-6">
+                <span class="text-lg font-semibold">Total</span>
+                <span id="payment-total" class="text-xl font-bold text-gray-900">₹0</span>
               </div>
+
+              <!-- Error message -->
+              <div id="payment-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm"></div>
+
+              <!-- Pay button -->
+              <button id="pay-now-btn"
+                class="w-full bg-gray-900 text-white py-3 px-6 rounded-md font-medium hover:bg-black transition-colors flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.243m-4.243 0L9 9m3 3l-3 3" />
+                </svg>
+                Pay with UPI
+              </button>
+
+              <!-- UPI QR / intent section (shown after clicking Pay) -->
+              <div id="upi-payment-section" class="hidden mt-6">
+                <div class="border-t pt-6">
+                  <p class="text-center text-sm text-gray-500 mb-4">Scan QR or pay via UPI app</p>
+
+                  <!-- QR Code -->
+                  <div class="flex justify-center mb-4">
+                    <div id="qr-wrapper" class="p-3 border-2 border-gray-200 rounded-lg inline-block">
+                      <img id="upi-qr-image" src="" alt="UPI QR Code" class="w-48 h-48" />
+                    </div>
+                  </div>
+
+                  <!-- UPI ID copy -->
+                  <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-md p-3 mb-4">
+                    <span class="text-xs text-gray-500 flex-shrink-0">UPI ID:</span>
+                    <span id="upi-vpa-display" class="text-sm font-mono font-medium text-gray-900 flex-1 truncate"></span>
+                    <button id="copy-upi-btn" class="text-xs text-gray-600 hover:text-black border border-gray-300 px-2 py-1 rounded transition-colors flex-shrink-0">
+                      Copy
+                    </button>
+                  </div>
+
+                  <!-- Mobile UPI app buttons -->
+                  <div class="grid grid-cols-3 gap-2 mb-6">
+                    <a id="gpay-btn" href="#" target="_blank"
+                      class="flex flex-col items-center gap-1 p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                      <span class="text-xl">G</span>
+                      <span class="text-xs text-gray-600">GPay</span>
+                    </a>
+                    <a id="phonepe-btn" href="#" target="_blank"
+                      class="flex flex-col items-center gap-1 p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                      <span class="text-xl">P</span>
+                      <span class="text-xs text-gray-600">PhonePe</span>
+                    </a>
+                    <a id="paytm-btn" href="#" target="_blank"
+                      class="flex flex-col items-center gap-1 p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                      <span class="text-xl">₹</span>
+                      <span class="text-xs text-gray-600">Paytm</span>
+                    </a>
+                  </div>
+
+                  <!-- Confirm order button -->
+                  <button id="confirm-order-btn"
+                    class="w-full bg-green-600 text-white py-3 px-6 rounded-md font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                    Confirm Order
+                  </button>
+
+                  <a href="/cart" class="block text-center text-sm text-gray-500 hover:text-black mt-4">← Back to Cart</a>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
       </div>
+
     </div>
   </div>
-  
+
   <script type="module" define:vars={{ apiUrl }}>
-    document.addEventListener('DOMContentLoaded', async function() {
-      let cartItems = [];
-      let subtotal = 0;
-      let shippingCharge = 50;
-      let totalAmount = 0;
-      let screenshotBase64 = '';
-      let isMobile = false;
+    document.addEventListener('DOMContentLoaded', async () => {
+      let cartItems        = [];
+      let subtotal         = 0;
+      let shippingCharge   = 50;
+      let totalAmount      = 0;
 
-      let productsCatalog = { products: [] };
-      let ordersData = { nextOrderNumber: 1001 };
-      let deliverySettingsData = { regions: [] };
-      let upiDetails = { vpa: '', name: '', qrCode: '' };
+      let productsCatalog  = { products: [] };
+      let deliverySettings = { regions: [] };
+      let upiDetails       = { vpa: '', name: '' };
+      let cashfreeOrderId  = '';
 
+      // ── Helpers ─────────────────────────────────────────────────────
+      function show(id)  { document.getElementById(id)?.classList.remove('hidden'); }
+      function hide(id)  { document.getElementById(id)?.classList.add('hidden'); }
+      function $( id)    { return document.getElementById(id); }
+      function setText(id, val) { const el = $(id); if (el) el.textContent = val; }
+
+      function showError(msg) {
+        const el = $('payment-error');
+        if (!el) return;
+        el.textContent = msg;
+        el.classList.remove('hidden');
+        setTimeout(() => el.classList.add('hidden'), 6000);
+      }
+
+      function setLoading(btnId, loading, label = '') {
+        const btn = $(btnId);
+        if (!btn) return;
+        btn.disabled = loading;
+        btn.innerHTML = loading
+          ? `<span class="spinner"></span> Processing…`
+          : label;
+      }
+
+      // ── Load remote data ─────────────────────────────────────────────
       async function fetchJson(endpoint) {
-        const response = await fetch(`${apiUrl}${endpoint}`);
-        if (!response.ok) {
-          console.error(`❌ API error: ${response.status} for ${endpoint}`);
-          return null;
-        }
-        return response.json();
+        const res = await fetch(`${apiUrl}${endpoint}`);
+        if (!res.ok) return null;
+        return res.json();
       }
 
       async function loadRemoteData() {
-        try {
-          const [productsData, settingsData, deliveryData] = await Promise.all([
-            fetchJson('/api/products'),
-            fetchJson('/api/public/settings'),
-            fetchJson('/api/delivery')
-          ]);
+        const [productsData, settingsData, deliveryData] = await Promise.all([
+          fetchJson('/api/products'),
+          fetchJson('/api/public/settings'),
+          fetchJson('/api/delivery'),
+        ]);
 
-          productsCatalog = { products: (productsData?.products || []).filter((p) => p.isActive) };
-          deliverySettingsData = deliveryData || { regions: [] };
-          const settings = settingsData || {};
-          upiDetails = settings?.upi || { vpa: '', name: '', qrCode: '' };
-
-          const upiCode = document.getElementById('upi-vpa');
-          const upiCodeMobile = document.getElementById('upi-vpa-mobile');
-          const upiQr = document.getElementById('upi-qr-code');
-          if (upiCode) upiCode.textContent = upiDetails.vpa || '-';
-          if (upiCodeMobile) upiCodeMobile.textContent = upiDetails.vpa || '-';
-          if (upiQr) {
-            if (upiDetails.qrCode) {
-              upiQr.src = upiDetails.qrCode;
-              upiQr.classList.remove('hidden');
-            } else {
-              upiQr.classList.add('hidden');
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error loading payment data:', error);
-        }
+        productsCatalog  = { products: (productsData?.products || []).filter(p => p.isActive) };
+        deliverySettings = deliveryData || { regions: [] };
+        upiDetails       = settingsData?.upi || { vpa: '', name: '' };
       }
 
-      await loadRemoteData();
-      
-      if (productsCatalog.products && productsCatalog.products.length > 0) {
-      } else {
-      }
-      
-      isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                 /Windows Phone|Kindle|Silk|Opera Mini/i.test(navigator.userAgent) ||
-                 (navigator.maxTouchPoints > 0 && /Mobile|Android|webOS/i.test(navigator.userAgent));
-      
-      const desktopPayment = document.getElementById('desktop-payment');
-      const mobilePayment = document.getElementById('mobile-payment');
-      
-      if (isMobile) {
-        mobilePayment.classList.remove('hidden');
-        desktopPayment.classList.add('hidden');
-      } else {
-        desktopPayment.classList.remove('hidden');
-        mobilePayment.classList.add('hidden');
-      }
-      
+      // ── Cart ─────────────────────────────────────────────────────────
       function loadCart() {
         try {
-          const cart = localStorage.getItem('cart');
-          
-          if (cart) {
-            cartItems = JSON.parse(cart);
-            updateCartDisplay();
-            checkFreeShipping();
-          }
-        } catch (error) {
-          console.error('❌ Error loading cart:', error);
-        }
-      }
-      
-      function updateCartDisplay() {
-        const cartContainer = document.getElementById('payment-cart-container');
-        const emptyCart = document.getElementById('payment-empty-cart');
-        
-        if (!cartContainer || !emptyCart) {
-          console.error('❌ Cart display elements not found');
-          return;
-        }
-        
+          cartItems = JSON.parse(localStorage.getItem('cart') || '[]');
+        } catch { cartItems = []; }
+
         if (cartItems.length === 0) {
-          cartContainer.classList.add('hidden');
-          emptyCart.classList.remove('hidden');
+          hide('payment-skeleton');
+          show('payment-empty-cart');
           return;
         }
-        
-        cartContainer.classList.remove('hidden');
-        emptyCart.classList.add('hidden');
-        
-        const cartItemsContainer = document.getElementById('payment-cart-items');
-        cartItemsContainer.innerHTML = '';
-        
+
+        hide('payment-skeleton');
+        show('payment-cart-container');
+        renderCartItems();
+        updateTotals();
+      }
+
+      function renderCartItems() {
+        const container = $('payment-cart-items');
+        if (!container) return;
         subtotal = 0;
-        
-        cartItems.forEach((item) => {
+        container.innerHTML = '';
+
+        cartItems.forEach(item => {
           const product = productsCatalog.products.find(p => p.id === item.productId);
-          if (!product) {
-            return;
-          }
-          
-          const variant = product.variants.find(v => v.id === item.variantId);
-          if (!variant) {
-            return;
-          }
-          
+          const variant = product?.variants?.find(v => v.id === item.variantId);
+          if (!product || !variant) return;
+
           const itemTotal = item.quantity * item.unitPrice;
           subtotal += itemTotal;
-          
-          const cartItemElement = document.createElement('div');
-          cartItemElement.className = 'flex items-center space-x-4 py-3 border-b';
-          cartItemElement.innerHTML = `
-            <div class="w-16 h-16 flex-shrink-0">
-              <img src="${item.productImage}" alt="${item.productName}" class="w-full h-full object-cover rounded-md">
-            </div>
-            
+
+          const el = document.createElement('div');
+          el.className = 'flex items-center gap-3 py-2 border-b border-gray-100 last:border-0';
+          el.innerHTML = `
+            <img src="${item.productImage}" alt="${item.productName}"
+              class="w-14 h-14 object-cover rounded-md flex-shrink-0" />
             <div class="flex-1 min-w-0">
-              <h3 class="text-sm font-medium text-gray-900 truncate">${item.productName}</h3>
+              <p class="text-sm font-medium text-gray-900 truncate">${item.productName}</p>
               <p class="text-xs text-gray-500">${item.color} / ${item.pattern} × ${item.quantity}</p>
-              <p class="text-sm font-medium text-gray-900">₹${itemTotal}</p>
+              <p class="text-sm font-semibold text-gray-900">₹${itemTotal}</p>
             </div>
           `;
-          
-          cartItemsContainer.appendChild(cartItemElement);
+          container.appendChild(el);
         });
-        
-        totalAmount = subtotal + shippingCharge;
-        
-        document.getElementById('payment-subtotal').textContent = `₹${subtotal}`;
-        document.getElementById('payment-shipping').textContent = shippingCharge === 0 ? 'FREE' : `₹${shippingCharge}`;
-        document.getElementById('payment-total').textContent = `₹${totalAmount}`;
+      }
 
-        updateQRCode();
+      function updateTotals() {
+        totalAmount = subtotal + shippingCharge;
+        setText('payment-subtotal', `₹${subtotal}`);
+        setText('payment-shipping', shippingCharge === 0 ? 'FREE' : `₹${shippingCharge}`);
+        setText('payment-total',    `₹${totalAmount}`);
+        rebuildUpiLinks();
       }
-      
-      function updateQRCode() {
-        const qrCodeElement = document.getElementById('upi-qr-code');
-        const qrData = `upi://pay?pa=${upiDetails.vpa}&pn=${encodeURIComponent(upiDetails.name)}&am=${totalAmount}&cu=INR&tn=${encodeURIComponent('Order payment')}`;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
-        
-        if (qrCodeElement) {
-          qrCodeElement.src = qrUrl;
-        }
-        
-        const upiLink = qrData;
-        const gpayLink = document.getElementById('gpay-link');
-        const phonepeLink = document.getElementById('phonepe-link');
-        const paytmLink = document.getElementById('paytm-link');
-        
-        if (gpayLink) {
-          gpayLink.href = upiLink;
-        }
-        if (phonepeLink) {
-          phonepeLink.href = upiLink;
-        }
-        if (paytmLink) {
-          paytmLink.href = upiLink;
-        }
-      }
-      
-      function checkFreeShipping() {
-        if (subtotal >= 1500) {
-          shippingCharge = 0;
-          totalAmount = subtotal;
-          
-          document.getElementById('payment-shipping').textContent = 'FREE';
-          document.getElementById('payment-total').textContent = `₹${totalAmount}`;
-          
-          document.getElementById('free-shipping-notice').classList.remove('hidden');
-          document.getElementById('shipping-charge-notice').classList.add('hidden');
-        } else {
-          shippingCharge = 50;
-          totalAmount = subtotal + shippingCharge;
-          
-          document.getElementById('payment-shipping').textContent = `₹${shippingCharge}`;
-          document.getElementById('payment-total').textContent = `₹${totalAmount}`;
-          
-          document.getElementById('free-shipping-notice').classList.add('hidden');
-          document.getElementById('shipping-charge-notice').classList.remove('hidden');
-        }
-        updateQRCode();
-      }
-      
+
+      // ── Pincode check ─────────────────────────────────────────────────
       function checkPincode() {
-        const pincode = document.getElementById('pincode').value;
-        
-        if (!pincode || pincode.length !== 6) {
-          document.getElementById('pincode-status').innerHTML = '';
-          document.getElementById('pincode-status').className = '';
-          return;
-        }
-        
-        let available = false;
-        let charge = 0;
-        let days = 0;
-        
-        const pincodeNum = parseInt(pincode);
-        
-        for (const region of deliverySettingsData.regions) {
+        const pincode    = $('pincode')?.value?.trim();
+        const statusEl   = $('pincode-status');
+        if (!pincode || pincode.length !== 6 || !statusEl) return;
+
+        const num     = parseInt(pincode);
+        let found     = false;
+
+        for (const region of deliverySettings.regions) {
           if (!region.isEnabled) continue;
-          
-          const start = parseInt(region.pincodeStart);
-          const end = parseInt(region.pincodeEnd);
-          
-          if (pincodeNum >= start && pincodeNum <= end) {
-            available = true;
-            charge = region.deliveryCharge;
-            days = region.estimatedDays;
+          if (num >= parseInt(region.pincodeStart) && num <= parseInt(region.pincodeEnd)) {
+            shippingCharge = region.deliveryCharge;
+            statusEl.innerHTML  = `<span class="text-green-600 text-xs">✓ Delivery in ${region.estimatedDays} days</span>`;
+            found = true;
             break;
           }
         }
-        
-        const statusElement = document.getElementById('pincode-status');
-        
-        if (available) {
-          shippingCharge = charge;
-          totalAmount = subtotal + shippingCharge;
-          
-          document.getElementById('payment-shipping').textContent = shippingCharge === 0 ? 'FREE' : `₹${shippingCharge}`;
-          document.getElementById('payment-total').textContent = `₹${totalAmount}`;
-          updateQRCode();
-          
-          statusElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg> Delivery available in ${days} days`;
-          statusElement.className = 'text-green-600 text-sm mt-1';
-        } else {
-          statusElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg> Delivery not available to this pincode`;
-          statusElement.className = 'text-red-600 text-sm mt-1';
+        if (!found) {
+          statusEl.innerHTML  = `<span class="text-red-600 text-xs">✗ Delivery not available</span>`;
         }
+        updateTotals();
       }
-      
-      function generateOrderNumber() {
-        return ordersData.nextOrderNumber;
-      }
-      
-      const screenshotInput = document.getElementById('payment-screenshot');
-      const fileNameDisplay = document.getElementById('file-name-display');
-      
-      if (screenshotInput) {
-        screenshotInput.addEventListener('change', function(e) {
-          const file = e.target.files[0];
-          if (file) {
-            fileNameDisplay.textContent = file.name;
-            fileNameDisplay.className = 'text-xs text-green-600 font-bold uppercase';
-            
-            const reader = new FileReader();
-            reader.onload = function(event) {
-              screenshotBase64 = event.target.result;
-            };
-            reader.readAsDataURL(file);
-          }
+
+      // ── Cashfree: create order ────────────────────────────────────────
+      async function createCashfreeOrder(customerDetails) {
+        const res = await fetch(`${apiUrl}/api/payments/cashfree/create-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount:      totalAmount,
+            currency:    'INR',
+            customer:    customerDetails,
+            cartItems,
+            shippingCharge,
+          }),
         });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || 'Failed to create payment order');
+        }
+        return res.json(); // { orderId, paymentSessionId, upiVpa, upiName }
       }
-      
-      const copyBtn = document.getElementById('copy-upi');
-      if (copyBtn) {
-        copyBtn.addEventListener('click', function() {
-          navigator.clipboard.writeText(upiDetails.vpa).then(() => {
-            const originalText = copyBtn.textContent;
-            copyBtn.textContent = 'Copied!';
-            setTimeout(() => copyBtn.textContent = originalText, 2000);
-          });
+
+      // ── UPI QR & intent links ─────────────────────────────────────────
+      function buildUpiString() {
+        return `upi://pay?pa=${encodeURIComponent(upiDetails.vpa)}&pn=${encodeURIComponent(upiDetails.name)}&am=${totalAmount}&cu=INR&tn=${encodeURIComponent(`Order #${cashfreeOrderId || 'pending'}`)}`;
+      }
+
+      function rebuildUpiLinks() {
+        if (!upiDetails.vpa) return;
+        const upiStr = buildUpiString();
+        const qrUrl  = `https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=${encodeURIComponent(upiStr)}`;
+
+        const qrImg = $('upi-qr-image');
+        if (qrImg) qrImg.src = qrUrl;
+
+        setText('upi-vpa-display', upiDetails.vpa);
+
+        const setHref = (id) => { const el = $(id); if (el) el.href = upiStr; };
+        setHref('gpay-btn');
+        setHref('phonepe-btn');
+        setHref('paytm-btn');
+      }
+
+      // ── Validate form ─────────────────────────────────────────────────
+      function getCustomerDetails() {
+        const name    = $('customer-name')?.value?.trim();
+        const phone   = $('customer-phone')?.value?.trim();
+        const email   = $('customer-email')?.value?.trim();
+        const address = $('delivery-address')?.value?.trim();
+        const city    = $('city')?.value?.trim();
+        const state   = $('state')?.value?.trim();
+        const pincode = $('pincode')?.value?.trim();
+
+        if (!name || !phone || !email || !address || !city || !state || !pincode) {
+          showError('Please fill in all required fields.');
+          return null;
+        }
+        if (!/^[0-9]{10}$/.test(phone)) {
+          showError('Enter a valid 10-digit phone number.');
+          return null;
+        }
+        if (!/^[0-9]{6}$/.test(pincode)) {
+          showError('Enter a valid 6-digit pincode.');
+          return null;
+        }
+        return { name, phone, email, address, city, state, pincode };
+      }
+
+      // ── "Pay with UPI" click → show QR + upload section ──────────────
+      $('pay-now-btn')?.addEventListener('click', async () => {
+        const customer = getCustomerDetails();
+        if (!customer) return;
+
+        setLoading('pay-now-btn', true);
+        try {
+          const result     = await createCashfreeOrder(customer);
+          cashfreeOrderId  = result.orderId;
+
+          // Update UPI details from server response if provided
+          if (result.upiVpa)  upiDetails.vpa  = result.upiVpa;
+          if (result.upiName) upiDetails.name = result.upiName;
+
+          rebuildUpiLinks();
+          hide('pay-now-btn');
+          show('upi-payment-section');
+        } catch (err) {
+          showError(err.message || 'Could not initiate payment. Try again.');
+        } finally {
+          setLoading('pay-now-btn', false, `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.243m-4.243 0L9 9m3 3l-3 3" />
+            </svg>
+            Pay with UPI`);
+        }
+      });
+
+      // ── Screenshot upload ─────────────────────────────────────────────
+      // ── Copy UPI ID ───────────────────────────────────────────────────
+      $('copy-upi-btn')?.addEventListener('click', () => {
+        navigator.clipboard.writeText(upiDetails.vpa).then(() => {
+          const btn = $('copy-upi-btn');
+          const orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => btn.textContent = orig, 2000);
         });
-      }
-      
-      const copyBtnMobile = document.getElementById('copy-upi-mobile');
-      if (copyBtnMobile) {
-        copyBtnMobile.addEventListener('click', function() {
-          navigator.clipboard.writeText(upiDetails.vpa).then(() => {
-            const originalText = copyBtnMobile.textContent;
-            copyBtnMobile.textContent = 'Copied!';
-            setTimeout(() => copyBtnMobile.textContent = originalText, 2000);
-          });
-        });
-      }
-      
-	      async function placeOrder(e) {
-	        e.preventDefault();
-        
-        const customerName = document.getElementById('customer-name').value;
-        const customerPhone = document.getElementById('customer-phone').value;
-        const customerEmail = document.getElementById('customer-email').value;
-        const deliveryAddress = document.getElementById('delivery-address').value;
-        const city = document.getElementById('city').value;
-        const state = document.getElementById('state').value;
-        const pincode = document.getElementById('pincode').value;
-        
-        if (!customerName || !customerPhone || !customerEmail || !deliveryAddress || !city || !state || !pincode) {
-          alert('Please fill in all the required fields');
+      });
+
+      // ── Confirm order (after payment done) ────────────────────────────
+      $('confirm-order-btn')?.addEventListener('click', async () => {
+        if (!cashfreeOrderId) {
+          showError('Payment session missing. Please refresh and try again.');
           return;
         }
-        
-	        if (!screenshotBase64) {
-	          alert('Please upload a payment screenshot');
-	          return;
-	        }
 
-	        // Validate stock before placing order
-	        const stockIssues = [];
-	        for (const item of cartItems) {
-	          const product = productsCatalog.products.find(p => p.id === item.productId);
-	          const variant = product?.variants?.find(v => v.id === item.variantId);
-	          const maxAllowed = variant?.isAvailable ? Math.max(0, Math.min(10, variant.stock || 0)) : 0;
-	          if (!variant || maxAllowed <= 0) {
-	            stockIssues.push(`${item.productName} (${item.color}/${item.pattern}) is unavailable`);
-	          } else if (item.quantity > maxAllowed) {
-	            stockIssues.push(`${item.productName} (${item.color}/${item.pattern}) only has ${maxAllowed} available`);
-	          }
-	        }
+        const customer = getCustomerDetails();
+        if (!customer) return;
 
-	        if (stockIssues.length > 0) {
-	          alert(`Please update your cart:\n\n- ${stockIssues.join('\n- ')}`);
-	          window.location.href = '/cart';
-	          return;
-	        }
-        
-        const submitBtn = document.getElementById('submit-order-btn');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Placing Order...';
-        
-        try {
-          const orderData = {
-            customer: {
-              name: customerName,
-              email: customerEmail,
-              phone: customerPhone,
-              address: deliveryAddress,
-              city: city,
-              state: state,
-              pincode: pincode
-            },
-            items: cartItems.map(item => ({
-              variantId: item.variantId,
-              quantity: item.quantity,
-              price: item.unitPrice
-            })),
-            totalAmount: totalAmount,
-            paymentMethod: 'upi',
-            paymentStatus: 'pending',
-            status: 'pending'
-          };
-          
-          const response = await fetch(`${apiUrl}/api/orders`, {
-	            method: 'POST',
-	            headers: { 'Content-Type': 'application/json' },
-	            body: JSON.stringify(orderData)
-	          });
-          
-          if (!response.ok) {
-            throw new Error('Failed to create order');
-          }
-          
-          const savedOrder = await response.json();
-          
-          const localOrder = {
-            ...savedOrder,
-            customerName,
-            customerPhone,
-            customerEmail,
-            deliveryAddress,
-            city,
-            state,
-            pincode,
-            items: cartItems,
-            subtotal,
-            shippingCharge,
-            paymentScreenshot: screenshotBase64
-          };
-          
-          // Safely store order data with error handling
-          try {
-            let orders = [];
-            try {
-              const ordersJson = localStorage.getItem('orders');
-              if (ordersJson) {
-                orders = JSON.parse(ordersJson);
-              }
-            } catch (e) {
-              console.warn('Could not read existing orders, starting fresh:', e);
-            }
-            
-            orders.push(localOrder);
-            localStorage.setItem('orders', JSON.stringify(orders));
-          } catch (storageError) {
-            console.warn('Could not save to localStorage (possibly private mode):', storageError);
-            // Continue - order is already saved in database
-          }
-          
-          // Clear cart
-          try {
-            localStorage.removeItem('cart');
-            const cartBadge = document.getElementById('cart-badge');
-            if (cartBadge) {
-              cartBadge.textContent = '0';
-            }
-          } catch (e) {
-            console.warn('Could not clear cart:', e);
-          }
-          
-          // Save to sessionStorage for immediate access
-          try {
-            sessionStorage.setItem('lastOrder', JSON.stringify(localOrder));
-          } catch (e) {
-            console.warn('Could not save to sessionStorage:', e);
-          }
-          
-          window.location.href = `/order/${savedOrder.orderNumber}`;
-        } catch (error) {
-          console.error('Order error:', error);
-          alert('Failed to place order. Please try again.');
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Place Order';
+        // Stock validation
+        const stockIssues = [];
+        for (const item of cartItems) {
+          const product    = productsCatalog.products.find(p => p.id === item.productId);
+          const variant    = product?.variants?.find(v => v.id === item.variantId);
+          const maxAllowed = variant?.isAvailable ? Math.min(10, variant.stock || 0) : 0;
+          if (maxAllowed <= 0)              stockIssues.push(`${item.productName} is unavailable`);
+          else if (item.quantity > maxAllowed) stockIssues.push(`${item.productName} only has ${maxAllowed} left`);
         }
-      }
-      
-      document.getElementById('pincode').addEventListener('blur', checkPincode);
-      document.getElementById('submit-order-btn').addEventListener('click', placeOrder);
-      
+        if (stockIssues.length > 0) {
+          showError(stockIssues.join(', '));
+          return;
+        }
+
+        setLoading('confirm-order-btn', true);
+        try {
+          const res = await fetch(`${apiUrl}/api/payments/cashfree/confirm-order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              cashfreeOrderId,
+              customer,
+              cartItems,
+              subtotal,
+              shippingCharge,
+              totalAmount,
+            }),
+          });
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || 'Failed to confirm order');
+          }
+
+          const { orderNumber } = await res.json();
+
+          // Clear cart
+          localStorage.removeItem('cart');
+          const badge = document.getElementById('cart-badge');
+          if (badge) badge.textContent = '0';
+
+          window.location.href = `/order/${orderNumber}`;
+        } catch (err) {
+          showError(err.message || 'Failed to confirm order. Please try again.');
+        } finally {
+          setLoading('confirm-order-btn', false, 'Confirm Order');
+        }
+      });
+
+      // ── Init ──────────────────────────────────────────────────────────
+      await loadRemoteData();
       loadCart();
+
+      $('pincode')?.addEventListener('blur', checkPincode);
     });
   </script>
 </Layout>
