@@ -7,35 +7,17 @@ const searchParams = Astro.url.searchParams;
 const initialCategory = searchParams.get('category') || '';
 const initialMinPrice = searchParams.get('minPrice') || '';
 const initialMaxPrice = searchParams.get('maxPrice') || '';
-const initialSearch   = searchParams.get('search') || '';
-const initialPage     = parseInt(searchParams.get('page') || '1');
-const ITEMS_PER_PAGE  = 9;
-const itemsPerPage    = ITEMS_PER_PAGE;
+const initialSearch = searchParams.get('search') || '';
+const initialPage = parseInt(searchParams.get('page') || '1');
+
+const ITEMS_PER_PAGE = 9;
+
+const itemsPerPage = ITEMS_PER_PAGE;
 ---
 
 <Layout title={initialSearch ? `Search: ${initialSearch} - Fashion Store` : 'Products - Fashion Store'}>
-  <style>
-    @keyframes shimmer {
-      0%   { background-position: -800px 0; }
-      100% { background-position: 800px 0; }
-    }
-    .skeleton {
-      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-      background-size: 800px 100%;
-      animation: shimmer 1.4s infinite linear;
-      border-radius: 6px;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .fade-in { animation: fadeIn 0.35s ease-in; }
-  </style>
-
   <div class="container mx-auto px-4 py-8">
     <div class="flex flex-col lg:flex-row gap-8">
-
-      <!-- Sidebar filter -->
       <div class="w-full lg:w-1/4">
         <FilterBar
           client:load
@@ -49,92 +31,101 @@ const itemsPerPage    = ITEMS_PER_PAGE;
       </div>
 
       <div class="w-full lg:w-3/4">
-        <!-- Header row -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h1 id="page-title" class="text-2xl font-bold">
-            {initialSearch ? `Search: "${initialSearch}"` : 'Products'}
-          </h1>
+        <div
+          class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"
+        >
+          <h1 id="page-title" class="text-2xl font-bold">{initialSearch ? `Search: "${initialSearch}"` : 'Products'}</h1>
           <div class="flex items-center gap-4">
-            <div id="product-count" class="text-gray-600">Showing 0 products</div>
+            <div id="product-count" class="text-gray-600">
+              Showing 0 products
+            </div>
             <div class="relative">
-              <select id="sort-select"
-                class="appearance-none bg-white border border-gray-300 rounded-md py-2 px-4 pr-8 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer">
+              <select
+                id="sort-select"
+                class="appearance-none bg-white border border-gray-300 rounded-md py-2 px-4 pr-8 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent cursor-pointer"
+              >
                 <option value="">Sort by</option>
                 <option value="new">Newest First</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
               </select>
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 absolute right-2 top-3 text-gray-400 pointer-events-none"
-                fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-4 h-4 absolute right-2 top-3 text-gray-400 pointer-events-none"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </div>
           </div>
         </div>
 
-        <!-- ── Skeleton grid shown while loading ─────────────────── -->
-        <div id="products-skeleton" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1,2,3,4,5,6].map(() => (
-            <div class="bg-white rounded-lg shadow-md overflow-hidden">
-              <div class="skeleton w-full h-64"></div>
-              <div class="p-4 space-y-3">
-                <div class="skeleton h-5 w-3/4"></div>
-                <div class="skeleton h-4 w-full"></div>
-                <div class="skeleton h-4 w-5/6"></div>
-                <div class="flex justify-between items-center pt-1">
-                  <div class="skeleton h-6 w-20"></div>
-                  <div class="skeleton h-8 w-24 rounded-md"></div>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         </div>
-
-        <!-- ── Real products grid (hidden until loaded) ───────────── -->
-        <div id="products-grid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
         <!-- Pagination -->
-        <div id="pagination" class="hidden flex justify-center items-center gap-2 mt-8">
-          <button id="prev-page"
+        <div id="pagination" class="flex justify-center items-center gap-2 mt-8">
+          <button
+            id="prev-page"
             class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled>Previous</button>
+            disabled
+          >
+            Previous
+          </button>
           <span id="page-info" class="text-gray-600">Page 1 of 1</span>
-          <button id="next-page"
+          <button
+            id="next-page"
             class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled>Next</button>
-        </div>
-
-        <!-- No products state -->
-        <div id="no-products" class="hidden text-center py-12">
-          <div id="no-products-category" class="hidden max-w-xl mx-auto">
-            <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-              <svg class="w-8 h-8 text-gray-700" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" stroke="currentColor" stroke-width="1.5" />
-                <path d="M3.3 7.8 12 12.7l8.7-4.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M12 22V12.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-              </svg>
-            </div>
-            <h3 class="text-xl font-semibold text-gray-900">Coming soon</h3>
-            <p class="mt-2 text-gray-500">We're adding products to <span id="empty-category-name" class="font-medium text-gray-800"></span>. Check back soon.</p>
-          </div>
-          <div id="no-products-generic" class="hidden max-w-xl mx-auto">
-            <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-              <svg class="w-8 h-8 text-gray-700" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M10 3H3v7h7V3Z" stroke="currentColor" stroke-width="1.5" />
-                <path d="M21 3h-7v7h7V3Z" stroke="currentColor" stroke-width="1.5" />
-                <path d="M21 14h-7v7h7v-7Z" stroke="currentColor" stroke-width="1.5" />
-                <path d="M10 14H3v7h7v-7Z" stroke="currentColor" stroke-width="1.5" />
-              </svg>
-            </div>
-            <h3 class="text-xl font-semibold text-gray-900">No matches</h3>
-            <p class="mt-2 text-gray-500 text-lg">No products found matching your criteria.</p>
-          </div>
-          <button id="clear-filters"
-            class="mt-4 px-6 py-2 bg-gray-900 text-white rounded-md hover:bg-black transition-colors">
-            Browse All Products
+            disabled
+          >
+            Next
           </button>
         </div>
 
+	        <div id="no-products" class="hidden text-center py-12">
+	          <div id="no-products-category" class="hidden max-w-xl mx-auto">
+	            <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+	              <svg class="w-8 h-8 text-gray-700" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+	                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" stroke="currentColor" stroke-width="1.5" />
+	                <path d="M3.3 7.8 12 12.7l8.7-4.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+	                <path d="M12 22V12.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+	              </svg>
+	            </div>
+	            <h3 class="text-xl font-semibold text-gray-900">Coming soon</h3>
+	            <p class="mt-2 text-gray-500">
+	              We’re adding products to <span id="empty-category-name" class="font-medium text-gray-800"></span>.
+	              Check back soon.
+	            </p>
+	          </div>
+
+	          <div id="no-products-generic" class="hidden max-w-xl mx-auto">
+	            <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+	              <svg class="w-8 h-8 text-gray-700" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+	                <path d="M10 3H3v7h7V3Z" stroke="currentColor" stroke-width="1.5" />
+	                <path d="M21 3h-7v7h7V3Z" stroke="currentColor" stroke-width="1.5" />
+	                <path d="M21 14h-7v7h7v-7Z" stroke="currentColor" stroke-width="1.5" />
+	                <path d="M10 14H3v7h7v-7Z" stroke="currentColor" stroke-width="1.5" />
+	              </svg>
+	            </div>
+	            <h3 class="text-xl font-semibold text-gray-900">No matches</h3>
+	            <p class="mt-2 text-gray-500 text-lg">
+	              No products found matching your criteria.
+	            </p>
+	          </div>
+	          <button
+	            id="clear-filters"
+	            class="mt-4 px-6 py-2 bg-gray-900 text-white rounded-md hover:bg-black transition-colors"
+	          >
+	            Browse All Products
+	          </button>
+	        </div>
       </div>
     </div>
   </div>
@@ -142,32 +133,22 @@ const itemsPerPage    = ITEMS_PER_PAGE;
   <script is:inline define:vars={{ apiUrl, initialCategory, initialMinPrice, initialMaxPrice, initialSearch, itemsPerPage }}>
     let products = [];
     let categories = [];
-
+    
     const NEW_DAYS = 30;
     const newThresholdDate = new Date();
     newThresholdDate.setDate(newThresholdDate.getDate() - NEW_DAYS);
-
+    
     let currentFilters = {
-      categories: initialCategory ? initialCategory.split(',').map((c) => c.trim()).filter(Boolean) : [],
+      categories: initialCategory
+        ? initialCategory.split(',').map((c) => c.trim()).filter(Boolean)
+        : [],
       minPrice: initialMinPrice ? parseInt(initialMinPrice) : null,
       maxPrice: initialMaxPrice ? parseInt(initialMaxPrice) : null,
       search: initialSearch,
     };
-
+    
     let currentPage = 1;
     let currentSort = new URLSearchParams(window.location.search).get('sort') || '';
-
-    function showLoading(show) {
-      const skeleton = document.getElementById('products-skeleton');
-      const grid     = document.getElementById('products-grid');
-      if (show) {
-        skeleton.classList.remove('hidden');
-        grid.classList.add('hidden');
-      } else {
-        skeleton.classList.add('hidden');
-        grid.classList.remove('hidden');
-      }
-    }
 
     async function fetchJson(endpoint) {
       const response = await fetch(`${apiUrl}${endpoint}`);
@@ -176,7 +157,9 @@ const itemsPerPage    = ITEMS_PER_PAGE;
     }
 
     function calculatePriceBounds(products) {
-      let min = Infinity, max = 0;
+      let min = Infinity;
+      let max = 0;
+
       products.forEach((product) => {
         product.variants.forEach((variant) => {
           if (variant.isAvailable) {
@@ -186,7 +169,11 @@ const itemsPerPage    = ITEMS_PER_PAGE;
           }
         });
       });
-      return { min: min === Infinity ? 0 : min, max: max === 0 ? 5000 : max };
+
+      return {
+        min: min === Infinity ? 0 : min,
+        max: max === 0 ? 5000 : max
+      };
     }
 
     async function loadProductsData() {
@@ -195,121 +182,165 @@ const itemsPerPage    = ITEMS_PER_PAGE;
         fetchJson('/api/categories')
       ]);
 
-      products   = (productsData?.products || []).filter((p) => p.isActive);
+      products = (productsData?.products || []).filter((p) => p.isActive);
       categories = categoriesData?.categories || [];
 
       const bounds = calculatePriceBounds(products);
       window.dispatchEvent(new CustomEvent('filters:data', {
-        detail: { categories, minPrice: bounds.min, maxPrice: bounds.max }
+        detail: {
+          categories,
+          minPrice: bounds.min,
+          maxPrice: bounds.max
+        }
       }));
     }
+    
+	    function isNewProduct(product) {
+	      const productDate = new Date(product.createdAt);
+	      return productDate >= newThresholdDate;
+	    }
 
-    function isNewProduct(product) {
-      return new Date(product.createdAt) >= newThresholdDate;
-    }
-
-    function getProductCategorySlug(product) {
-      if (!product) return '';
-      if (typeof product.category === 'string') return product.category;
-      return product.category?.slug || product.categoryDetails?.slug || '';
-    }
-
-    function filterAndRenderProducts() {
-      let filtered = [...products];
-
+	    function getProductCategorySlug(product) {
+	      if (!product) return '';
+	      if (typeof product.category === 'string') return product.category;
+	      return product.category?.slug || product.categoryDetails?.slug || '';
+	    }
+	    
+	    function filterAndRenderProducts() {
+	      let filtered = [...products];
+      
+      // Apply search filter
       if (currentFilters.search) {
-        const q = currentFilters.search.toLowerCase().trim();
-        filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
-      }
-      if (currentFilters.categories.length > 0) {
-        filtered = filtered.filter((p) => currentFilters.categories.includes(getProductCategorySlug(p)));
-      }
+        const searchQuery = currentFilters.search.toLowerCase().trim();
+        filtered = filtered.filter(p => {
+          const nameMatch = p.name.toLowerCase().includes(searchQuery);
+          const descMatch = p.description.toLowerCase().includes(searchQuery);
+          return nameMatch || descMatch;
+        });
+	      }
+	      
+	      if (currentFilters.categories.length > 0) {
+	        filtered = filtered.filter((p) => currentFilters.categories.includes(getProductCategorySlug(p)));
+	      }
+      
       if (currentFilters.minPrice !== null) {
-        filtered = filtered.filter(p => Math.min(...p.variants.map(v => p.basePrice + v.additionalPrice)) >= currentFilters.minPrice);
+        filtered = filtered.filter(p => {
+          const minPrice = Math.min(...p.variants.map(v => p.basePrice + v.additionalPrice));
+          return minPrice >= currentFilters.minPrice;
+        });
       }
+      
       if (currentFilters.maxPrice !== null) {
-        filtered = filtered.filter(p => Math.max(...p.variants.map(v => p.basePrice + v.additionalPrice)) <= currentFilters.maxPrice);
+        filtered = filtered.filter(p => {
+          const maxPrice = Math.max(...p.variants.map(v => p.basePrice + v.additionalPrice));
+          return maxPrice <= currentFilters.maxPrice;
+        });
       }
+      
       if (currentSort === 'new') {
         filtered = filtered.filter(p => isNewProduct(p));
         filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       } else if (currentSort === 'price-low') {
-        filtered.sort((a, b) => Math.min(...a.variants.map(v => a.basePrice + v.additionalPrice)) - Math.min(...b.variants.map(v => b.basePrice + v.additionalPrice)));
+        filtered.sort((a, b) => {
+          const minA = Math.min(...a.variants.map(v => a.basePrice + v.additionalPrice));
+          const minB = Math.min(...b.variants.map(v => b.basePrice + v.additionalPrice));
+          return minA - minB;
+        });
       } else if (currentSort === 'price-high') {
-        filtered.sort((a, b) => Math.max(...b.variants.map(v => b.basePrice + v.additionalPrice)) - Math.max(...a.variants.map(v => a.basePrice + v.additionalPrice)));
+        filtered.sort((a, b) => {
+          const maxA = Math.max(...a.variants.map(v => a.basePrice + v.additionalPrice));
+          const maxB = Math.max(...b.variants.map(v => b.basePrice + v.additionalPrice));
+          return maxB - maxA;
+        });
       }
-
+      
       renderProducts(filtered);
       updatePageTitle();
     }
-
-    function renderProducts(filteredProducts) {
-      const grid               = document.getElementById('products-grid');
-      const noProducts         = document.getElementById('no-products');
-      const noProductsCategory = document.getElementById('no-products-category');
-      const noProductsGeneric  = document.getElementById('no-products-generic');
-      const emptyCategoryName  = document.getElementById('empty-category-name');
-      const countEl            = document.getElementById('product-count');
-      const pagination         = document.getElementById('pagination');
-      const prevBtn            = document.getElementById('prev-page');
-      const nextBtn            = document.getElementById('next-page');
-      const pageInfo           = document.getElementById('page-info');
-
+    
+	    function renderProducts(filteredProducts) {
+	      const grid = document.getElementById('products-grid');
+	      const noProducts = document.getElementById('no-products');
+	      const noProductsCategory = document.getElementById('no-products-category');
+	      const noProductsGeneric = document.getElementById('no-products-generic');
+	      const emptyCategoryName = document.getElementById('empty-category-name');
+	      const countEl = document.getElementById('product-count');
+	      const pagination = document.getElementById('pagination');
+	      const prevBtn = document.getElementById('prev-page');
+	      const nextBtn = document.getElementById('next-page');
+      const pageInfo = document.getElementById('page-info');
+      
       const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-      if (currentPage > totalPages) currentPage = 1;
-
-      const startIndex        = (currentPage - 1) * itemsPerPage;
-      const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
-
-      countEl.textContent = `Showing ${filteredProducts.length} of ${products.length} products`;
-
-      if (filteredProducts.length === 0) {
-        grid.classList.add('hidden');
-        pagination.classList.add('hidden');
-        noProducts.classList.remove('hidden');
-
-        const isCategoryOnly = currentFilters.categories.length === 1 && !currentFilters.search &&
-          currentFilters.minPrice === null && currentFilters.maxPrice === null && !currentSort;
-
-        if (isCategoryOnly) {
-          const slug = currentFilters.categories[0];
-          const cat  = categories.find((c) => c.slug === slug);
-          if (emptyCategoryName) emptyCategoryName.textContent = cat?.name || slug;
-          noProductsCategory?.classList.remove('hidden');
-          noProductsGeneric?.classList.add('hidden');
-        } else {
-          noProductsCategory?.classList.add('hidden');
-          noProductsGeneric?.classList.remove('hidden');
-        }
-        return;
+      
+      // Reset to page 1 if current page is out of bounds
+      if (currentPage > totalPages) {
+        currentPage = 1;
       }
+      
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+      
+	      countEl.textContent = `Showing ${filteredProducts.length} of ${products.length} products`;
+	      
+	      if (filteredProducts.length === 0) {
+	        grid.classList.add('hidden');
+	        pagination.classList.add('hidden');
+	        noProducts.classList.remove('hidden');
 
+	        const isCategoryOnlyFilter =
+	          currentFilters.categories.length === 1 &&
+	          !currentFilters.search &&
+	          currentFilters.minPrice === null &&
+	          currentFilters.maxPrice === null &&
+	          !currentSort;
+
+	        if (isCategoryOnlyFilter) {
+	          const slug = currentFilters.categories[0];
+	          const category = categories.find((c) => c.slug === slug);
+	          if (emptyCategoryName) emptyCategoryName.textContent = category?.name || slug;
+	          noProductsCategory?.classList.remove('hidden');
+	          noProductsGeneric?.classList.add('hidden');
+	        } else {
+	          noProductsCategory?.classList.add('hidden');
+	          noProductsGeneric?.classList.remove('hidden');
+	        }
+	        return;
+	      }
+      
       grid.classList.remove('hidden');
       noProducts.classList.add('hidden');
-
+      
+      // Show pagination if more than one page
       if (filteredProducts.length > itemsPerPage) {
         pagination.classList.remove('hidden');
-        prevBtn.disabled     = currentPage === 1;
-        nextBtn.disabled     = currentPage === totalPages;
+        prevBtn.disabled = currentPage === 1;
+        nextBtn.disabled = currentPage === totalPages;
         pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
       } else {
         pagination.classList.add('hidden');
       }
-
+      
       grid.innerHTML = paginatedProducts.map(product => {
-        const minPrice    = Math.min(...product.variants.map(v => product.basePrice + v.additionalPrice));
-        const maxPrice    = Math.max(...product.variants.map(v => product.basePrice + v.additionalPrice));
+        const minPrice = Math.min(...product.variants.map(v => product.basePrice + v.additionalPrice));
+        const maxPrice = Math.max(...product.variants.map(v => product.basePrice + v.additionalPrice));
         const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} - ₹${maxPrice}`;
-        const isNew        = isNewProduct(product);
+        const isNew = isNewProduct(product);
+        
         const firstVariant = product.variants.find(v => v.isAvailable) || product.variants[0];
         const isOutOfStock = !firstVariant?.isAvailable || firstVariant?.stock <= 0;
-
+        
         return `
-          <div class="fade-in bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105 ${isOutOfStock ? 'opacity-60 grayscale' : ''}">
+          <div class="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105 ${isOutOfStock ? 'opacity-60 grayscale' : ''}">
             <div class="relative">
               <a href="/products/${product.slug}">
-                <img src="${product.images[0]}" alt="${product.name}"
-                  class="w-full h-64 object-cover" loading="lazy" decoding="async" />
+                <img 
+                  src="${product.images[0]}" 
+                  alt="${product.name}"
+                  class="w-full h-64 object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
               </a>
               ${isNew ? '<div class="absolute top-2 right-2"><span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full">New</span></div>' : ''}
             </div>
@@ -320,9 +351,14 @@ const itemsPerPage    = ITEMS_PER_PAGE;
               </div>
               <div class="flex justify-between items-center">
                 <span class="text-lg font-bold text-gray-900">${priceDisplay}</span>
-                ${isOutOfStock
-                  ? '<span class="px-3 py-1 rounded-md text-sm font-medium bg-gray-300 text-gray-500 cursor-not-allowed">Out of Stock</span>'
-                  : `<a href="/products/${product.slug}" class="px-3 py-1 rounded-md text-sm font-medium bg-gray-900 text-white hover:bg-black transition-colors">View Details</a>`
+                ${isOutOfStock 
+                  ? '<span class="px-3 py-1 rounded-md text-sm font-medium bg-gray-300 text-gray-500 cursor-not-allowed text-center inline-block">Out of Stock</span>'
+                  : `<a 
+                      href="/products/${product.slug}"
+                      class="px-3 py-1 rounded-md text-sm font-medium transition-colors bg-gray-900 text-white hover:bg-black"
+                    >
+                      View Details
+                    </a>`
                 }
               </div>
             </div>
@@ -330,13 +366,15 @@ const itemsPerPage    = ITEMS_PER_PAGE;
         `;
       }).join('');
     }
-
+    
     function updatePageTitle() {
       const titleEl = document.getElementById('page-title');
       if (currentFilters.search) {
         titleEl.textContent = `Search: "${currentFilters.search}"`;
       } else if (currentFilters.categories.length > 0) {
-        const names = currentFilters.categories.map((slug) => categories.find((c) => c.slug === slug)?.name).filter(Boolean);
+        const names = currentFilters.categories
+          .map((slug) => categories.find((c) => c.slug === slug)?.name)
+          .filter(Boolean);
         titleEl.textContent = names.length > 0 ? names.join(', ') : 'Products';
       } else if (currentSort === 'new') {
         titleEl.textContent = 'New Arrivals';
@@ -344,73 +382,112 @@ const itemsPerPage    = ITEMS_PER_PAGE;
         titleEl.textContent = 'Products';
       }
     }
-
+    
     function updateSortUrl() {
       const params = new URLSearchParams(window.location.search);
-      if (currentSort) params.set('sort', currentSort); else params.delete('sort');
-      window.history.replaceState({}, '', `/products${params.toString() ? '?' + params.toString() : ''}`);
+      if (currentSort) {
+        params.set('sort', currentSort);
+      } else {
+        params.delete('sort');
+      }
+      const newUrl = `/products${params.toString() ? '?' + params.toString() : ''}`;
+      window.history.replaceState({}, '', newUrl);
     }
-
+    
     function updateUrl() {
       const params = new URLSearchParams();
       if (currentFilters.categories.length > 0) params.set('category', currentFilters.categories.join(','));
-      if (currentFilters.minPrice)  params.set('minPrice', currentFilters.minPrice.toString());
-      if (currentFilters.maxPrice)  params.set('maxPrice', currentFilters.maxPrice.toString());
-      if (currentFilters.search)    params.set('search', currentFilters.search);
-      window.history.replaceState({}, '', `/products${params.toString() ? '?' + params.toString() : ''}`);
+      if (currentFilters.minPrice) params.set('minPrice', currentFilters.minPrice.toString());
+      if (currentFilters.maxPrice) params.set('maxPrice', currentFilters.maxPrice.toString());
+      if (currentFilters.search) params.set('search', currentFilters.search);
+      
+      const newUrl = `/products${params.toString() ? '?' + params.toString() : ''}`;
+      window.history.replaceState({}, '', newUrl);
     }
-
-    function getFilteredProducts() {
-      let filtered = [...products];
-      if (currentFilters.search) {
-        const q = currentFilters.search.toLowerCase().trim();
-        filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q));
-      }
-      if (currentFilters.categories.length > 0) filtered = filtered.filter((p) => currentFilters.categories.includes(getProductCategorySlug(p)));
-      if (currentFilters.minPrice !== null) filtered = filtered.filter(p => Math.min(...p.variants.map(v => p.basePrice + v.additionalPrice)) >= currentFilters.minPrice);
-      if (currentFilters.maxPrice !== null) filtered = filtered.filter(p => Math.max(...p.variants.map(v => p.basePrice + v.additionalPrice)) <= currentFilters.maxPrice);
-      return filtered;
-    }
-
+    
     document.addEventListener('DOMContentLoaded', async () => {
+      // Set sort dropdown to current URL value
       document.getElementById('sort-select').value = currentSort;
-
-      // Show skeleton immediately, fetch, then swap in real content
-      showLoading(true);
       await loadProductsData();
-      showLoading(false);
       filterAndRenderProducts();
-
+      
       document.getElementById('sort-select')?.addEventListener('change', (e) => {
         currentSort = e.target.value;
         currentPage = 1;
         filterAndRenderProducts();
         updateSortUrl();
       });
-
+      
       document.getElementById('clear-filters')?.addEventListener('click', () => {
         currentFilters = { categories: [], minPrice: null, maxPrice: null, search: '' };
         currentPage = 1;
         window.location.href = '/products';
       });
-
+      
+      // Pagination controls
       document.getElementById('prev-page')?.addEventListener('click', () => {
-        if (currentPage > 1) { currentPage--; filterAndRenderProducts(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        if (currentPage > 1) {
+          currentPage--;
+          filterAndRenderProducts();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       });
-
+      
       document.getElementById('next-page')?.addEventListener('click', () => {
-        const totalPages = Math.ceil(getFilteredProducts().length / itemsPerPage);
-        if (currentPage < totalPages) { currentPage++; filterAndRenderProducts(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        const filtered = getFilteredProducts();
+        const totalPages = Math.ceil(filtered.length / itemsPerPage);
+        if (currentPage < totalPages) {
+          currentPage++;
+          filterAndRenderProducts();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       });
-
+      
       window.addEventListener('filter-change', (e) => {
-        const detail     = e.detail || {};
-        const normalized = detail.categories ? detail : detail.category ? { ...detail, categories: [detail.category] } : detail;
-        currentFilters   = { ...currentFilters, ...normalized };
-        currentPage      = 1;
+        const detail = e.detail || {};
+        const normalized = detail.categories
+          ? detail
+          : detail.category
+            ? { ...detail, categories: [detail.category] }
+            : detail;
+        currentFilters = { ...currentFilters, ...normalized };
+        currentPage = 1;
         filterAndRenderProducts();
         updateUrl();
       });
     });
+    
+	    function getFilteredProducts() {
+	      let filtered = [...products];
+      
+      if (currentFilters.search) {
+        const searchQuery = currentFilters.search.toLowerCase().trim();
+        filtered = filtered.filter(p => {
+          const nameMatch = p.name.toLowerCase().includes(searchQuery);
+          const descMatch = p.description.toLowerCase().includes(searchQuery);
+          return nameMatch || descMatch;
+        });
+      }
+	      
+	      if (currentFilters.categories.length > 0) {
+	        filtered = filtered.filter((p) => currentFilters.categories.includes(getProductCategorySlug(p)));
+	      }
+      
+      if (currentFilters.minPrice !== null) {
+        filtered = filtered.filter(p => {
+          const minPrice = Math.min(...p.variants.map(v => p.basePrice + v.additionalPrice));
+          return minPrice >= currentFilters.minPrice;
+        });
+      }
+      
+      if (currentFilters.maxPrice !== null) {
+        filtered = filtered.filter(p => {
+          const maxPrice = Math.max(...p.variants.map(v => p.basePrice + v.additionalPrice));
+          return maxPrice <= currentFilters.maxPrice;
+        });
+      }
+      
+      return filtered;
+    }
   </script>
 </Layout>

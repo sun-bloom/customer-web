@@ -332,7 +332,6 @@ const { apiUrl } = Astro.props;
 
     async function loadProduct() {
       const slug = getSlugFromPath();
-      console.log('Loading product with slug:', slug);
       if (!slug) return renderNotFound();
       try {
         const response = await fetch(`${apiUrl}/api/products/slug/${encodeURIComponent(slug)}`);

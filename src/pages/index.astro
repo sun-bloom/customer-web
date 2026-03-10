@@ -5,104 +5,62 @@ const site = { name: 'Fashion Store', tagline: 'Discover your style' };
 ---
 
 <Layout title="Home">
-  <style>
-    @keyframes shimmer {
-      0%   { background-position: -800px 0; }
-      100% { background-position: 800px 0; }
-    }
-    .skeleton {
-      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-      background-size: 800px 100%;
-      animation: shimmer 1.4s infinite linear;
-      border-radius: 4px;
-    }
-    /* Fade in when content is ready */
-    .fade-in {
-      animation: fadeIn 0.4s ease-in;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+	<main>
+		<!-- Hero Section -->
+		<div class="relative bg-white text-gray-900 overflow-hidden border-b border-gray-100">
+			<div class="absolute inset-0">
+				<div class="w-full h-full bg-white"></div>
+                <div class="absolute inset-0 bg-[url('/images/hero-pattern.png')] opacity-5"></div>
+			</div>
+			<div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 md:py-48 flex flex-col items-center text-center">
+				<h1 id="home-site-name" class="text-5xl md:text-8xl font-bold font-heading mb-8 tracking-tighter text-black uppercase">
+					{site.name}
+				</h1>
+				<p id="home-site-tagline" class="text-xl md:text-2xl text-gray-500 max-w-2xl mb-12 leading-relaxed font-light italic">
+					{site.tagline}
+				</p>
+				<div class="flex flex-col sm:flex-row gap-4">
+                    <a 
+                        href="/products" 
+                        class="inline-block bg-black text-white font-medium px-10 py-4 rounded-none hover:bg-gray-800 transition-all duration-300 tracking-widest uppercase text-sm border border-black"
+                    >
+                        Explore Collection
+                    </a>
+                    <a 
+                        href="/products?sort=new" 
+                        class="inline-block bg-white text-black font-medium px-10 py-4 rounded-none hover:bg-gray-100 transition-all duration-300 tracking-widest uppercase text-sm border border-black"
+                    >
+                        New Arrivals
+                    </a>
+                </div>
+			</div>
+		</div>
 
-  <main>
-    <!-- ── Hero Section ──────────────────────────────────────────── -->
-    <div class="relative bg-white text-gray-900 overflow-hidden border-b border-gray-100">
-      <div class="absolute inset-0">
-        <div class="w-full h-full bg-white"></div>
-        <div class="absolute inset-0 bg-[url('/images/hero-pattern.png')] opacity-5"></div>
-      </div>
-      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 md:py-48 flex flex-col items-center text-center">
+		<!-- Categories Section -->
+		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+			<div class="text-center mb-20">
+				<h2 class="text-3xl md:text-5xl font-bold font-heading mb-4 text-black tracking-widest uppercase">The Collection</h2>
+				<p class="text-gray-500 font-light italic">Refined styles for every occasion</p>
+			</div>
+            
+			<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-8">
+				<div id="categories-grid" class="contents"></div>
+			</div>
+			<p id="categories-empty" class="hidden text-center text-gray-500 mt-8">No categories found.</p>
+		</div>
 
-        <!-- Site name: show skeleton until API responds -->
-        <div id="home-site-name-skeleton" class="skeleton h-16 md:h-24 w-72 md:w-[480px] mb-8 rounded-none"></div>
-        <h1 id="home-site-name"
-          class="hidden text-5xl md:text-8xl font-bold font-heading mb-8 tracking-tighter text-black uppercase fade-in">
-          {site.name}
-        </h1>
-
-        <!-- Tagline: show skeleton until API responds -->
-        <div id="home-site-tagline-skeleton" class="skeleton h-6 w-64 md:w-96 mb-12 rounded-none"></div>
-        <p id="home-site-tagline"
-          class="hidden text-xl md:text-2xl text-gray-500 max-w-2xl mb-12 leading-relaxed font-light italic fade-in">
-          {site.tagline}
-        </p>
-
-        <div class="flex flex-col sm:flex-row gap-4">
-          <a href="/products"
-            class="inline-block bg-black text-white font-medium px-10 py-4 rounded-none hover:bg-gray-800 transition-all duration-300 tracking-widest uppercase text-sm border border-black">
-            Explore Collection
-          </a>
-          <a href="/products?sort=new"
-            class="inline-block bg-white text-black font-medium px-10 py-4 rounded-none hover:bg-gray-100 transition-all duration-300 tracking-widest uppercase text-sm border border-black">
-            New Arrivals
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Categories Section ────────────────────────────────────── -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
-      <div class="text-center mb-20">
-        <h2 class="text-3xl md:text-5xl font-bold font-heading mb-4 text-black tracking-widest uppercase">The Collection</h2>
-        <p class="text-gray-500 font-light italic">Refined styles for every occasion</p>
-      </div>
-
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-8">
-
-        <!-- Skeleton cards shown while fetching -->
-        <div id="categories-skeleton" class="contents">
-          {[1,2,3,4,5].map(() => (
-            <div class="h-full">
-              <div class="aspect-[4/5] skeleton rounded-2xl w-full"></div>
-              <div class="mt-3 skeleton h-5 w-3/4 mx-auto"></div>
+        <!-- Newsletter / Promo Section -->
+        <div class="bg-white py-24 border-t border-gray-100">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-black">
+                 <h2 class="text-3xl font-bold mb-4 font-heading tracking-widest uppercase">Stay Updated</h2>
+                 <p class="text-gray-500 mb-10 font-light italic">Subscribe to our newsletter for the latest updates and exclusive offers.</p>
+                 <div class="max-w-md mx-auto flex flex-col sm:flex-row gap-0">
+                    <input type="email" placeholder="ENTER YOUR EMAIL" class="flex-1 px-6 py-4 border border-black focus:outline-none text-sm tracking-widest bg-transparent uppercase" />
+                    <button class="bg-black text-white px-10 py-4 font-medium hover:bg-gray-800 transition-colors tracking-widest uppercase text-sm">Subscribe</button>
+                 </div>
             </div>
-          ))}
         </div>
-
-        <!-- Real categories injected here -->
-        <div id="categories-grid" class="contents"></div>
-      </div>
-
-      <p id="categories-empty" class="hidden text-center text-gray-500 mt-8">No categories found.</p>
-    </div>
-
-    <!-- ── Newsletter Section ────────────────────────────────────── -->
-    <div class="bg-white py-24 border-t border-gray-100">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-black">
-        <h2 class="text-3xl font-bold mb-4 font-heading tracking-widest uppercase">Stay Updated</h2>
-        <p class="text-gray-500 mb-10 font-light italic">Subscribe to our newsletter for the latest updates and exclusive offers.</p>
-        <div class="max-w-md mx-auto flex flex-col sm:flex-row gap-0">
-          <input type="email" placeholder="ENTER YOUR EMAIL"
-            class="flex-1 px-6 py-4 border border-black focus:outline-none text-sm tracking-widest bg-transparent uppercase" />
-          <button class="bg-black text-white px-10 py-4 font-medium hover:bg-gray-800 transition-colors tracking-widest uppercase text-sm">
-            Subscribe
-          </button>
-        </div>
-      </div>
-    </div>
-  </main>
+	</main>
 </Layout>
 
 <script is:inline define:vars={{ apiUrl }}>
@@ -112,34 +70,10 @@ const site = { name: 'Fashion Store', tagline: 'Discover your style' };
     return response.json();
   }
 
-  function showHero(name, tagline) {
-    // Hide skeletons
-    document.getElementById('home-site-name-skeleton').classList.add('hidden');
-    document.getElementById('home-site-tagline-skeleton').classList.add('hidden');
-
-    // Show real content
-    const nameEl    = document.getElementById('home-site-name');
-    const taglineEl = document.getElementById('home-site-tagline');
-
-    if (nameEl) {
-      if (name) nameEl.textContent = name;
-      nameEl.classList.remove('hidden');
-    }
-    if (taglineEl) {
-      if (tagline) taglineEl.textContent = tagline;
-      taglineEl.classList.remove('hidden');
-    }
-  }
-
   function renderCategories(categories) {
-    // Hide skeleton
-    const skeleton = document.getElementById('categories-skeleton');
-    if (skeleton) skeleton.classList.add('hidden');
-
-    const grid  = document.getElementById('categories-grid');
+    const grid = document.getElementById('categories-grid');
     const empty = document.getElementById('categories-empty');
     if (!grid) return;
-
     if (!Array.isArray(categories) || categories.length === 0) {
       grid.innerHTML = '';
       if (empty) empty.classList.remove('hidden');
@@ -148,9 +82,8 @@ const site = { name: 'Fashion Store', tagline: 'Discover your style' };
     if (empty) empty.classList.add('hidden');
 
     grid.innerHTML = categories.map((category) => `
-      <div class="h-full fade-in">
-        <a href="/products?category=${category.slug}"
-          class="group relative overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 block h-full">
+      <div class="h-full">
+        <a href="/products?category=${category.slug}" class="group relative overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 block h-full">
           <div class="aspect-[4/5] overflow-hidden bg-gray-100">
             <img
               src="${category.image}"
@@ -180,10 +113,16 @@ const site = { name: 'Fashion Store', tagline: 'Discover your style' };
       fetchJson('/api/categories')
     ]);
 
-    // Reveal hero text (with API values if available, fallback to defaults)
-    showHero(settings?.site?.name, settings?.site?.tagline);
+    const site = settings?.site;
+    if (site?.name) {
+      const nameEl = document.getElementById('home-site-name');
+      if (nameEl) nameEl.textContent = site.name;
+    }
+    if (site?.tagline) {
+      const taglineEl = document.getElementById('home-site-tagline');
+      if (taglineEl) taglineEl.textContent = site.tagline;
+    }
 
-    // Render categories (replaces skeleton)
     renderCategories(categoriesData?.categories || []);
   }
 
