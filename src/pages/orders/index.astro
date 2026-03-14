@@ -22,7 +22,6 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
             <input
               type="tel"
               id="lookup-phone"
-              placeholder="9876543210"
               maxlength="10"
               pattern="[0-9]{10}"
               required
@@ -195,8 +194,8 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
                     day: 'numeric'
                   })}</p>
                 </div>
-                <span class="px-3 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.status] || 'bg-gray-100 text-gray-800'}">
-                  ${statusLabels[order.status] || order.status}
+                <span class="px-3 py-1 rounded-full text-xs font-medium capitalize ${statusColors[order.orderStatus] || 'bg-gray-100 text-gray-800'}">
+                  ${statusLabels[order.orderStatus] || order.orderStatus}
                 </span>
               </div>
             </div>
@@ -206,19 +205,22 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
             <div class="space-y-4">
               ${order.items.map(item => `
                 <div class="flex items-center gap-4">
-                  <div class="w-20 h-20 bg-gray-100 rounded-md flex items-center justify-center">
-                    <span class="text-gray-400 text-xs">Product</span>
+                  <div class="w-20 h-20 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                    ${item.image
+                      ? `<img src="${item.image}" alt="${item.productName || 'Product'}" class="w-full h-full object-cover" />`
+                      : `<div class="w-full h-full flex items-center justify-center"><span class="text-gray-400 text-xs">No Image</span></div>`
+                    }
                   </div>
                   <div class="flex-1 min-w-0">
-                    <h4 class="font-medium text-gray-900 truncate">${item.variant?.product?.name || 'Product'}</h4>
-                    <p class="text-sm text-gray-500">${item.variant?.color || ''} / ${item.variant?.pattern || ''}</p>
+                    <h4 class="font-medium text-gray-900 truncate">${item.productName || 'Product'}</h4>
+                    <p class="text-sm text-gray-500">${item.color || ''}${item.color && item.pattern ? ' / ' : ''}${item.pattern || ''}</p>
                     <p class="text-sm text-gray-500">Qty: ${item.quantity}</p>
                   </div>
                   <p class="font-medium text-gray-900">${new Intl.NumberFormat('en-IN', {
                     style: 'currency',
                     currency: 'INR',
                     minimumFractionDigits: 0
-                  }).format(item.price * item.quantity)}</p>
+                  }).format(item.totalPrice ?? (item.unitPrice * item.quantity))}</p>
                 </div>
               `).join('')}
             </div>
@@ -272,9 +274,9 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
                     </span>
                   </div>
                   <p class="text-sm text-gray-600">
-                    ${order.status === 'CONFIRMED' ? 'Confirmed - Will ship soon' : 
-                      order.status === 'SHIPPED' ? 'Shipped - On the way' : 
-                      order.status === 'DELIVERED' ? 'Delivered' : 
+                    ${order.orderStatus === 'confirmed' ? 'Confirmed - Will ship soon' :
+                      order.orderStatus === 'shipped' ? 'Shipped - On the way' :
+                      order.orderStatus === 'delivered' ? 'Delivered' :
                       'Preparing your order'}
                   </p>
                 </div>
