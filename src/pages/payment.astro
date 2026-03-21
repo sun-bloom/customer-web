@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:4040';
 ---
 
 <Layout title="Payment - Fashion Store">
@@ -15,9 +15,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
       animation: shimmer 1.4s infinite linear;
       border-radius: 4px;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .spinner {
       width: 20px; height: 20px;
       border: 2px solid #ffffff40;
@@ -25,6 +23,21 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
       display: inline-block;
+    }
+    @keyframes pulse-ring {
+      0%   { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(2);   opacity: 0; }
+    }
+    .pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in-up { animation: fadeInUp 0.4s ease forwards; }
+    .timer-ring-circle {
+      transition: stroke-dashoffset 1s linear;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
     }
   </style>
 
@@ -173,53 +186,80 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
                 Pay with UPI
               </button>
 
-              <!-- UPI QR / intent section (shown after clicking Pay) -->
+              <!-- UPI QR section -->
               <div id="upi-payment-section" class="hidden mt-6">
                 <div class="border-t pt-6">
-                  <p class="text-center text-sm text-gray-500 mb-4">Scan QR or pay via UPI app</p>
 
-                  <!-- QR Code -->
-                  <div class="flex justify-center mb-4">
-                    <div id="qr-wrapper" class="p-3 border-2 border-gray-200 rounded-lg inline-block">
-                      <img id="upi-qr-image" src="" alt="UPI QR Code" class="w-48 h-48" />
+                  <!-- Timer row -->
+                  <div class="flex items-center justify-between mb-4">
+                    <p class="text-sm text-gray-500">Scan QR to pay</p>
+                    <div class="flex items-center gap-2">
+                      <svg class="w-8 h-8" viewBox="0 0 36 36">
+                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e5e7eb" stroke-width="3"/>
+                        <circle id="timer-ring" cx="18" cy="18" r="15.9" fill="none"
+                          stroke="#111827" stroke-width="3"
+                          stroke-dasharray="100 100"
+                          stroke-dashoffset="0"
+                          stroke-linecap="round"
+                          class="timer-ring-circle"/>
+                      </svg>
+                      <span id="session-timer" class="text-sm font-mono font-medium text-gray-700">15:00</span>
                     </div>
                   </div>
 
-                  <!-- UPI ID copy -->
-                  <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-md p-3 mb-4">
-                    <span class="text-xs text-gray-500 flex-shrink-0">UPI ID:</span>
-                    <span id="upi-vpa-display" class="text-sm font-mono font-medium text-gray-900 flex-1 truncate"></span>
-                    <button id="copy-upi-btn" class="text-xs text-gray-600 hover:text-black border border-gray-300 px-2 py-1 rounded transition-colors flex-shrink-0">
-                      Copy
+                  <!-- QR Code -->
+                  <div class="flex justify-center mb-4">
+                    <div id="qr-wrapper" class="p-3 border-2 border-gray-200 rounded-lg inline-block relative">
+                      <img id="upi-qr-image" src="" alt="UPI QR Code" class="w-48 h-48" />
+                      <!-- Expired overlay -->
+                      <div id="qr-expired-overlay" class="hidden absolute inset-0 bg-white/90 rounded-lg flex flex-col items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-sm font-medium text-gray-700">QR Expired</p>
+                        <button id="refresh-qr-btn" class="mt-2 text-xs bg-gray-900 text-white px-3 py-1.5 rounded-md hover:bg-black transition-colors">
+                          Generate New QR
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Polling indicator -->
+                  <div id="polling-status" class="flex items-center justify-center gap-2 mb-4">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-gray-500"></span>
+                    </span>
+                    <span class="text-xs text-gray-500">Waiting for payment…</span>
+                  </div>
+
+                  <!-- Payment success banner -->
+                  <div id="payment-success-banner" class="hidden fade-in-up bg-green-50 border border-green-200 rounded-lg p-5 text-center mb-4">
+                    <div class="flex items-center justify-center mb-3">
+                      <div class="relative">
+                        <div class="absolute inset-0 bg-green-300 rounded-full pulse-ring"></div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="relative h-12 w-12 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <p class="font-bold text-green-800 text-xl">Payment Successful!</p>
+                    <p class="text-sm text-green-600 mt-1">Saving your order, redirecting…</p>
+                  </div>
+
+                  <!-- Payment failed banner -->
+                  <div id="payment-failed-banner" class="hidden fade-in-up bg-red-50 border border-red-200 rounded-lg p-5 text-center mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-red-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="font-bold text-red-800 text-xl">Payment Failed</p>
+                    <p class="text-sm text-red-600 mt-1">Your payment was not completed.</p>
+                    <button id="retry-payment-btn" class="mt-3 bg-gray-900 text-white text-sm px-5 py-2 rounded-md hover:bg-black transition-colors">
+                      Try Again
                     </button>
                   </div>
 
-                  <!-- Mobile UPI app buttons -->
-                  <div class="grid grid-cols-3 gap-2 mb-6">
-                    <a id="gpay-btn" href="#" target="_blank"
-                      class="flex flex-col items-center gap-1 p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                      <span class="text-xl">G</span>
-                      <span class="text-xs text-gray-600">GPay</span>
-                    </a>
-                    <a id="phonepe-btn" href="#" target="_blank"
-                      class="flex flex-col items-center gap-1 p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                      <span class="text-xl">P</span>
-                      <span class="text-xs text-gray-600">PhonePe</span>
-                    </a>
-                    <a id="paytm-btn" href="#" target="_blank"
-                      class="flex flex-col items-center gap-1 p-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                      <span class="text-xl">₹</span>
-                      <span class="text-xs text-gray-600">Paytm</span>
-                    </a>
-                  </div>
-
-                  <!-- Confirm order button -->
-                  <button id="confirm-order-btn"
-                    class="w-full bg-green-600 text-white py-3 px-6 rounded-md font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
-                    Confirm Order
-                  </button>
-
-                  <a href="/cart" class="block text-center text-sm text-gray-500 hover:text-black mt-4">← Back to Cart</a>
+                  <a href="/cart" class="block text-center text-sm text-gray-500 hover:text-black mt-2">← Back to Cart</a>
                 </div>
               </div>
 
@@ -237,16 +277,22 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
       let subtotal         = 0;
       let shippingCharge   = 50;
       let totalAmount      = 0;
-
       let productsCatalog  = { products: [] };
       let deliverySettings = { regions: [] };
       let upiDetails       = { vpa: '', name: '' };
       let cashfreeOrderId  = '';
+      let paymentSessionId = '';
+      let pollInterval     = null;
+      let timerInterval    = null;
+      let sessionExpired   = false;
+      let currentCustomer  = null;
 
-      // ── Helpers ─────────────────────────────────────────────────────
+      const SESSION_DURATION = 5 * 60; // 5 min
+
+      // ── Helpers ──────────────────────────────────────────────────────
       function show(id)  { document.getElementById(id)?.classList.remove('hidden'); }
       function hide(id)  { document.getElementById(id)?.classList.add('hidden'); }
-      function $( id)    { return document.getElementById(id); }
+      function $(id)     { return document.getElementById(id); }
       function setText(id, val) { const el = $(id); if (el) el.textContent = val; }
 
       function showError(msg) {
@@ -261,12 +307,10 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
         const btn = $(btnId);
         if (!btn) return;
         btn.disabled = loading;
-        btn.innerHTML = loading
-          ? `<span class="spinner"></span> Processing…`
-          : label;
+        btn.innerHTML = loading ? `<span class="spinner"></span> Processing…` : label;
       }
 
-      // ── Load remote data ─────────────────────────────────────────────
+      // ── Remote data ───────────────────────────────────────────────────
       async function fetchJson(endpoint) {
         const res = await fetch(`${apiUrl}${endpoint}`);
         if (!res.ok) return null;
@@ -279,24 +323,18 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
           fetchJson('/api/public/settings'),
           fetchJson('/api/delivery'),
         ]);
-
         productsCatalog  = { products: (productsData?.products || []).filter(p => p.isActive) };
         deliverySettings = deliveryData || { regions: [] };
         upiDetails       = settingsData?.upi || { vpa: '', name: '' };
       }
 
-      // ── Cart ─────────────────────────────────────────────────────────
+      // ── Cart ──────────────────────────────────────────────────────────
       function loadCart() {
-        try {
-          cartItems = JSON.parse(localStorage.getItem('cart') || '[]');
-        } catch { cartItems = []; }
-
+        try { cartItems = JSON.parse(localStorage.getItem('cart') || '[]'); }
+        catch { cartItems = []; }
         if (cartItems.length === 0) {
-          hide('payment-skeleton');
-          show('payment-empty-cart');
-          return;
+          hide('payment-skeleton'); show('payment-empty-cart'); return;
         }
-
         hide('payment-skeleton');
         show('payment-cart-container');
         renderCartItems();
@@ -308,20 +346,16 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
         if (!container) return;
         subtotal = 0;
         container.innerHTML = '';
-
         cartItems.forEach(item => {
           const product = productsCatalog.products.find(p => p.id === item.productId);
           const variant = product?.variants?.find(v => v.id === item.variantId);
           if (!product || !variant) return;
-
           const itemTotal = item.quantity * item.unitPrice;
           subtotal += itemTotal;
-
           const el = document.createElement('div');
           el.className = 'flex items-center gap-3 py-2 border-b border-gray-100 last:border-0';
           el.innerHTML = `
-            <img src="${item.productImage}" alt="${item.productName}"
-              class="w-14 h-14 object-cover rounded-md flex-shrink-0" />
+            <img src="${item.productImage}" alt="${item.productName}" class="w-14 h-14 object-cover rounded-md flex-shrink-0" />
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-900 truncate">${item.productName}</p>
               <p class="text-xs text-gray-500">${item.color} / ${item.pattern} × ${item.quantity}</p>
@@ -337,68 +371,90 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
         setText('payment-subtotal', `₹${subtotal}`);
         setText('payment-shipping', shippingCharge === 0 ? 'FREE' : `₹${shippingCharge}`);
         setText('payment-total',    `₹${totalAmount}`);
-        rebuildUpiLinks();
       }
 
-      // ── Fallback delivery regions (used when API returns none) ────────
+      // ── Pincode ───────────────────────────────────────────────────────
       const FALLBACK_REGIONS = [
-        // Tamil Nadu — Major cities
-        { regionName: 'Chennai',      pincodeStart: '600001', pincodeEnd: '600130', deliveryCharge: 40,  estimatedDays: 1, isEnabled: true },
-        { regionName: 'Coimbatore',   pincodeStart: '641001', pincodeEnd: '641110', deliveryCharge: 60,  estimatedDays: 2, isEnabled: true },
-        { regionName: 'Madurai',      pincodeStart: '625001', pincodeEnd: '625030', deliveryCharge: 60,  estimatedDays: 2, isEnabled: true },
-        { regionName: 'Tiruchirappalli', pincodeStart: '620001', pincodeEnd: '620030', deliveryCharge: 60, estimatedDays: 2, isEnabled: true },
-        { regionName: 'Salem',        pincodeStart: '636001', pincodeEnd: '636030', deliveryCharge: 70,  estimatedDays: 3, isEnabled: true },
-        { regionName: 'Tirunelveli', pincodeStart: '627001', pincodeEnd: '627030', deliveryCharge: 70,  estimatedDays: 3, isEnabled: true },
-        { regionName: 'Erode',        pincodeStart: '638001', pincodeEnd: '638060', deliveryCharge: 70,  estimatedDays: 3, isEnabled: true },
-        { regionName: 'Vellore',      pincodeStart: '632001', pincodeEnd: '632060', deliveryCharge: 70,  estimatedDays: 3, isEnabled: true },
-        { regionName: 'Thoothukudi',  pincodeStart: '628001', pincodeEnd: '628030', deliveryCharge: 70,  estimatedDays: 3, isEnabled: true },
-        { regionName: 'Dindigul',     pincodeStart: '624001', pincodeEnd: '624030', deliveryCharge: 70,  estimatedDays: 3, isEnabled: true },
-        { regionName: 'Thanjavur',    pincodeStart: '613001', pincodeEnd: '613010', deliveryCharge: 70,  estimatedDays: 3, isEnabled: true },
-        { regionName: 'Tiruppur',     pincodeStart: '641601', pincodeEnd: '641670', deliveryCharge: 60,  estimatedDays: 2, isEnabled: true },
-        { regionName: 'Nagercoil',    pincodeStart: '629001', pincodeEnd: '629020', deliveryCharge: 80,  estimatedDays: 3, isEnabled: true },
-        { regionName: 'Kanchipuram',  pincodeStart: '631501', pincodeEnd: '631570', deliveryCharge: 50,  estimatedDays: 2, isEnabled: true },
-        { regionName: 'Cuddalore',    pincodeStart: '607001', pincodeEnd: '607030', deliveryCharge: 70,  estimatedDays: 3, isEnabled: true },
-        // Rest of India — Metro cities
-        { regionName: 'Mumbai',       pincodeStart: '400001', pincodeEnd: '400110', deliveryCharge: 90,  estimatedDays: 4, isEnabled: true },
-        { regionName: 'Delhi',        pincodeStart: '110001', pincodeEnd: '110110', deliveryCharge: 90,  estimatedDays: 4, isEnabled: true },
-        { regionName: 'Bengaluru',    pincodeStart: '560001', pincodeEnd: '560110', deliveryCharge: 70,  estimatedDays: 3, isEnabled: true },
-        { regionName: 'Hyderabad',    pincodeStart: '500001', pincodeEnd: '500110', deliveryCharge: 80,  estimatedDays: 3, isEnabled: true },
-        { regionName: 'Pune',         pincodeStart: '411001', pincodeEnd: '411060', deliveryCharge: 90,  estimatedDays: 4, isEnabled: true },
-        { regionName: 'Kolkata',      pincodeStart: '700001', pincodeEnd: '700110', deliveryCharge: 100, estimatedDays: 5, isEnabled: true },
-        { regionName: 'Ahmedabad',    pincodeStart: '380001', pincodeEnd: '380060', deliveryCharge: 100, estimatedDays: 5, isEnabled: true },
+        { regionName: 'Chennai',         pincodeStart: '600001', pincodeEnd: '600130', deliveryCharge: 40,  estimatedDays: 1, isEnabled: true },
+        { regionName: 'Coimbatore',      pincodeStart: '641001', pincodeEnd: '641110', deliveryCharge: 60,  estimatedDays: 2, isEnabled: true },
+        { regionName: 'Madurai',         pincodeStart: '625001', pincodeEnd: '625030', deliveryCharge: 60,  estimatedDays: 2, isEnabled: true },
+        { regionName: 'Tiruchirappalli', pincodeStart: '620001', pincodeEnd: '620030', deliveryCharge: 60,  estimatedDays: 2, isEnabled: true },
+        { regionName: 'Salem',           pincodeStart: '636001', pincodeEnd: '636030', deliveryCharge: 70,  estimatedDays: 3, isEnabled: true },
+        { regionName: 'Tirunelveli',     pincodeStart: '627001', pincodeEnd: '627030', deliveryCharge: 70,  estimatedDays: 3, isEnabled: true },
+        { regionName: 'Erode',           pincodeStart: '638001', pincodeEnd: '638060', deliveryCharge: 70,  estimatedDays: 3, isEnabled: true },
+        { regionName: 'Vellore',         pincodeStart: '632001', pincodeEnd: '632060', deliveryCharge: 70,  estimatedDays: 3, isEnabled: true },
+        { regionName: 'Tiruppur',        pincodeStart: '641601', pincodeEnd: '641670', deliveryCharge: 60,  estimatedDays: 2, isEnabled: true },
+        { regionName: 'Bengaluru',       pincodeStart: '560001', pincodeEnd: '560110', deliveryCharge: 70,  estimatedDays: 3, isEnabled: true },
+        { regionName: 'Mumbai',          pincodeStart: '400001', pincodeEnd: '400110', deliveryCharge: 90,  estimatedDays: 4, isEnabled: true },
+        { regionName: 'Delhi',           pincodeStart: '110001', pincodeEnd: '110110', deliveryCharge: 90,  estimatedDays: 4, isEnabled: true },
+        { regionName: 'Hyderabad',       pincodeStart: '500001', pincodeEnd: '500110', deliveryCharge: 80,  estimatedDays: 3, isEnabled: true },
+        { regionName: 'Pune',            pincodeStart: '411001', pincodeEnd: '411060', deliveryCharge: 90,  estimatedDays: 4, isEnabled: true },
+        { regionName: 'Kolkata',         pincodeStart: '700001', pincodeEnd: '700110', deliveryCharge: 100, estimatedDays: 5, isEnabled: true },
       ];
 
-      // ── Pincode check ─────────────────────────────────────────────────
       function checkPincode() {
         const pincode  = $('pincode')?.value?.trim();
         const statusEl = $('pincode-status');
         if (!pincode || pincode.length !== 6 || !statusEl) return;
-
-        // Use API regions if available, else fall back to built-in list
-        const regions = (deliverySettings.regions?.length > 0)
-          ? deliverySettings.regions
-          : FALLBACK_REGIONS;
-
-        const num   = parseInt(pincode);
-        let found   = false;
-
+        const regions = deliverySettings.regions?.length > 0 ? deliverySettings.regions : FALLBACK_REGIONS;
+        const num = parseInt(pincode);
+        let found = false;
         for (const region of regions) {
           if (!region.isEnabled) continue;
-          const start = parseInt(region.pincodeStart);
-          const end   = parseInt(region.pincodeEnd);
-          // Handles both exact-match (start === end) and range
-          if (num >= start && num <= end) {
+          if (num >= parseInt(region.pincodeStart) && num <= parseInt(region.pincodeEnd)) {
             shippingCharge = region.deliveryCharge;
             statusEl.innerHTML = `<span class="text-green-600 text-xs">✓ ${region.regionName} — Delivery in ${region.estimatedDays} day${region.estimatedDays > 1 ? 's' : ''} · ₹${region.deliveryCharge} shipping</span>`;
             found = true;
             break;
           }
         }
-
-        if (!found) {
-          statusEl.innerHTML = `<span class="text-red-600 text-xs">✗ Delivery not available for this pincode</span>`;
-        }
+        if (!found) statusEl.innerHTML = `<span class="text-red-600 text-xs">✗ Delivery not available for this pincode</span>`;
         updateTotals();
+      }
+
+      // ── Session timer ─────────────────────────────────────────────────
+      function startSessionTimer() {
+        let remaining = SESSION_DURATION;
+        const timerEl = $('session-timer');
+        const ring    = $('timer-ring');
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+          remaining--;
+          const mins = String(Math.floor(remaining / 60)).padStart(2, '0');
+          const secs = String(remaining % 60).padStart(2, '0');
+          if (timerEl) timerEl.textContent = `${mins}:${secs}`;
+          // Shrink ring stroke
+          const offset = 100 - (remaining / SESSION_DURATION) * 100;
+          if (ring) ring.style.strokeDashoffset = offset;
+          // Red in last 2 mins
+          if (remaining <= 120) {
+            if (ring) ring.style.stroke = '#ef4444';
+            timerEl?.classList.add('text-red-500');
+            timerEl?.classList.remove('text-gray-700');
+          }
+          if (remaining <= 0) {
+            clearInterval(timerInterval);
+            expireSession();
+          }
+        }, 1000);
+      }
+
+      function expireSession() {
+        sessionExpired = true;
+        stopPolling();
+        show('qr-expired-overlay');
+        hide('polling-status');
+        const timerEl = $('session-timer');
+        if (timerEl) timerEl.textContent = '00:00';
+      }
+
+      function resetTimer() {
+        clearInterval(timerInterval);
+        sessionExpired = false;
+        const timerEl = $('session-timer');
+        const ring    = $('timer-ring');
+        if (timerEl) { timerEl.textContent = '15:00'; timerEl.classList.remove('text-red-500'); timerEl.classList.add('text-gray-700'); }
+        if (ring)    { ring.style.strokeDashoffset = '0'; ring.style.stroke = '#111827'; }
       }
 
       // ── Cashfree: create order ────────────────────────────────────────
@@ -406,44 +462,103 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
         const res = await fetch(`${apiUrl}/api/payments/cashfree/create-order`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount:      totalAmount,
-            currency:    'INR',
-            customer:    customerDetails,
-            cartItems,
-            shippingCharge,
-          }),
+          body: JSON.stringify({ amount: totalAmount, currency: 'INR', customer: customerDetails, cartItems, shippingCharge }),
         });
-
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.message || 'Failed to create payment order');
         }
-        return res.json(); // { orderId, paymentSessionId, upiVpa, upiName }
+        return res.json(); // { orderId, paymentSessionId, upiQrUrl, upiVpa, upiName }
       }
 
-      // ── UPI QR & intent links ─────────────────────────────────────────
-      function buildUpiString() {
-        return `upi://pay?pa=${encodeURIComponent(upiDetails.vpa)}&pn=${encodeURIComponent(upiDetails.name)}&am=${totalAmount}&cu=INR&tn=${encodeURIComponent(`Order #${cashfreeOrderId || 'pending'}`)}`;
+      // ── Poll for payment status every 5s ─────────────────────────────
+      function startPolling() {
+        stopPolling();
+        pollInterval = setInterval(pollPaymentStatus, 5000);
       }
 
-      function rebuildUpiLinks() {
-        if (!upiDetails.vpa) return;
-        const upiStr = buildUpiString();
-        const qrUrl  = `https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=${encodeURIComponent(upiStr)}`;
-
-        const qrImg = $('upi-qr-image');
-        if (qrImg) qrImg.src = qrUrl;
-
-        setText('upi-vpa-display', upiDetails.vpa);
-
-        const setHref = (id) => { const el = $(id); if (el) el.href = upiStr; };
-        setHref('gpay-btn');
-        setHref('phonepe-btn');
-        setHref('paytm-btn');
+      function stopPolling() {
+        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
       }
 
-      // ── Validate form ─────────────────────────────────────────────────
+      async function pollPaymentStatus() {
+        if (sessionExpired || !cashfreeOrderId) return;
+        try {
+          const res = await fetch(`${apiUrl}/api/payments/cashfree/status/${cashfreeOrderId}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          // Normalise — Cashfree returns uppercase e.g. "PAID"
+          const status = (data.status || data.order_status || '').toUpperCase().trim();
+          console.log('[Payment] Poll status:', status);
+
+          if (status === 'PAID') {
+            stopPolling();
+            clearInterval(timerInterval);
+            await onPaymentSuccess();
+          } else if (status === 'FAILED' || status === 'EXPIRED' || status === 'CANCELLED') {
+            stopPolling();
+            clearInterval(timerInterval);
+            onPaymentFailed();
+          }
+          // ACTIVE = still waiting, keep polling
+        } catch (e) {
+          console.warn('[Payment] Poll error (retrying):', e.message);
+        }
+      }
+
+      // ── Payment success ───────────────────────────────────────────────
+      async function onPaymentSuccess() {
+        // Stop all activity immediately
+        stopPolling();
+        clearInterval(timerInterval);
+
+        // Hide everything in the UPI section, show only success banner
+        console.log('[Payment] SUCCESS — hiding QR, showing banner');
+        hide('polling-status');
+        hide('qr-wrapper');
+        hide('qr-expired-overlay');
+        hide('payment-failed-banner');
+        // Hide the timer row
+        const timerRow = document.querySelector('#upi-payment-section .flex.items-center.justify-between');
+        if (timerRow) timerRow.style.display = 'none';
+        show('payment-success-banner');
+
+        try {
+          const res = await fetch(`${apiUrl}/api/payments/cashfree/confirm-order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              cashfreeOrderId,
+              customer:      currentCustomer,
+              cartItems,
+              subtotal,
+              shippingCharge,
+              totalAmount,
+            }),
+          });
+          if (!res.ok) throw new Error('Save failed');
+          const { orderNumber } = await res.json();
+
+          // Clear cart
+          localStorage.removeItem('cart');
+          const badge = document.getElementById('cart-badge');
+          if (badge) badge.textContent = '0';
+
+          setTimeout(() => { window.location.href = `/order/${orderNumber}`; }, 1800);
+        } catch {
+          // Payment confirmed but save failed — redirect with CF order ID as fallback
+          setTimeout(() => { window.location.href = `/order/pending?cf_order_id=${cashfreeOrderId}`; }, 1800);
+        }
+      }
+
+      // ── Payment failed ────────────────────────────────────────────────
+      function onPaymentFailed() {
+        hide('polling-status');
+        hide('qr-wrapper');
+        show('payment-failed-banner');
+      }
+
+      // ── Form validation ───────────────────────────────────────────────
       function getCustomerDetails() {
         const name    = $('customer-name')?.value?.trim();
         const phone   = $('customer-phone')?.value?.trim();
@@ -452,39 +567,47 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
         const city    = $('city')?.value?.trim();
         const state   = $('state')?.value?.trim();
         const pincode = $('pincode')?.value?.trim();
-
         if (!name || !phone || !email || !address || !city || !state || !pincode) {
-          showError('Please fill in all required fields.');
-          return null;
+          showError('Please fill in all required fields.'); return null;
         }
-        if (!/^[0-9]{10}$/.test(phone)) {
-          showError('Enter a valid 10-digit phone number.');
-          return null;
-        }
-        if (!/^[0-9]{6}$/.test(pincode)) {
-          showError('Enter a valid 6-digit pincode.');
-          return null;
-        }
+        if (!/^[0-9]{10}$/.test(phone)) { showError('Enter a valid 10-digit phone number.'); return null; }
+        if (!/^[0-9]{6}$/.test(pincode)) { showError('Enter a valid 6-digit pincode.'); return null; }
         return { name, phone, email, address, city, state, pincode };
       }
 
-      // ── "Pay with UPI" click → show QR + upload section ──────────────
-      $('pay-now-btn')?.addEventListener('click', async () => {
+      // ── Pay now ───────────────────────────────────────────────────────
+      async function initiatePayment() {
         const customer = getCustomerDetails();
         if (!customer) return;
+        currentCustomer = customer;
 
         setLoading('pay-now-btn', true);
+        resetTimer();
+        hide('payment-failed-banner');
+
         try {
           const result     = await createCashfreeOrder(customer);
           cashfreeOrderId  = result.orderId;
+          paymentSessionId = result.paymentSessionId;
 
-          // Update UPI details from server response if provided
-          if (result.upiVpa)  upiDetails.vpa  = result.upiVpa;
-          if (result.upiName) upiDetails.name = result.upiName;
+          // Use Cashfree QR if backend returns it, else build UPI string QR
+          const qrImg = $('upi-qr-image');
+          if (result.upiQrUrl && qrImg) {
+            qrImg.src = result.upiQrUrl;
+          } else if (result.upiVpa) {
+            upiDetails.vpa  = result.upiVpa;
+            upiDetails.name = result.upiName || upiDetails.name;
+            const upiStr = `upi://pay?pa=${encodeURIComponent(upiDetails.vpa)}&pn=${encodeURIComponent(upiDetails.name)}&am=${totalAmount}&cu=INR&tn=${encodeURIComponent('Order #' + cashfreeOrderId)}`;
+            if (qrImg) qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=${encodeURIComponent(upiStr)}`;
+          }
 
-          rebuildUpiLinks();
+          show('qr-wrapper');
+          show('polling-status');
           hide('pay-now-btn');
           show('upi-payment-section');
+          startSessionTimer();
+          startPolling();
+
         } catch (err) {
           showError(err.message || 'Could not initiate payment. Try again.');
         } finally {
@@ -494,82 +617,33 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
             </svg>
             Pay with UPI`);
         }
+      }
+
+      $('pay-now-btn')?.addEventListener('click', initiatePayment);
+
+      // Retry after failure
+      $('retry-payment-btn')?.addEventListener('click', () => {
+        hide('payment-failed-banner');
+        hide('upi-payment-section');
+        show('pay-now-btn');
+        cashfreeOrderId = '';
+        paymentSessionId = '';
       });
 
-      // ── Screenshot upload ─────────────────────────────────────────────
-      // ── Copy UPI ID ───────────────────────────────────────────────────
-      $('copy-upi-btn')?.addEventListener('click', () => {
-        navigator.clipboard.writeText(upiDetails.vpa).then(() => {
-          const btn = $('copy-upi-btn');
-          const orig = btn.textContent;
-          btn.textContent = 'Copied!';
-          setTimeout(() => btn.textContent = orig, 2000);
-        });
-      });
-
-      // ── Confirm order (after payment done) ────────────────────────────
-      $('confirm-order-btn')?.addEventListener('click', async () => {
-        if (!cashfreeOrderId) {
-          showError('Payment session missing. Please refresh and try again.');
-          return;
-        }
-
-        const customer = getCustomerDetails();
-        if (!customer) return;
-
-        // Stock validation
-        const stockIssues = [];
-        for (const item of cartItems) {
-          const product    = productsCatalog.products.find(p => p.id === item.productId);
-          const variant    = product?.variants?.find(v => v.id === item.variantId);
-          const maxAllowed = variant?.isAvailable ? Math.min(10, variant.stock || 0) : 0;
-          if (maxAllowed <= 0)              stockIssues.push(`${item.productName} is unavailable`);
-          else if (item.quantity > maxAllowed) stockIssues.push(`${item.productName} only has ${maxAllowed} left`);
-        }
-        if (stockIssues.length > 0) {
-          showError(stockIssues.join(', '));
-          return;
-        }
-
-        setLoading('confirm-order-btn', true);
-        try {
-          const res = await fetch(`${apiUrl}/api/payments/cashfree/confirm-order`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              cashfreeOrderId,
-              customer,
-              cartItems,
-              subtotal,
-              shippingCharge,
-              totalAmount,
-            }),
-          });
-
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.message || 'Failed to confirm order');
-          }
-
-          const { orderNumber } = await res.json();
-
-          // Clear cart
-          localStorage.removeItem('cart');
-          const badge = document.getElementById('cart-badge');
-          if (badge) badge.textContent = '0';
-
-          window.location.href = `/order/${orderNumber}`;
-        } catch (err) {
-          showError(err.message || 'Failed to confirm order. Please try again.');
-        } finally {
-          setLoading('confirm-order-btn', false, 'Confirm Order');
-        }
+      // Refresh after QR expiry
+      $('refresh-qr-btn')?.addEventListener('click', () => {
+        hide('qr-expired-overlay');
+        hide('upi-payment-section');
+        show('pay-now-btn');
+        cashfreeOrderId = '';
+        paymentSessionId = '';
+        show('polling-status');
+        resetTimer();
       });
 
       // ── Init ──────────────────────────────────────────────────────────
       await loadRemoteData();
       loadCart();
-
       $('pincode')?.addEventListener('blur', checkPincode);
     });
   </script>

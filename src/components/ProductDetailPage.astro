@@ -2,7 +2,12 @@
 const { apiUrl } = Astro.props;
 ---
 
-  <script define:vars={{ apiUrl }}>
+  <div id="page-config" data-api-url={apiUrl} style="display:none"></div>
+
+  <script>
+    // Read apiUrl safely from data attribute — avoids define:vars colon bug
+    const apiUrl = document.getElementById('page-config')?.dataset?.apiUrl || 'http://localhost:3001';
+
     let product = null;
     let variants = [];
     let colors = [];
@@ -331,10 +336,12 @@ const { apiUrl } = Astro.props;
     }
 
     async function loadProduct() {
+      console.log('Loading product details...');
       const slug = getSlugFromPath();
       if (!slug) return renderNotFound();
       try {
         const response = await fetch(`${apiUrl}/api/products/slug/${encodeURIComponent(slug)}`);
+        console.log('Fetch response:', response);
         if (!response.ok) return renderNotFound();
         const found = await response.json();
         if (!found || !found.isActive) return renderNotFound();
@@ -346,6 +353,7 @@ const { apiUrl } = Astro.props;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+    console.log('Document ready, initializing product page...');
       loadProduct();
     });
   </script>
