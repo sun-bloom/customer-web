@@ -44,6 +44,7 @@ const { apiUrl } = Astro.props;
         }
 
         // Fetch order directly by order number (public endpoint — no phone needed)
+        // console.log("order id", orderNumber);
         const response = await fetch(`${apiUrl}/api/orders/by-number/${encodeURIComponent(orderNumber)}`);
 
         if (response.ok) {

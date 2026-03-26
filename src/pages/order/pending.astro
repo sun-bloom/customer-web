@@ -1,0 +1,262 @@
+---
+import Layout from '../../layouts/Layout.astro';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:4040';
+---
+
+<Layout title="Confirming Payment - Fashion Store">
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-lg {
+      width: 48px; height: 48px;
+      border: 4px solid #e5e7eb;
+      border-top-color: #111827;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes pulse-ring {
+      0%   { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(2);   opacity: 0; }
+    }
+    .pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeInUp 0.4s ease forwards; }
+  </style>
+
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+    <div class="max-w-md w-full">
+
+      <!-- ── Checking state (default) ── -->
+      <div id="state-checking" class="bg-white rounded-xl shadow-md p-8 text-center">
+        <div class="flex justify-center mb-6">
+          <div class="spinner-lg"></div>
+        </div>
+        <h1 class="text-xl font-bold text-gray-900 mb-2">Confirming Your Payment</h1>
+        <p class="text-gray-500 text-sm">Please wait while we verify your payment with Cashfree…</p>
+        <div id="retry-countdown" class="mt-4 text-xs text-gray-400"></div>
+      </div>
+
+      <!-- ── Success state ── -->
+      <div id="state-success" class="hidden fade-in bg-white rounded-xl shadow-md p-8 text-center">
+        <div class="flex justify-center mb-4">
+          <div class="relative">
+            <div class="absolute inset-0 bg-green-300 rounded-full pulse-ring"></div>
+            <svg xmlns="http://www.w3.org/2000/svg" class="relative h-16 w-16 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
+        <p class="text-gray-500 text-sm mb-2">Your order has been confirmed.</p>
+        <p class="text-sm text-gray-700 mb-6">
+          Order Number: <span id="success-order-number" class="font-bold text-gray-900"></span>
+        </p>
+        <p class="text-xs text-gray-400 mb-2">Redirecting to your order page…</p>
+        <div class="w-full bg-gray-100 rounded-full h-1">
+          <div id="redirect-bar" class="bg-gray-900 h-1 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- ── Payment pending / not confirmed state ── -->
+      <div id="state-pending" class="hidden fade-in bg-white rounded-xl shadow-md p-8 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-14 w-14 text-yellow-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h1 class="text-xl font-bold text-gray-900 mb-2">Payment Pending</h1>
+        <p class="text-sm text-gray-500 mb-6">
+          Your payment is still being processed by Cashfree. This usually takes a few seconds.
+        </p>
+        <button id="check-again-btn"
+          class="w-full bg-gray-900 text-white py-3 rounded-md font-medium hover:bg-black transition-colors mb-3">
+          Check Again
+        </button>
+        <a href="/orders" class="block text-sm text-gray-500 hover:text-black transition-colors">
+          View My Orders
+        </a>
+      </div>
+
+      <!-- ── Failed state ── -->
+      <div id="state-failed" class="hidden fade-in bg-white rounded-xl shadow-md p-8 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-14 w-14 text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h1 class="text-xl font-bold text-gray-900 mb-2">Payment Failed</h1>
+        <p id="failed-reason" class="text-sm text-gray-500 mb-6">Your payment could not be completed.</p>
+        <a href="/payment"
+          class="block w-full bg-gray-900 text-white py-3 rounded-md font-medium hover:bg-black transition-colors mb-3 text-center">
+          Try Again
+        </a>
+        <a href="/cart" class="block text-sm text-gray-500 hover:text-black transition-colors">
+          ← Back to Cart
+        </a>
+      </div>
+
+      <!-- ── Not found state ── -->
+      <div id="state-not-found" class="hidden fade-in bg-white rounded-xl shadow-md p-8 text-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-14 w-14 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h1 class="text-xl font-bold text-gray-900 mb-2">Order Not Found</h1>
+        <p class="text-sm text-gray-500 mb-2">
+          We couldn't find an order linked to this payment.
+        </p>
+        <p class="text-xs text-gray-400 mb-6">
+          If money was deducted, please contact support with your Cashfree order ID:
+          <span id="cf-order-id-display" class="font-mono font-medium text-gray-700 block mt-1"></span>
+        </p>
+        <a href="/orders" class="block w-full bg-gray-900 text-white py-3 rounded-md font-medium hover:bg-black transition-colors mb-3 text-center">
+          View My Orders
+        </a>
+        <a href="/" class="block text-sm text-gray-500 hover:text-black transition-colors">
+          Go to Home
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="page-config" data-api-url={apiUrl} style="display:none"></div>
+
+  <script>
+    const API_URL = document.getElementById('page-config')?.dataset?.apiUrl || 'http://localhost:4040';
+
+    const MAX_RETRIES    = 6;   // Try up to 6 times
+    const RETRY_INTERVAL = 4000; // Every 4 seconds = 24s total wait
+    let   retryCount     = 0;
+    let   retryTimer     = null;
+
+    // ── Helpers ──────────────────────────────────────────────────────────
+    function show(id) { document.getElementById(id)?.classList.remove('hidden'); }
+    function hide(id) { document.getElementById(id)?.classList.add('hidden'); }
+    function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
+    function showState(state) {
+      ['checking', 'success', 'pending', 'failed', 'not-found'].forEach(s => {
+        const el = document.getElementById(`state-${s}`);
+        if (el) el.classList.add('hidden');
+      });
+      show(`state-${state}`);
+    }
+
+    // ── Read cf_order_id from URL ─────────────────────────────────────────
+    const params    = new URLSearchParams(window.location.search);
+    const cfOrderId = params.get('cf_order_id') || params.get('order_id') || '';
+
+    if (!cfOrderId) {
+      showState('not-found');
+      setText('cf-order-id-display', 'Unknown');
+    } else {
+      setText('cf-order-id-display', cfOrderId);
+      checkPaymentStatus();
+    }
+
+    // ── Check payment status ──────────────────────────────────────────────
+    async function checkPaymentStatus() {
+      showState('checking');
+      updateCountdown();
+
+      try {
+        // Step 1: Check Cashfree order status via your backend
+        // console.log(cfOrderId)
+        const statusRes = await fetch(`${API_URL}/api/payments/cashfree/status/${cfOrderId}`);
+        if (!statusRes.ok) throw new Error('Status check failed');
+        const { status, reason } = await statusRes.json();
+
+        console.log('[Pending] Cashfree status:', status);
+
+        if (status === 'PAID') {
+          await handlePaid();
+          return;
+        }
+
+        if (status === 'FAILED' || status === 'CANCELLED') {
+          showState('failed');
+          setText('failed-reason', reason || 'Your payment was declined or cancelled.');
+          return;
+        }
+
+        if (status === 'EXPIRED') {
+          showState('failed');
+          setText('failed-reason', 'Payment session expired. Please try again.');
+          return;
+        }
+
+        // ACTIVE — payment not confirmed yet, retry
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          retryTimer = setTimeout(checkPaymentStatus, RETRY_INTERVAL);
+        } else {
+          // Max retries reached — show pending state with manual check button
+          showState('pending');
+        }
+
+      } catch (err) {
+        console.error('[Pending] Error:', err.message);
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          retryTimer = setTimeout(checkPaymentStatus, RETRY_INTERVAL);
+        } else {
+          showState('pending');
+        }
+      }
+    }
+
+    // ── Handle PAID status ────────────────────────────────────────────────
+    async function handlePaid() {
+      try {
+        // Step 2: Find the DB order by cfOrderId
+        const orderRes = await fetch(`${API_URL}/api/payments/cashfree/order-by-cf-id/${cfOrderId}`);
+
+        if (orderRes.ok) {
+          const { orderNumber } = await orderRes.json();
+
+          // Show success + animate redirect bar
+          showState('success');
+          setText('success-order-number', orderNumber);
+          animateRedirectBar();
+
+          setTimeout(() => {
+            window.location.href = `/order/${orderNumber}`;
+          }, 3000);
+          return;
+        }
+      } catch (e) {
+        console.warn('[Pending] Could not find DB order:', e.message);
+      }
+
+      // Order not in DB yet — show not-found with support info
+      showState('not-found');
+      setText('cf-order-id-display', cfOrderId);
+    }
+
+    // ── Redirect progress bar ─────────────────────────────────────────────
+    function animateRedirectBar() {
+      const bar      = document.getElementById('redirect-bar');
+      const duration = 3000;
+      const start    = Date.now();
+      const tick = () => {
+        const elapsed = Date.now() - start;
+        const pct     = Math.min(100, (elapsed / duration) * 100);
+        if (bar) bar.style.width = `${pct}%`;
+        if (pct < 100) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
+
+    // ── Retry countdown display ───────────────────────────────────────────
+    function updateCountdown() {
+      const el = document.getElementById('retry-countdown');
+      if (!el || retryCount === 0) return;
+      el.textContent = `Attempt ${retryCount} of ${MAX_RETRIES}…`;
+    }
+
+    // ── Manual check again button ─────────────────────────────────────────
+    document.getElementById('check-again-btn')?.addEventListener('click', () => {
+      retryCount = 0;
+      clearTimeout(retryTimer);
+      checkPaymentStatus();
+    });
+  </script>
+</Layout>
