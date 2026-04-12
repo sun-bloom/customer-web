@@ -1,270 +1,590 @@
 ---
-import Layout from '../layouts/Layout.astro';
-const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
+import Layout from "../layouts/Layout.astro";
+const apiUrl = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
 ---
 
-<Layout title="Payment - Fashion Store">
-  <div class="container mx-auto px-4 py-8">
-    <div class="max-w-4xl mx-auto">
-      <h1 class="text-3xl font-bold mb-8">Complete Payment</h1>
-      
-      <div id="payment-empty-cart" class="bg-white rounded-lg shadow-md p-8 text-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+<Layout title='Payment - Fashion Store'>
+  <style>
+    @keyframes shimmer {
+      0% {
+        background-position: -800px 0;
+      }
+      100% {
+        background-position: 800px 0;
+      }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 800px 100%;
+      animation: shimmer 1.4s infinite linear;
+      border-radius: 4px;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #ffffff40;
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+    @keyframes pulse-ring {
+      0% {
+        transform: scale(0.8);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(2);
+        opacity: 0;
+      }
+    }
+    .pulse-ring {
+      animation: pulse-ring 1.5s ease-out infinite;
+    }
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .fade-in-up {
+      animation: fadeInUp 0.4s ease forwards;
+    }
+    .timer-ring-circle {
+      transition: stroke-dashoffset 1s linear;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+  </style>
+
+  <div class='container mx-auto px-4 py-8'>
+    <div class='max-w-4xl mx-auto'>
+      <h1 class='text-3xl font-bold mb-8'>Complete Payment</h1>
+
+      <!-- Skeleton loader -->
+      <div id='payment-skeleton'>
+        <div class='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+          <div class='bg-white rounded-lg shadow-md p-6 space-y-4'>
+            <div class='skeleton h-6 w-40 mb-6'></div>
+            <div class='grid grid-cols-2 gap-4'>
+              {
+                [1, 2, 3, 4].map(() => (
+                  <div class='space-y-1'>
+                    <div class='skeleton h-4 w-24' />
+                    <div class='skeleton h-10 w-full rounded-md' />
+                  </div>
+                ))
+              }
+            </div>
+            <div class='space-y-1'>
+              <div class='skeleton h-4 w-32'></div>
+              <div class='skeleton h-20 w-full rounded-md'></div>
+            </div>
+            <div class='grid grid-cols-2 gap-4'>
+              {
+                [1, 2].map(() => (
+                  <div class='space-y-1'>
+                    <div class='skeleton h-4 w-16' />
+                    <div class='skeleton h-10 w-full rounded-md' />
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+          <div class='bg-white rounded-lg shadow-md p-6'>
+            <div class='skeleton h-6 w-36 mb-4'></div>
+            {
+              [1, 2, 3].map(() => (
+                <div class='flex items-center gap-3 py-3 border-b border-gray-100'>
+                  <div class='skeleton w-16 h-16 rounded-md flex-shrink-0' />
+                  <div class='flex-1 space-y-2'>
+                    <div class='skeleton h-4 w-full' />
+                    <div class='skeleton h-3 w-24' />
+                    <div class='skeleton h-4 w-16' />
+                  </div>
+                </div>
+              ))
+            }
+            <div class='skeleton h-12 w-full rounded-md mt-6'></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty cart -->
+      <div
+        id='payment-empty-cart'
+        class='hidden bg-white rounded-lg shadow-md p-8 text-center'
+      >
+        <svg
+          xmlns='http://www.w3.org/2000/svg'
+          class='mx-auto h-16 w-16 text-gray-400 mb-4'
+          fill='none'
+          viewBox='0 0 24 24'
+          stroke='currentColor'
+        >
+          <path
+            stroke-linecap='round'
+            stroke-linejoin='round'
+            stroke-width='2'
+            d='M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z'
+          ></path>
         </svg>
-        <h2 class="text-xl font-medium text-gray-900 mb-2">Your cart is empty</h2>
-        <p class="text-gray-500 mb-6">Looks like you haven't added anything to your cart yet.</p>
-        <a href="/products" class="inline-block bg-gray-900 text-white py-2 px-6 rounded-md font-medium hover:bg-black transition-colors">
+        <h2 class='text-xl font-medium text-gray-900 mb-2'>
+          Your cart is empty
+        </h2>
+        <p class='text-gray-500 mb-6'>
+          Looks like you haven't added anything to your cart yet.
+        </p>
+        <a
+          href='/products'
+          class='inline-block bg-gray-900 text-white py-2 px-6 rounded-md font-medium hover:bg-black transition-colors'
+        >
           Continue Shopping
         </a>
       </div>
-      
-      <div id="payment-cart-container" class="hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div class="space-y-6">
-            <div class="bg-white rounded-lg shadow-md p-6">
-              <h2 class="text-xl font-semibold mb-6">Your Details</h2>
-              <form id="payment-form">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label for="customer-name" class="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      id="customer-name"
-                      name="customer-name"
-                      required
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label for="customer-phone" class="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      id="customer-phone"
-                      name="customer-phone"
-                      required
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label for="customer-email" class="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      id="customer-email"
-                      name="customer-email"
-                      required
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label for="pincode" class="block text-sm font-medium text-gray-700 mb-1">
-                      Pincode *
-                    </label>
-                    <input
-                      type="text"
-                      id="pincode"
-                      name="pincode"
-                      required
-                      maxlength="6"
-                      pattern="[0-9]{6}"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                    />
-                    <div id="pincode-status"></div>
-                  </div>
-                </div>
-                
-                <div class="mt-4">
-                  <label for="delivery-address" class="block text-sm font-medium text-gray-700 mb-1">
-                    Delivery Address *
-                  </label>
-                  <textarea
-                    id="delivery-address"
-                    name="delivery-address"
-                    rows="3"
+
+      <!-- Payment content -->
+      <div
+        id='payment-cart-container'
+        class='hidden'
+      >
+        <div class='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+          <!-- Left: Customer details -->
+          <div class='space-y-6'>
+            <div class='bg-white rounded-lg shadow-md p-6'>
+              <h2 class='text-xl font-semibold mb-6'>Your Details</h2>
+              <div class='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div>
+                  <label
+                    for='customer-name'
+                    class='block text-sm font-medium text-gray-700 mb-1'
+                    >Full Name *</label
+                  >
+                  <input
+                    type='text'
+                    id='customer-name'
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                  ></textarea>
+                    class='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-gray-900'
+                  />
                 </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <label for="city" class="block text-sm font-medium text-gray-700 mb-1">
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      id="city"
-                      name="city"
-                      required
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label for="state" class="block text-sm font-medium text-gray-700 mb-1">
-                      State *
-                    </label>
-                    <input
-                      type="text"
-                      id="state"
-                      name="state"
-                      required
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-gray-900 focus:border-gray-900"
-                    />
-                  </div>
+                <div>
+                  <label
+                    for='customer-phone'
+                    class='block text-sm font-medium text-gray-700 mb-1'
+                    >Phone Number *</label
+                  >
+                  <input
+                    type='tel'
+                    id='customer-phone'
+                    required
+                    class='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-gray-900'
+                  />
                 </div>
-              </form>
-            </div>
-            
-            <div class="bg-white rounded-lg shadow-md p-6">
-              <h2 class="text-xl font-semibold mb-4">Payment Method</h2>
-              
-              <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                <div class="flex items-center mb-6">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-900 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <div>
-                    <h4 class="font-medium text-gray-900">UPI Payment</h4>
-                    <p class="text-sm text-gray-600">Complete your payment using UPI</p>
-                  </div>
+                <div>
+                  <label
+                    for='customer-email'
+                    class='block text-sm font-medium text-gray-700 mb-1'
+                    >Email Address *</label
+                  >
+                  <input
+                    type='email'
+                    id='customer-email'
+                    required
+                    class='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-gray-900'
+                  />
                 </div>
-                
-                <div id="desktop-payment" class="hidden">
-                  <div class="flex flex-col items-center">
-                    <div class="w-48 h-48 bg-white rounded-lg p-2 flex items-center justify-center border border-gray-200 shadow-sm mb-4">
-                      <img id="upi-qr-code" src="" alt="UPI QR Code" class="max-w-full max-h-full hidden" />
-                    </div>
-                    <p class="text-sm text-gray-600 mb-2">Scan QR Code to Pay</p>
-                    <div class="text-center mb-6">
-                      <p class="text-sm font-medium text-gray-700 mb-1">UPI ID:</p>
-                      <div class="flex items-center justify-center">
-                        <code id="upi-vpa" class="font-mono font-bold text-gray-900 bg-gray-100 px-3 py-2 rounded">-</code>
-                        <button type="button" id="copy-upi" class="ml-2 text-sm text-blue-600 hover:underline">Copy</button>
-                      </div>
-                    </div>
+                <div>
+                  <label
+                    for='pincode'
+                    class='block text-sm font-medium text-gray-700 mb-1'
+                    >Pincode *</label
+                  >
+                  <input
+                    type='text'
+                    id='pincode'
+                    required
+                    maxlength='6'
+                    pattern='[0-9]{6}'
+                    class='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-gray-900'
+                  />
+                  <div
+                    id='pincode-status'
+                    class='mt-1'
+                  >
                   </div>
                 </div>
-                
-                <div id="mobile-payment" class="hidden">
-                  <div class="space-y-4">
-                    <p class="text-sm text-gray-600 text-center">Tap to pay with your preferred UPI app:</p>
-                    <div class="grid grid-cols-3 gap-3">
-                      <a id="gpay-link" href="#" class="flex flex-col items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-2">
-                          <span class="text-white font-bold text-sm">G</span>
-                        </div>
-                        <span class="text-xs font-medium text-gray-700">GPay</span>
-                      </a>
-                      <a id="phonepe-link" href="#" class="flex flex-col items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-2">
-                          <span class="text-white font-bold text-sm">P</span>
-                        </div>
-                        <span class="text-xs font-medium text-gray-700">PhonePe</span>
-                      </a>
-                      <a id="paytm-link" href="#" class="flex flex-col items-center p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mb-2">
-                          <span class="text-white font-bold text-sm">P</span>
-                        </div>
-                        <span class="text-xs font-medium text-gray-700">Paytm</span>
-                      </a>
-                    </div>
-                    <div class="text-center mt-4">
-                      <p class="text-sm text-gray-600">Or copy UPI ID:</p>
-                      <div class="flex items-center justify-center mt-2">
-                        <code id="upi-vpa-mobile" class="font-mono font-bold text-gray-900 bg-gray-100 px-3 py-2 rounded">-</code>
-                        <button type="button" id="copy-upi-mobile" class="ml-2 text-sm text-blue-600 hover:underline">Copy</button>
-                      </div>
-                    </div>
-                  </div>
+              </div>
+              <div class='mt-4'>
+                <label
+                  for='delivery-address'
+                  class='block text-sm font-medium text-gray-700 mb-1'
+                  >Delivery Address *</label
+                >
+                <textarea
+                  id='delivery-address'
+                  rows='3'
+                  required
+                  class='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-gray-900'
+                ></textarea>
+              </div>
+              <div class='grid grid-cols-1 md:grid-cols-2 gap-4 mt-4'>
+                <div>
+                  <label
+                    for='city'
+                    class='block text-sm font-medium text-gray-700 mb-1'
+                    >City *</label
+                  >
+                  <input
+                    type='text'
+                    id='city'
+                    required
+                    class='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-gray-900'
+                  />
                 </div>
-                
-                <div class="w-full space-y-3 mt-6">
-                  <label class="block text-sm font-medium text-gray-700">
-                    Upload Payment Screenshot *
-                  </label>
-                  <div class="flex items-center justify-center w-full">
-                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50">
-                      <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                        <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                        </svg>
-                        <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
-                        <p id="file-name-display" class="text-xs text-gray-500 uppercase">PNG, JPG or PDF</p>
-                      </div>
-                      <input id="payment-screenshot" type="file" class="hidden" accept="image/*" required />
-                    </label>
-                  </div>
-                </div>
-                
-                <div class="mt-6 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <p class="text-xs text-yellow-800">
-                    <strong>Important:</strong> Your order will be processed after we verify the payment from your screenshot.
-                  </p>
+                <div>
+                  <label
+                    for='state'
+                    class='block text-sm font-medium text-gray-700 mb-1'
+                    >State *</label
+                  >
+                  <input
+                    type='text'
+                    id='state'
+                    required
+                    class='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-gray-900'
+                  />
                 </div>
               </div>
             </div>
           </div>
-          
+
+          <!-- Right: Order summary + UPI -->
           <div>
-            <div class="bg-white rounded-lg shadow-md p-6 sticky top-6">
-              <h2 class="text-xl font-semibold mb-4">Order Summary</h2>
-              
-              <div id="payment-cart-items" class="space-y-3 mb-4">
+            <div class='bg-white rounded-lg shadow-md p-6 sticky top-6'>
+              <h2 class='text-xl font-semibold mb-4'>Order Summary</h2>
+
+              <div
+                id='payment-cart-items'
+                class='space-y-3 mb-4'
+              >
               </div>
-              
-              <div class="space-y-3 pb-4 border-b">
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Subtotal</span>
-                  <span id="payment-subtotal" class="font-medium">₹0</span>
+
+              <div class='space-y-2 pb-4 border-b'>
+                <div class='flex justify-between text-sm text-gray-600'>
+                  <span>Subtotal</span>
+                  <span
+                    id='payment-subtotal'
+                    class='font-medium text-gray-900'
+                    >₹0</span
+                  >
                 </div>
-                
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Shipping</span>
-                  <span id="payment-shipping" class="font-medium">₹50</span>
+                <div class='flex justify-between text-sm text-gray-600'>
+                  <span>Shipping</span>
+                  <span
+                    id='payment-shipping'
+                    class='font-medium text-gray-900'
+                    >₹50</span
+                  >
                 </div>
               </div>
-              
-              <div class="pt-4">
-                <div class="flex justify-between items-center mb-6">
-                  <span class="text-lg font-semibold">Total</span>
-                  <span id="payment-total" class="text-xl font-bold text-gray-900">₹0</span>
-                </div>
-                
-                <div id="free-shipping-notice" class="hidden text-sm text-green-600 mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  You've qualified for free shipping!
-                </div>
-                
-                <div id="shipping-charge-notice" class="text-sm text-gray-600 mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Add ₹1500 more for free shipping
-                </div>
-                
-                <button
-                  type="submit"
-                  id="submit-order-btn"
-                  class="w-full bg-gray-900 text-white py-3 px-6 rounded-md font-medium hover:bg-black transition-colors"
+
+              <div class='pt-4 flex justify-between items-center mb-6'>
+                <span class='text-lg font-semibold'>Total</span>
+                <span
+                  id='payment-total'
+                  class='text-xl font-bold text-gray-900'
+                  >₹0</span
                 >
-                  Place Order
-                </button>
-                
-                <a href="/cart" class="block text-center text-gray-600 hover:text-black mt-4">
-                  Back to Cart
-                </a>
+              </div>
+
+              <!-- Error message -->
+              <div
+                id='payment-error'
+                class='hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-sm'
+              >
+              </div>
+
+              <!-- Stock error banner -->
+              <div
+                id='stock-error-banner'
+                class='hidden mb-4 p-4 bg-orange-50 border border-orange-200 rounded-md'
+              >
+                <div class='flex items-start gap-2 mb-2'>
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    class='h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5'
+                    fill='none'
+                    viewBox='0 0 24 24'
+                    stroke='currentColor'
+                  >
+                    <path
+                      stroke-linecap='round'
+                      stroke-linejoin='round'
+                      stroke-width='2'
+                      d='M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+                    ></path>
+                  </svg>
+                  <p class='text-sm font-semibold text-orange-800'>
+                    Some items are unavailable
+                  </p>
+                </div>
+                <ul
+                  id='stock-error-list'
+                  class='space-y-1 pl-7'
+                >
+                </ul>
+                <a
+                  href='/cart'
+                  class='mt-3 inline-block text-xs font-medium text-orange-700 underline'
+                  >← Update your cart</a
+                >
+              </div>
+
+              <!-- Pay button -->
+              <button
+                id='pay-now-btn'
+                class='w-full bg-gray-900 text-white py-3 px-6 rounded-md font-medium hover:bg-black transition-colors flex items-center justify-center gap-2 cursor-pointer'
+              >
+                <svg
+                  xmlns='http://www.w3.org/2000/svg'
+                  class='h-5 w-5'
+                  fill='none'
+                  viewBox='0 0 24 24'
+                  stroke='currentColor'
+                >
+                  <path
+                    stroke-linecap='round'
+                    stroke-linejoin='round'
+                    stroke-width='2'
+                    d='M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.243m-4.243 0L9 9m3 3l-3 3'
+                  ></path>
+                </svg>
+                Pay with UPI
+              </button>
+
+              <!-- UPI QR section -->
+              <div
+                id='upi-payment-section'
+                class='hidden mt-6'
+              >
+                <div class='border-t pt-6'>
+                  <!-- Timer row -->
+                  <div class='flex items-center justify-between mb-4'>
+                    <p class='text-sm text-gray-500'>Scan QR to pay</p>
+                    <div class='flex items-center gap-2'>
+                      <svg
+                        class='w-8 h-8'
+                        viewBox='0 0 36 36'
+                      >
+                        <circle
+                          cx='18'
+                          cy='18'
+                          r='15.9'
+                          fill='none'
+                          stroke='#e5e7eb'
+                          stroke-width='3'
+                        ></circle>
+                        <circle
+                          id='timer-ring'
+                          cx='18'
+                          cy='18'
+                          r='15.9'
+                          fill='none'
+                          stroke='#111827'
+                          stroke-width='3'
+                          stroke-dasharray='100 100'
+                          stroke-dashoffset='0'
+                          stroke-linecap='round'
+                          class='timer-ring-circle'
+                        ></circle>
+                      </svg>
+                      <span
+                        id='session-timer'
+                        class='text-sm font-mono font-medium text-gray-700'
+                        >15:00</span
+                      >
+                    </div>
+                  </div>
+
+                  <!-- QR Code -->
+                  <div class='flex justify-center mb-4'>
+                    <div
+                      id='qr-wrapper'
+                      class='p-3 border-2 border-gray-200 rounded-lg inline-block relative'
+                    >
+                      <img
+                        id='upi-qr-image'
+                        src=''
+                        alt='UPI QR Code'
+                        class='w-48 h-48'
+                      />
+                      <!-- Expired overlay -->
+                      <div
+                        id='qr-expired-overlay'
+                        class='hidden absolute inset-0 bg-white/90 rounded-lg flex flex-col items-center justify-center'
+                      >
+                        <svg
+                          xmlns='http://www.w3.org/2000/svg'
+                          class='h-10 w-10 text-red-400 mb-2'
+                          fill='none'
+                          viewBox='0 0 24 24'
+                          stroke='currentColor'
+                        >
+                          <path
+                            stroke-linecap='round'
+                            stroke-linejoin='round'
+                            stroke-width='2'
+                            d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
+                          ></path>
+                        </svg>
+                        <p class='text-sm font-medium text-gray-700'>
+                          QR Expired
+                        </p>
+                        <button
+                          id='refresh-qr-btn'
+                          class='mt-2 text-xs bg-gray-900 text-white px-3 py-1.5 rounded-md hover:bg-black transition-colors'
+                        >
+                          Generate New QR
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- UPI App buttons — mobile only -->
+                  <div
+                    id='upi-app-buttons'
+                    class='hidden mb-4'
+                  >
+                    <a
+                      id='upi-pay-btn'
+                      href='#'
+                      class='flex items-center justify-center gap-2 w-full p-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-medium rounded-xl transition-colors'
+                    >
+                      <svg
+                        viewBox='0 0 24 24'
+                        class='w-5 h-5'
+                        fill='none'
+                        xmlns='http://www.w3.org/2000/svg'
+                      >
+                        <path
+                          d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'
+                          stroke='white'
+                          stroke-width='2'
+                          stroke-linecap='round'
+                          stroke-linejoin='round'
+                        ></path>
+                      </svg>
+                      Pay with UPI App
+                    </a>
+                  </div>
+
+                  <!-- Polling indicator -->
+                  <div
+                    id='polling-status'
+                    class='flex items-center justify-center gap-2 mb-4'
+                  >
+                    <span class='relative flex h-2 w-2'>
+                      <span
+                        class='animate-ping absolute inline-flex h-full w-full rounded-full bg-gray-400 opacity-75'
+                      ></span>
+                      <span
+                        class='relative inline-flex rounded-full h-2 w-2 bg-gray-500'
+                      ></span>
+                    </span>
+                    <span class='text-xs text-gray-500'
+                      >Waiting for payment…</span
+                    >
+                  </div>
+
+                  <!-- Payment success banner -->
+                  <div
+                    id='payment-success-banner'
+                    class='hidden fade-in-up bg-green-50 border border-green-200 rounded-lg p-5 text-center mb-4'
+                  >
+                    <div class='flex items-center justify-center mb-3'>
+                      <div class='relative'>
+                        <div
+                          class='absolute inset-0 bg-green-300 rounded-full pulse-ring'
+                        >
+                        </div>
+                        <svg
+                          xmlns='http://www.w3.org/2000/svg'
+                          class='relative h-12 w-12 text-green-600'
+                          fill='none'
+                          viewBox='0 0 24 24'
+                          stroke='currentColor'
+                        >
+                          <path
+                            stroke-linecap='round'
+                            stroke-linejoin='round'
+                            stroke-width='2'
+                            d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+                          ></path>
+                        </svg>
+                      </div>
+                    </div>
+                    <p class='font-bold text-green-800 text-xl'>
+                      Payment Successful!
+                    </p>
+                    <p class='text-sm text-green-600 mt-1'>
+                      Saving your order, redirecting…
+                    </p>
+                  </div>
+
+                  <!-- Payment failed banner -->
+                  <div
+                    id='payment-failed-banner'
+                    class='hidden fade-in-up bg-red-50 border border-red-200 rounded-lg p-5 text-center mb-4'
+                  >
+                    <svg
+                      xmlns='http://www.w3.org/2000/svg'
+                      class='mx-auto h-12 w-12 text-red-500 mb-2'
+                      fill='none'
+                      viewBox='0 0 24 24'
+                      stroke='currentColor'
+                    >
+                      <path
+                        stroke-linecap='round'
+                        stroke-linejoin='round'
+                        stroke-width='2'
+                        d='M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'
+                      ></path>
+                    </svg>
+                    <p class='font-bold text-red-800 text-xl'>Payment Failed</p>
+                    <p class='text-sm text-red-600 mt-1'>
+                      Your payment was not completed.
+                    </p>
+                    <div class='flex items-center justify-center gap-3 mt-3'>
+                      <button
+                        id='retry-payment-btn'
+                        class='bg-gray-900 text-white text-sm px-5 py-2 rounded-md hover:bg-black transition-colors'
+                      >
+                        Check again
+                      </button>
+                      <button
+                        id='cancel-order-btn'
+                        class='bg-white text-red-600 border border-red-300 text-sm px-5 py-2 rounded-md hover:bg-red-50 transition-colors'
+                      >
+                        Cancel Order
+                      </button>
+                    </div>
+                  </div>
+
+                  <a
+                    href='/cart'
+                    class='block text-center text-sm text-gray-500 hover:text-black mt-2'
+                    >← Back to Cart</a
+                  >
+                </div>
               </div>
             </div>
           </div>
@@ -272,446 +592,745 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
       </div>
     </div>
   </div>
-  
-  <script type="module" define:vars={{ apiUrl }}>
-    document.addEventListener('DOMContentLoaded', async function() {
+
+  <script type='module' define:vars={{ apiUrl }}>
+    document.addEventListener("DOMContentLoaded", async () => {
       let cartItems = [];
       let subtotal = 0;
       let shippingCharge = 50;
       let totalAmount = 0;
-      let screenshotBase64 = '';
-      let isMobile = false;
-
       let productsCatalog = { products: [] };
-      let ordersData = { nextOrderNumber: 1001 };
-      let deliverySettingsData = { regions: [] };
-      let upiDetails = { vpa: '', name: '', qrCode: '' };
+      let deliverySettings = { regions: [] };
+      let upiDetails = { vpa: "", name: "" };
+      let cashfreeOrderId = "";
+      let paymentSessionId = "";
+      let orderExpiryTime = null;
+      let pollInterval = null;
+      let timerInterval = null;
+      let sessionExpired = false;
+      let currentCustomer = null;
+      let paymentDone = false; // guard — prevents duplicate success/fail triggers
+      let orderNumber = "";
 
+      const SESSION_DURATION = 15 * 60; // 15 min
+
+      // ── Helpers ──────────────────────────────────────────────────────
+      function show(id) {
+        document.getElementById(id)?.classList.remove("hidden");
+      }
+      function hide(id) {
+        document.getElementById(id)?.classList.add("hidden");
+      }
+      function $(id) {
+        return document.getElementById(id);
+      }
+      function setText(id, val) {
+        const el = $(id);
+        if (el) el.textContent = val;
+      }
+
+      function showError(msg) {
+        const el = $("payment-error");
+        if (!el) return;
+        el.textContent = msg;
+        el.classList.remove("hidden");
+        setTimeout(() => el.classList.add("hidden"), 6000);
+      }
+
+      function showStockErrors(stockErrors) {
+        const banner = $("stock-error-banner");
+        const list = $("stock-error-list");
+        if (!banner || !list) return;
+        list.innerHTML = stockErrors
+          .map(
+            (e) =>
+              `<li class="text-sm text-orange-700">
+            <span class="font-medium">${e.productName}</span>
+            — ${e.reason}${e.available ? ` (${e.available} available)` : ""}
+          </li>`,
+          )
+          .join("");
+        banner.classList.remove("hidden");
+        banner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      function setLoading(btnId, loading, label = "") {
+        const btn = $(btnId);
+        if (!btn) return;
+        btn.disabled = loading;
+        btn.innerHTML = loading
+          ? `<span class="spinner"></span> Processing…`
+          : label;
+      }
+
+      // ── Remote data ───────────────────────────────────────────────────
       async function fetchJson(endpoint) {
-        const response = await fetch(`${apiUrl}${endpoint}`);
-        if (!response.ok) {
-          console.error(`❌ API error: ${response.status} for ${endpoint}`);
-          return null;
-        }
-        return response.json();
+        const res = await fetch(`${apiUrl}${endpoint}`);
+        if (!res.ok) return null;
+        return res.json();
       }
 
       async function loadRemoteData() {
-        try {
-          const [productsData, settingsData, deliveryData] = await Promise.all([
-            fetchJson('/api/products'),
-            fetchJson('/api/public/settings'),
-            fetchJson('/api/delivery')
-          ]);
-
-          productsCatalog = { products: (productsData?.products || []).filter((p) => p.isActive) };
-          deliverySettingsData = deliveryData || { regions: [] };
-          const settings = settingsData || {};
-          upiDetails = settings?.upi || { vpa: '', name: '', qrCode: '' };
-
-          const upiCode = document.getElementById('upi-vpa');
-          const upiCodeMobile = document.getElementById('upi-vpa-mobile');
-          const upiQr = document.getElementById('upi-qr-code');
-          if (upiCode) upiCode.textContent = upiDetails.vpa || '-';
-          if (upiCodeMobile) upiCodeMobile.textContent = upiDetails.vpa || '-';
-          if (upiQr) {
-            if (upiDetails.qrCode) {
-              upiQr.src = upiDetails.qrCode;
-              upiQr.classList.remove('hidden');
-            } else {
-              upiQr.classList.add('hidden');
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error loading payment data:', error);
-        }
+        const [productsData, settingsData, deliveryData] = await Promise.all([
+          fetchJson("/api/products"),
+          fetchJson("/api/public/settings"),
+          fetchJson("/api/delivery"),
+        ]);
+        productsCatalog = {
+          products: (productsData?.products || []).filter((p) => p.isActive),
+        };
+        deliverySettings = deliveryData || { regions: [] };
+        upiDetails = settingsData?.upi || { vpa: "", name: "" };
       }
 
-      await loadRemoteData();
-      
-      if (productsCatalog.products && productsCatalog.products.length > 0) {
-      } else {
-      }
-      
-      isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                 /Windows Phone|Kindle|Silk|Opera Mini/i.test(navigator.userAgent) ||
-                 (navigator.maxTouchPoints > 0 && /Mobile|Android|webOS/i.test(navigator.userAgent));
-      
-      const desktopPayment = document.getElementById('desktop-payment');
-      const mobilePayment = document.getElementById('mobile-payment');
-      
-      if (isMobile) {
-        mobilePayment.classList.remove('hidden');
-        desktopPayment.classList.add('hidden');
-      } else {
-        desktopPayment.classList.remove('hidden');
-        mobilePayment.classList.add('hidden');
-      }
-      
+      // ── Cart ──────────────────────────────────────────────────────────
       function loadCart() {
         try {
-          const cart = localStorage.getItem('cart');
-          
-          if (cart) {
-            cartItems = JSON.parse(cart);
-            updateCartDisplay();
-            checkFreeShipping();
-          }
-        } catch (error) {
-          console.error('❌ Error loading cart:', error);
+          cartItems = JSON.parse(localStorage.getItem("cart") || "[]");
+        } catch {
+          cartItems = [];
         }
-      }
-      
-      function updateCartDisplay() {
-        const cartContainer = document.getElementById('payment-cart-container');
-        const emptyCart = document.getElementById('payment-empty-cart');
-        
-        if (!cartContainer || !emptyCart) {
-          console.error('❌ Cart display elements not found');
-          return;
-        }
-        
         if (cartItems.length === 0) {
-          cartContainer.classList.add('hidden');
-          emptyCart.classList.remove('hidden');
+          hide("payment-skeleton");
+          show("payment-empty-cart");
           return;
         }
-        
-        cartContainer.classList.remove('hidden');
-        emptyCart.classList.add('hidden');
-        
-        const cartItemsContainer = document.getElementById('payment-cart-items');
-        cartItemsContainer.innerHTML = '';
-        
+        hide("payment-skeleton");
+        show("payment-cart-container");
+        renderCartItems();
+        updateTotals();
+      }
+
+      function renderCartItems() {
+        const container = $("payment-cart-items");
+        if (!container) return;
         subtotal = 0;
-        
+        container.innerHTML = "";
         cartItems.forEach((item) => {
-          const product = productsCatalog.products.find(p => p.id === item.productId);
-          if (!product) {
-            return;
-          }
-          
-          const variant = product.variants.find(v => v.id === item.variantId);
-          if (!variant) {
-            return;
-          }
-          
+          const product = productsCatalog.products.find(
+            (p) => p.id === item.productId,
+          );
+          const variant = product?.variants?.find(
+            (v) => v.id === item.variantId,
+          );
+          if (!product || !variant) return;
           const itemTotal = item.quantity * item.unitPrice;
           subtotal += itemTotal;
-          
-          const cartItemElement = document.createElement('div');
-          cartItemElement.className = 'flex items-center space-x-4 py-3 border-b';
-          cartItemElement.innerHTML = `
-            <div class="w-16 h-16 flex-shrink-0">
-              <img src="${item.productImage}" alt="${item.productName}" class="w-full h-full object-cover rounded-md">
-            </div>
-            
+          const el = document.createElement("div");
+          el.className =
+            "flex items-center gap-3 py-2 border-b border-gray-100 last:border-0";
+          el.innerHTML = `
+            <img src="${item.productImage}" alt="${item.productName}" class="w-14 h-14 object-cover rounded-md flex-shrink-0" />
             <div class="flex-1 min-w-0">
-              <h3 class="text-sm font-medium text-gray-900 truncate">${item.productName}</h3>
+              <p class="text-sm font-medium text-gray-900 truncate">${item.productName}</p>
               <p class="text-xs text-gray-500">${item.color} / ${item.pattern} × ${item.quantity}</p>
-              <p class="text-sm font-medium text-gray-900">₹${itemTotal}</p>
+              <p class="text-sm font-semibold text-gray-900">₹${itemTotal}</p>
             </div>
           `;
-          
-          cartItemsContainer.appendChild(cartItemElement);
+          container.appendChild(el);
         });
-        
-        totalAmount = subtotal + shippingCharge;
-        
-        document.getElementById('payment-subtotal').textContent = `₹${subtotal}`;
-        document.getElementById('payment-shipping').textContent = shippingCharge === 0 ? 'FREE' : `₹${shippingCharge}`;
-        document.getElementById('payment-total').textContent = `₹${totalAmount}`;
+      }
 
-        updateQRCode();
+      function updateTotals() {
+        totalAmount = subtotal + shippingCharge;
+        setText("payment-subtotal", `₹${subtotal}`);
+        setText(
+          "payment-shipping",
+          shippingCharge === 0 ? "FREE" : `₹${shippingCharge}`,
+        );
+        setText("payment-total", `₹${totalAmount}`);
       }
-      
-      function updateQRCode() {
-        const qrCodeElement = document.getElementById('upi-qr-code');
-        const qrData = `upi://pay?pa=${upiDetails.vpa}&pn=${encodeURIComponent(upiDetails.name)}&am=${totalAmount}&cu=INR&tn=${encodeURIComponent('Order payment')}`;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
-        
-        if (qrCodeElement) {
-          qrCodeElement.src = qrUrl;
-        }
-        
-        const upiLink = qrData;
-        const gpayLink = document.getElementById('gpay-link');
-        const phonepeLink = document.getElementById('phonepe-link');
-        const paytmLink = document.getElementById('paytm-link');
-        
-        if (gpayLink) {
-          gpayLink.href = upiLink;
-        }
-        if (phonepeLink) {
-          phonepeLink.href = upiLink;
-        }
-        if (paytmLink) {
-          paytmLink.href = upiLink;
-        }
-      }
-      
-      function checkFreeShipping() {
-        if (subtotal >= 1500) {
-          shippingCharge = 0;
-          totalAmount = subtotal;
-          
-          document.getElementById('payment-shipping').textContent = 'FREE';
-          document.getElementById('payment-total').textContent = `₹${totalAmount}`;
-          
-          document.getElementById('free-shipping-notice').classList.remove('hidden');
-          document.getElementById('shipping-charge-notice').classList.add('hidden');
-        } else {
-          shippingCharge = 50;
-          totalAmount = subtotal + shippingCharge;
-          
-          document.getElementById('payment-shipping').textContent = `₹${shippingCharge}`;
-          document.getElementById('payment-total').textContent = `₹${totalAmount}`;
-          
-          document.getElementById('free-shipping-notice').classList.add('hidden');
-          document.getElementById('shipping-charge-notice').classList.remove('hidden');
-        }
-        updateQRCode();
-      }
-      
+
+      // ── Pincode ───────────────────────────────────────────────────────
+      const FALLBACK_REGIONS = [
+        {
+          regionName: "Chennai",
+          pincodeStart: "600001",
+          pincodeEnd: "600130",
+          deliveryCharge: 40,
+          estimatedDays: 1,
+          isEnabled: true,
+        },
+        {
+          regionName: "Coimbatore",
+          pincodeStart: "641001",
+          pincodeEnd: "641110",
+          deliveryCharge: 60,
+          estimatedDays: 2,
+          isEnabled: true,
+        },
+        {
+          regionName: "Madurai",
+          pincodeStart: "625001",
+          pincodeEnd: "625030",
+          deliveryCharge: 60,
+          estimatedDays: 2,
+          isEnabled: true,
+        },
+        {
+          regionName: "Tiruchirappalli",
+          pincodeStart: "620001",
+          pincodeEnd: "620030",
+          deliveryCharge: 60,
+          estimatedDays: 2,
+          isEnabled: true,
+        },
+        {
+          regionName: "Salem",
+          pincodeStart: "636001",
+          pincodeEnd: "636030",
+          deliveryCharge: 70,
+          estimatedDays: 3,
+          isEnabled: true,
+        },
+        {
+          regionName: "Tirunelveli",
+          pincodeStart: "627001",
+          pincodeEnd: "627030",
+          deliveryCharge: 70,
+          estimatedDays: 3,
+          isEnabled: true,
+        },
+        {
+          regionName: "Erode",
+          pincodeStart: "638001",
+          pincodeEnd: "638060",
+          deliveryCharge: 70,
+          estimatedDays: 3,
+          isEnabled: true,
+        },
+        {
+          regionName: "Vellore",
+          pincodeStart: "632001",
+          pincodeEnd: "632060",
+          deliveryCharge: 70,
+          estimatedDays: 3,
+          isEnabled: true,
+        },
+        {
+          regionName: "Tiruppur",
+          pincodeStart: "641601",
+          pincodeEnd: "641670",
+          deliveryCharge: 60,
+          estimatedDays: 2,
+          isEnabled: true,
+        },
+        {
+          regionName: "Bengaluru",
+          pincodeStart: "560001",
+          pincodeEnd: "560110",
+          deliveryCharge: 70,
+          estimatedDays: 3,
+          isEnabled: true,
+        },
+        {
+          regionName: "Mumbai",
+          pincodeStart: "400001",
+          pincodeEnd: "400110",
+          deliveryCharge: 90,
+          estimatedDays: 4,
+          isEnabled: true,
+        },
+        {
+          regionName: "Delhi",
+          pincodeStart: "110001",
+          pincodeEnd: "110110",
+          deliveryCharge: 90,
+          estimatedDays: 4,
+          isEnabled: true,
+        },
+        {
+          regionName: "Hyderabad",
+          pincodeStart: "500001",
+          pincodeEnd: "500110",
+          deliveryCharge: 80,
+          estimatedDays: 3,
+          isEnabled: true,
+        },
+        {
+          regionName: "Pune",
+          pincodeStart: "411001",
+          pincodeEnd: "411060",
+          deliveryCharge: 90,
+          estimatedDays: 4,
+          isEnabled: true,
+        },
+        {
+          regionName: "Kolkata",
+          pincodeStart: "700001",
+          pincodeEnd: "700110",
+          deliveryCharge: 100,
+          estimatedDays: 5,
+          isEnabled: true,
+        },
+      ];
+
       function checkPincode() {
-        const pincode = document.getElementById('pincode').value;
-        
-        if (!pincode || pincode.length !== 6) {
-          document.getElementById('pincode-status').innerHTML = '';
-          document.getElementById('pincode-status').className = '';
-          return;
-        }
-        
-        let available = false;
-        let charge = 0;
-        let days = 0;
-        
-        const pincodeNum = parseInt(pincode);
-        
-        for (const region of deliverySettingsData.regions) {
+        const pincode = $("pincode")?.value?.trim();
+        const statusEl = $("pincode-status");
+        if (!pincode || pincode.length !== 6 || !statusEl) return;
+        const regions =
+          deliverySettings.regions?.length > 0
+            ? deliverySettings.regions
+            : FALLBACK_REGIONS;
+        const num = parseInt(pincode);
+        let found = false;
+        for (const region of regions) {
           if (!region.isEnabled) continue;
-          
-          const start = parseInt(region.pincodeStart);
-          const end = parseInt(region.pincodeEnd);
-          
-          if (pincodeNum >= start && pincodeNum <= end) {
-            available = true;
-            charge = region.deliveryCharge;
-            days = region.estimatedDays;
+          if (
+            num >= parseInt(region.pincodeStart) &&
+            num <= parseInt(region.pincodeEnd)
+          ) {
+            shippingCharge = region.deliveryCharge;
+            statusEl.innerHTML = `<span class="text-green-600 text-xs">✓ ${region.regionName} — Delivery in ${region.estimatedDays} day${region.estimatedDays > 1 ? "s" : ""} · ₹${region.deliveryCharge} shipping</span>`;
+            found = true;
             break;
           }
         }
-        
-        const statusElement = document.getElementById('pincode-status');
-        
-        if (available) {
-          shippingCharge = charge;
-          totalAmount = subtotal + shippingCharge;
-          
-          document.getElementById('payment-shipping').textContent = shippingCharge === 0 ? 'FREE' : `₹${shippingCharge}`;
-          document.getElementById('payment-total').textContent = `₹${totalAmount}`;
-          updateQRCode();
-          
-          statusElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg> Delivery available in ${days} days`;
-          statusElement.className = 'text-green-600 text-sm mt-1';
-        } else {
-          statusElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="inline-block h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg> Delivery not available to this pincode`;
-          statusElement.className = 'text-red-600 text-sm mt-1';
-        }
+        if (!found)
+          statusEl.innerHTML = `<span class="text-red-600 text-xs">✗ Delivery not available for this pincode</span>`;
+        updateTotals();
       }
-      
-      function generateOrderNumber() {
-        return ordersData.nextOrderNumber;
-      }
-      
-      const screenshotInput = document.getElementById('payment-screenshot');
-      const fileNameDisplay = document.getElementById('file-name-display');
-      
-      if (screenshotInput) {
-        screenshotInput.addEventListener('change', function(e) {
-          const file = e.target.files[0];
-          if (file) {
-            fileNameDisplay.textContent = file.name;
-            fileNameDisplay.className = 'text-xs text-green-600 font-bold uppercase';
-            
-            const reader = new FileReader();
-            reader.onload = function(event) {
-              screenshotBase64 = event.target.result;
-            };
-            reader.readAsDataURL(file);
+
+      // ── Session timer ─────────────────────────────────────────────────
+      function startSessionTimer() {
+        let remaining = SESSION_DURATION;
+        const timerEl = $("session-timer");
+        const ring = $("timer-ring");
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+          remaining--;
+          const mins = String(Math.floor(remaining / 60)).padStart(2, "0");
+          const secs = String(remaining % 60).padStart(2, "0");
+          if (timerEl) timerEl.textContent = `${mins}:${secs}`;
+          // Shrink ring stroke
+          const offset = 100 - (remaining / SESSION_DURATION) * 100;
+          if (ring) ring.style.strokeDashoffset = offset;
+          // Red in last 2 mins
+          if (remaining <= 120) {
+            if (ring) ring.style.stroke = "#ef4444";
+            timerEl?.classList.add("text-red-500");
+            timerEl?.classList.remove("text-gray-700");
           }
-        });
+          if (remaining <= 0) {
+            clearInterval(timerInterval);
+            expireSession();
+          }
+        }, 1000);
       }
-      
-      const copyBtn = document.getElementById('copy-upi');
-      if (copyBtn) {
-        copyBtn.addEventListener('click', function() {
-          navigator.clipboard.writeText(upiDetails.vpa).then(() => {
-            const originalText = copyBtn.textContent;
-            copyBtn.textContent = 'Copied!';
-            setTimeout(() => copyBtn.textContent = originalText, 2000);
-          });
-        });
+
+      function expireSession() {
+        sessionExpired = true;
+        stopPolling();
+        show("qr-expired-overlay");
+        hide("polling-status");
+        const timerEl = $("session-timer");
+        if (timerEl) timerEl.textContent = "00:00";
       }
-      
-      const copyBtnMobile = document.getElementById('copy-upi-mobile');
-      if (copyBtnMobile) {
-        copyBtnMobile.addEventListener('click', function() {
-          navigator.clipboard.writeText(upiDetails.vpa).then(() => {
-            const originalText = copyBtnMobile.textContent;
-            copyBtnMobile.textContent = 'Copied!';
-            setTimeout(() => copyBtnMobile.textContent = originalText, 2000);
-          });
-        });
-      }
-      
-	      async function placeOrder(e) {
-	        e.preventDefault();
-        
-        const customerName = document.getElementById('customer-name').value;
-        const customerPhone = document.getElementById('customer-phone').value;
-        const customerEmail = document.getElementById('customer-email').value;
-        const deliveryAddress = document.getElementById('delivery-address').value;
-        const city = document.getElementById('city').value;
-        const state = document.getElementById('state').value;
-        const pincode = document.getElementById('pincode').value;
-        
-        if (!customerName || !customerPhone || !customerEmail || !deliveryAddress || !city || !state || !pincode) {
-          alert('Please fill in all the required fields');
-          return;
+
+      // Resume timer with specific remaining seconds (used by retry)
+      function resumeSessionTimer(remainingSecs) {
+        const timerEl = $("session-timer");
+        const ring = $("timer-ring");
+        clearInterval(timerInterval);
+        // Reset red colour if we have enough time
+        if (remainingSecs > 120) {
+          if (ring) ring.style.stroke = "#111827";
+          timerEl?.classList.remove("text-red-500");
+          timerEl?.classList.add("text-gray-700");
         }
-        
-	        if (!screenshotBase64) {
-	          alert('Please upload a payment screenshot');
-	          return;
-	        }
+        let remaining = remainingSecs;
+        timerInterval = setInterval(() => {
+          remaining--;
+          const mins = String(Math.floor(remaining / 60)).padStart(2, "0");
+          const secs = String(remaining % 60).padStart(2, "0");
+          if (timerEl) timerEl.textContent = `${mins}:${secs}`;
+          const offset = 100 - (remaining / SESSION_DURATION) * 100;
+          if (ring) ring.style.strokeDashoffset = offset;
+          if (remaining <= 120) {
+            if (ring) ring.style.stroke = "#ef4444";
+            timerEl?.classList.add("text-red-500");
+            timerEl?.classList.remove("text-gray-700");
+          }
+          if (remaining <= 0) {
+            clearInterval(timerInterval);
+            expireSession();
+          }
+        }, 1000);
+      }
 
-	        // Validate stock before placing order
-	        const stockIssues = [];
-	        for (const item of cartItems) {
-	          const product = productsCatalog.products.find(p => p.id === item.productId);
-	          const variant = product?.variants?.find(v => v.id === item.variantId);
-	          const maxAllowed = variant?.isAvailable ? Math.max(0, Math.min(10, variant.stock || 0)) : 0;
-	          if (!variant || maxAllowed <= 0) {
-	            stockIssues.push(`${item.productName} (${item.color}/${item.pattern}) is unavailable`);
-	          } else if (item.quantity > maxAllowed) {
-	            stockIssues.push(`${item.productName} (${item.color}/${item.pattern}) only has ${maxAllowed} available`);
-	          }
-	        }
+      function resetTimer() {
+        clearInterval(timerInterval);
+        sessionExpired = false;
+        const timerEl = $("session-timer");
+        const ring = $("timer-ring");
+        if (timerEl) {
+          timerEl.textContent = "15:00";
+          timerEl.classList.remove("text-red-500");
+          timerEl.classList.add("text-gray-700");
+        }
+        if (ring) {
+          ring.style.strokeDashoffset = "0";
+          ring.style.stroke = "#111827";
+        }
+      }
 
-	        if (stockIssues.length > 0) {
-	          alert(`Please update your cart:\n\n- ${stockIssues.join('\n- ')}`);
-	          window.location.href = '/cart';
-	          return;
-	        }
-        
-        const submitBtn = document.getElementById('submit-order-btn');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Placing Order...';
-        
+      //MARK: ── Cashfree: create order ────────────────────────────────────────
+      async function createCashfreeOrder(customerDetails) {
+        const res = await fetch(
+          `${apiUrl}/api/payments/cashfree/create-order`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              amount: totalAmount,
+              currency: "INR",
+              customer: customerDetails,
+              cartItems,
+              shippingCharge,
+              subtotal,
+              totalAmount,
+            }),
+          },
+        );
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          // Attach stockErrors so caller can display them properly
+          const error = new Error(
+            err.message || "Failed to create payment order",
+          );
+          if (err.stockErrors) error.stockErrors = err.stockErrors;
+          throw error;
+        }
+        return res.json(); // { orderId, orderNumber, paymentSessionId, upiVpa, upiName }
+      }
+
+      //MARK: ── Poll for payment status every 5s ─────────────────────────────
+      function startPolling() {
+        // console.log("polling started");
+        stopPolling();
+        pollInterval = setInterval(pollPaymentStatus, 5000);
+      }
+
+      function stopPolling() {
+        if (pollInterval) {
+          clearInterval(pollInterval);
+          pollInterval = null;
+        }
+      }
+
+      async function pollPaymentStatus() {
+        if (paymentDone || sessionExpired || !cashfreeOrderId) return;
         try {
-          const orderData = {
-            customer: {
-              name: customerName,
-              email: customerEmail,
-              phone: customerPhone,
-              address: deliveryAddress,
-              city: city,
-              state: state,
-              pincode: pincode
-            },
-            items: cartItems.map(item => ({
-              variantId: item.variantId,
-              quantity: item.quantity,
-              price: item.unitPrice
-            })),
-            totalAmount: totalAmount,
-            paymentMethod: 'upi',
-            paymentStatus: 'pending',
-            status: 'pending'
-          };
-          
-          const response = await fetch(`${apiUrl}/api/orders`, {
-	            method: 'POST',
-	            headers: { 'Content-Type': 'application/json' },
-	            body: JSON.stringify(orderData)
-	          });
-          
-          if (!response.ok) {
-            throw new Error('Failed to create order');
+          const res = await fetch(
+            `${apiUrl}/api/payments/cashfree/status/${cashfreeOrderId}`,
+          );
+          if (!res.ok) return;
+          const data = await res.json();
+          // Normalise — Cashfree returns uppercase e.g. "PAID"
+          const status = (data.status || data.order_status || "")
+            .toUpperCase()
+            .trim();
+          console.log("[Payment] Poll status:", status);
+
+          if (status === "PAID") {
+            stopPolling();
+            clearInterval(timerInterval);
+            await onPaymentSuccess();
+          } else if (
+            status === "FAILED" ||
+            status === "EXPIRED" ||
+            status === "CANCELLED"
+          ) {
+            stopPolling();
+            // clearInterval(timerInterval);
+            onPaymentFailed();
           }
-          
-          const savedOrder = await response.json();
-          
-          const localOrder = {
-            ...savedOrder,
-            customerName,
-            customerPhone,
-            customerEmail,
-            deliveryAddress,
-            city,
-            state,
-            pincode,
-            items: cartItems,
-            subtotal,
-            shippingCharge,
-            paymentScreenshot: screenshotBase64
-          };
-          
-          // Safely store order data with error handling
-          try {
-            let orders = [];
-            try {
-              const ordersJson = localStorage.getItem('orders');
-              if (ordersJson) {
-                orders = JSON.parse(ordersJson);
-              }
-            } catch (e) {
-              console.warn('Could not read existing orders, starting fresh:', e);
-            }
-            
-            orders.push(localOrder);
-            localStorage.setItem('orders', JSON.stringify(orders));
-          } catch (storageError) {
-            console.warn('Could not save to localStorage (possibly private mode):', storageError);
-            // Continue - order is already saved in database
-          }
-          
-          // Clear cart
-          try {
-            localStorage.removeItem('cart');
-            const cartBadge = document.getElementById('cart-badge');
-            if (cartBadge) {
-              cartBadge.textContent = '0';
-            }
-          } catch (e) {
-            console.warn('Could not clear cart:', e);
-          }
-          
-          // Save to sessionStorage for immediate access
-          try {
-            sessionStorage.setItem('lastOrder', JSON.stringify(localOrder));
-          } catch (e) {
-            console.warn('Could not save to sessionStorage:', e);
-          }
-          
-          window.location.href = `/order/${savedOrder.orderNumber}`;
-        } catch (error) {
-          console.error('Order error:', error);
-          alert('Failed to place order. Please try again.');
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Place Order';
+          // ACTIVE = still waiting, keep polling
+        } catch (e) {
+          console.warn("[Payment] Poll error (retrying):", e.message);
         }
       }
-      
-      document.getElementById('pincode').addEventListener('blur', checkPincode);
-      document.getElementById('submit-order-btn').addEventListener('click', placeOrder);
-      
+
+      // ── Payment success ───────────────────────────────────────────────
+      async function onPaymentSuccess() {
+        // Stop all activity immediately
+        stopPolling();
+        clearInterval(timerInterval);
+        paymentDone = true;
+        // Clear cart — remove from localStorage and update all UI badges
+        localStorage.removeItem("cart");
+        cartItems = []; // reset in-memory cart too
+
+        // Update every cart badge on the page (header, mobile nav, etc.)
+        document
+          .querySelectorAll("#cart-badge, .cart-badge, [data-cart-badge]")
+          .forEach((el) => {
+            el.textContent = "0";
+          });
+
+        // Dispatch event so other components (header, navbar) can react
+        window.dispatchEvent(
+          new CustomEvent("cart:updated", {
+            detail: { cart: [], timestamp: Date.now() },
+          }),
+        );
+        // Hide everything in the UPI section, show only success banner
+        console.log("[Payment] SUCCESS — hiding QR, showing banner");
+        hide("polling-status");
+        hide("qr-wrapper");
+        hide("qr-expired-overlay");
+        hide("payment-failed-banner");
+        // Hide the timer row
+        const timerRow = document.querySelector(
+          "#upi-payment-section .flex.items-center.justify-between",
+        );
+        if (timerRow) timerRow.style.display = "none";
+        show("payment-success-banner");
+
+        try {
+          const res = await fetch(
+            `${apiUrl}/api/payments/cashfree/order-by-cf-id/${cfOrderId}`,
+          );
+          if (!res.ok) throw new Error("Save failed");
+          const { orderNumber } = await res.json();
+          // Clear cart
+          localStorage.removeItem("cart");
+          const badge = document.getElementById("cart-badge");
+          if (badge) badge.textContent = "0";
+          console.log("order number in payment when success" + orderNumber);
+
+          setTimeout(() => {
+            window.location.href = `/order/${orderNumber}`;
+          }, 1800);
+        } catch {
+          // Payment confirmed but save failed — redirect with CF order ID as fallback
+          setTimeout(() => {
+            window.location.href = `/order/pending?cf_order_id=${cashfreeOrderId}`;
+          }, 1800);
+        }
+      }
+
+      // ── Payment failed ────────────────────────────────────────────────
+      function onPaymentFailed() {
+        hide("polling-status");
+        show("payment-failed-banner");
+      }
+
+      // ── Form validation ───────────────────────────────────────────────
+      function getCustomerDetails() {
+        const name = $("customer-name")?.value?.trim();
+        const phone = $("customer-phone")?.value?.trim();
+        const email = $("customer-email")?.value?.trim();
+        const address = $("delivery-address")?.value?.trim();
+        const city = $("city")?.value?.trim();
+        const state = $("state")?.value?.trim();
+        const pincode = $("pincode")?.value?.trim();
+        if (
+          !name ||
+          !phone ||
+          !email ||
+          !address ||
+          !city ||
+          !state ||
+          !pincode
+        ) {
+          showError("Please fill in all required fields.");
+          return null;
+        }
+        if (!/^[0-9]{10}$/.test(phone)) {
+          showError("Enter a valid 10-digit phone number.");
+          return null;
+        }
+        if (!/^[0-9]{6}$/.test(pincode)) {
+          showError("Enter a valid 6-digit pincode.");
+          return null;
+        }
+        return { name, phone, email, address, city, state, pincode };
+      }
+
+      // ── Build UPI string + wire QR and app buttons ───────────────────
+      function buildUpiLinks() {
+        console.log("calling buildupi");
+
+        if (!upiDetails.vpa) return;
+
+        const upiStr = `upi://pay?pa=${encodeURIComponent(upiDetails.vpa)}&pn=${encodeURIComponent(upiDetails.name)}&am=${totalAmount}&cu=INR&tn=${encodeURIComponent("Order #" + cashfreeOrderId)}`;
+
+        // Update QR image
+        const qrImg = $("upi-qr-image");
+        if (qrImg && !qrImg.src.includes("cashfree")) {
+          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=${encodeURIComponent(upiStr)}`;
+        }
+
+        // Single UPI pay button — OS will show app chooser
+        const upiPayBtn = $("upi-pay-btn");
+        if (upiPayBtn) upiPayBtn.href = upiStr;
+
+        // Show button only on mobile
+        const isMobile =
+          window.matchMedia("(max-width: 768px)").matches ||
+          "ontouchstart" in window;
+        const appBtns = $("upi-app-buttons");
+        const qr = $("qr-wrapper");
+        if (appBtns) {
+          if (isMobile) {
+            qr.classList.remove('inline-block')
+            qr.classList.add('hidden');
+            appBtns.classList.remove("hidden");
+          } else {
+            qr.classList.add('inline-block')
+            qr.classList.remove('hidden');
+            appBtns.classList.add("hidden");
+          }
+        }
+      }
+
+      // ── Pay now ───────────────────────────────────────────────────────
+      async function initiatePayment() {
+        const customer = getCustomerDetails();
+        if (!customer) return;
+        currentCustomer = customer;
+
+        setLoading("pay-now-btn", true);
+        resetTimer();
+        hide("payment-failed-banner");
+
+        try {
+          const result = await createCashfreeOrder(customer);
+          cashfreeOrderId = result.orderId;
+          orderNumber = result.orderNumber;
+          paymentSessionId = result.paymentSessionId;
+          orderExpiryTime = new Date(Date.now() + SESSION_DURATION * 1000);
+
+          // Use Cashfree QR if backend returns it, else build UPI string QR
+          const qrImg = $("upi-qr-image");
+          if (result.upiQrUrl && qrImg) {
+            qrImg.src = result.upiQrUrl;
+          } else if (result.upiVpa) {
+            upiDetails.vpa = result.upiVpa;
+            upiDetails.name = result.upiName || upiDetails.name;
+          }
+          buildUpiLinks();
+
+          show("polling-status");
+          hide("pay-now-btn");
+          show("upi-payment-section");
+          startSessionTimer();
+          startPolling();
+        } catch (err) {
+          // Handle stock errors — show each unavailable item clearly
+          if (err.stockErrors) {
+            const msgs = err.stockErrors
+              .map((e) => `${e.productName}: ${e.reason}`)
+              .join("\n");
+            showStockErrors(err.stockErrors);
+          } else {
+            showError(err.message || "Could not initiate payment. Try again.");
+          }
+        } finally {
+          setLoading(
+            "pay-now-btn",
+            false,
+            `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.243m-4.243 0L9 9m3 3l-3 3" />
+            </svg>
+            Pay with UPI`,
+          );
+        }
+      }
+
+      $("pay-now-btn")?.addEventListener("click", initiatePayment);
+
+      // ── Retry after failure ───────────────────────────────────────────
+      $("retry-payment-btn")?.addEventListener("click", () => {
+        const now = new Date();
+        const orderStillValid =
+          cashfreeOrderId && orderExpiryTime && now < orderExpiryTime;
+
+        hide("payment-failed-banner");
+
+        if (orderStillValid) {
+          // Reuse existing order — just show QR again and resume polling
+          console.log("[Payment] Reusing existing order:", cashfreeOrderId);
+          show("qr-wrapper");
+          show("polling-status");
+          sessionExpired = false;
+          paymentDone = false;
+
+          // Resume timer from remaining time
+          const remainingSecs = Math.max(
+            0,
+            Math.floor((orderExpiryTime - now) / 1000),
+          );
+          resumeSessionTimer(remainingSecs);
+          // Start polling — with a short delay only if status was FAILED
+          // to give Cashfree time to register the new payment attempt
+          setTimeout(() => {
+            if (!paymentDone && !sessionExpired) {
+              setText("polling-msg", "Waiting for payment…");
+              startPolling();
+            }
+          }, 3000);
+        } else {
+          // Order expired or not set — create a new one
+          console.log("[Payment] Order expired, creating new order");
+          hide("upi-payment-section");
+          show("pay-now-btn");
+          cashfreeOrderId = "";
+          paymentDone = false;
+          paymentSessionId = "";
+          orderExpiryTime = null;
+          resetTimer();
+        }
+      });
+
+      // ── Cancel order ──────────────────────────────────────────────────
+      $("cancel-order-btn")?.addEventListener("click", async () => {
+        const btn = $("cancel-order-btn");
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "Cancelling…";
+        }
+
+        // Try to cancel the order on Cashfree
+        if (cashfreeOrderId) {
+          try {
+            await fetch(
+              `${apiUrl}/api/payments/cashfree/cancel-order/${cashfreeOrderId}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+              },
+            );
+          } catch (e) {
+            console.warn("[Payment] Cancel request failed:", e.message);
+          }
+        }
+
+        // Stop everything and go back to cart
+        stopPolling();
+        clearInterval(timerInterval);
+        window.location.href = "/cart";
+      });
+
+      // Refresh after QR expiry
+      $("refresh-qr-btn")?.addEventListener("click", () => {
+        hide("qr-expired-overlay");
+        hide("upi-payment-section");
+        show("pay-now-btn");
+        cashfreeOrderId = "";
+        paymentSessionId = "";
+        paymentDone = false;
+        show("polling-status");
+        resetTimer();
+      });
+
+      // ── Init ──────────────────────────────────────────────────────────
+      await loadRemoteData();
       loadCart();
+      $("pincode")?.addEventListener("blur", checkPincode);
     });
   </script>
 </Layout>
