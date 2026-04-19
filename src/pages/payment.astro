@@ -67,7 +67,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
   </style>
 
   <div class='container mx-auto px-4 py-8'>
-    <div class='max-w-4xl mx-auto'>
+    <div id="main-container" class='max-w-4xl mx-auto'>
       <h1 class='text-3xl font-bold mb-8'>Complete Payment</h1>
 
       <!-- Skeleton loader -->
@@ -892,89 +892,6 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
         updateTotals();
       }
 
-      // ── Session timer ─────────────────────────────────────────────────
-      function startSessionTimer() {
-        let remaining = SESSION_DURATION;
-        const timerEl = $("session-timer");
-        const ring = $("timer-ring");
-        clearInterval(timerInterval);
-        timerInterval = setInterval(() => {
-          remaining--;
-          const mins = String(Math.floor(remaining / 60)).padStart(2, "0");
-          const secs = String(remaining % 60).padStart(2, "0");
-          if (timerEl) timerEl.textContent = `${mins}:${secs}`;
-          // Shrink ring stroke
-          const offset = 100 - (remaining / SESSION_DURATION) * 100;
-          if (ring) ring.style.strokeDashoffset = offset;
-          // Red in last 2 mins
-          if (remaining <= 120) {
-            if (ring) ring.style.stroke = "#ef4444";
-            timerEl?.classList.add("text-red-500");
-            timerEl?.classList.remove("text-gray-700");
-          }
-          if (remaining <= 0) {
-            clearInterval(timerInterval);
-            expireSession();
-          }
-        }, 1000);
-      }
-
-      function expireSession() {
-        sessionExpired = true;
-        stopPolling();
-        show("qr-expired-overlay");
-        hide("polling-status");
-        const timerEl = $("session-timer");
-        if (timerEl) timerEl.textContent = "00:00";
-      }
-
-      // Resume timer with specific remaining seconds (used by retry)
-      function resumeSessionTimer(remainingSecs) {
-        const timerEl = $("session-timer");
-        const ring = $("timer-ring");
-        clearInterval(timerInterval);
-        // Reset red colour if we have enough time
-        if (remainingSecs > 120) {
-          if (ring) ring.style.stroke = "#111827";
-          timerEl?.classList.remove("text-red-500");
-          timerEl?.classList.add("text-gray-700");
-        }
-        let remaining = remainingSecs;
-        timerInterval = setInterval(() => {
-          remaining--;
-          const mins = String(Math.floor(remaining / 60)).padStart(2, "0");
-          const secs = String(remaining % 60).padStart(2, "0");
-          if (timerEl) timerEl.textContent = `${mins}:${secs}`;
-          const offset = 100 - (remaining / SESSION_DURATION) * 100;
-          if (ring) ring.style.strokeDashoffset = offset;
-          if (remaining <= 120) {
-            if (ring) ring.style.stroke = "#ef4444";
-            timerEl?.classList.add("text-red-500");
-            timerEl?.classList.remove("text-gray-700");
-          }
-          if (remaining <= 0) {
-            clearInterval(timerInterval);
-            expireSession();
-          }
-        }, 1000);
-      }
-
-      function resetTimer() {
-        clearInterval(timerInterval);
-        sessionExpired = false;
-        const timerEl = $("session-timer");
-        const ring = $("timer-ring");
-        if (timerEl) {
-          timerEl.textContent = "15:00";
-          timerEl.classList.remove("text-red-500");
-          timerEl.classList.add("text-gray-700");
-        }
-        if (ring) {
-          ring.style.strokeDashoffset = "0";
-          ring.style.stroke = "#111827";
-        }
-      }
-
       //MARK: ── Cashfree: create order ────────────────────────────────────────
       async function createCashfreeOrder(customerDetails) {
         const res = await fetch(
@@ -1004,119 +921,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
         }
         return res.json(); // { orderId, orderNumber, paymentSessionId, upiVpa, upiName }
       }
-
-      //MARK: ── Poll for payment status every 5s ─────────────────────────────
-      function startPolling() {
-        // console.log("polling started");
-        stopPolling();
-        pollInterval = setInterval(pollPaymentStatus, 5000);
-      }
-
-      function stopPolling() {
-        if (pollInterval) {
-          clearInterval(pollInterval);
-          pollInterval = null;
-        }
-      }
-
-      async function pollPaymentStatus() {
-        if (paymentDone || sessionExpired || !cashfreeOrderId) return;
-        try {
-          const res = await fetch(
-            `${apiUrl}/api/payments/cashfree/status/${cashfreeOrderId}`,
-          );
-          if (!res.ok) return;
-          const data = await res.json();
-          // Normalise — Cashfree returns uppercase e.g. "PAID"
-          const status = (data.status || data.order_status || "")
-            .toUpperCase()
-            .trim();
-          console.log("[Payment] Poll status:", status);
-
-          if (status === "PAID") {
-            stopPolling();
-            clearInterval(timerInterval);
-            await onPaymentSuccess();
-          } else if (
-            status === "FAILED" ||
-            status === "EXPIRED" ||
-            status === "CANCELLED"
-          ) {
-            stopPolling();
-            // clearInterval(timerInterval);
-            onPaymentFailed();
-          }
-          // ACTIVE = still waiting, keep polling
-        } catch (e) {
-          console.warn("[Payment] Poll error (retrying):", e.message);
-        }
-      }
-
-      // ── Payment success ───────────────────────────────────────────────
-      async function onPaymentSuccess() {
-        // Stop all activity immediately
-        stopPolling();
-        clearInterval(timerInterval);
-        paymentDone = true;
-        // Clear cart — remove from localStorage and update all UI badges
-        localStorage.removeItem("cart");
-        cartItems = []; // reset in-memory cart too
-
-        // Update every cart badge on the page (header, mobile nav, etc.)
-        document
-          .querySelectorAll("#cart-badge, .cart-badge, [data-cart-badge]")
-          .forEach((el) => {
-            el.textContent = "0";
-          });
-
-        // Dispatch event so other components (header, navbar) can react
-        window.dispatchEvent(
-          new CustomEvent("cart:updated", {
-            detail: { cart: [], timestamp: Date.now() },
-          }),
-        );
-        // Hide everything in the UPI section, show only success banner
-        console.log("[Payment] SUCCESS — hiding QR, showing banner");
-        hide("polling-status");
-        hide("qr-wrapper");
-        hide("qr-expired-overlay");
-        hide("payment-failed-banner");
-        // Hide the timer row
-        const timerRow = document.querySelector(
-          "#upi-payment-section .flex.items-center.justify-between",
-        );
-        if (timerRow) timerRow.style.display = "none";
-        show("payment-success-banner");
-
-        try {
-          const res = await fetch(
-            `${apiUrl}/api/payments/cashfree/order-by-cf-id/${cfOrderId}`,
-          );
-          if (!res.ok) throw new Error("Save failed");
-          const { orderNumber } = await res.json();
-          // Clear cart
-          localStorage.removeItem("cart");
-          const badge = document.getElementById("cart-badge");
-          if (badge) badge.textContent = "0";
-          console.log("order number in payment when success" + orderNumber);
-
-          setTimeout(() => {
-            window.location.href = `/order/${orderNumber}`;
-          }, 1800);
-        } catch {
-          // Payment confirmed but save failed — redirect with CF order ID as fallback
-          setTimeout(() => {
-            window.location.href = `/order/pending?cf_order_id=${cashfreeOrderId}`;
-          }, 1800);
-        }
-      }
-
-      // ── Payment failed ────────────────────────────────────────────────
-      function onPaymentFailed() {
-        hide("polling-status");
-        show("payment-failed-banner");
-      }
-
+ 
       // ── Form validation ───────────────────────────────────────────────
       function getCustomerDetails() {
         const name = $("customer-name")?.value?.trim();
@@ -1148,44 +953,6 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
         }
         return { name, phone, email, address, city, state, pincode };
       }
-
-      // ── Build UPI string + wire QR and app buttons ───────────────────
-      function buildUpiLinks() {
-        console.log("calling buildupi");
-
-        if (!upiDetails.vpa) return;
-
-        const upiStr = `upi://pay?pa=${encodeURIComponent(upiDetails.vpa)}&pn=${encodeURIComponent(upiDetails.name)}&am=${totalAmount}&cu=INR&tn=${encodeURIComponent("Order #" + cashfreeOrderId)}`;
-
-        // Update QR image
-        const qrImg = $("upi-qr-image");
-        if (qrImg && !qrImg.src.includes("cashfree")) {
-          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=${encodeURIComponent(upiStr)}`;
-        }
-
-        // Single UPI pay button — OS will show app chooser
-        const upiPayBtn = $("upi-pay-btn");
-        if (upiPayBtn) upiPayBtn.href = upiStr;
-
-        // Show button only on mobile
-        const isMobile =
-          window.matchMedia("(max-width: 768px)").matches ||
-          "ontouchstart" in window;
-        const appBtns = $("upi-app-buttons");
-        const qr = $("qr-wrapper");
-        if (appBtns) {
-          if (isMobile) {
-            qr.classList.remove('inline-block')
-            qr.classList.add('hidden');
-            appBtns.classList.remove("hidden");
-          } else {
-            qr.classList.add('inline-block')
-            qr.classList.remove('hidden');
-            appBtns.classList.add("hidden");
-          }
-        }
-      }
-
       // ── Pay now ───────────────────────────────────────────────────────
       async function initiatePayment() {
         const customer = getCustomerDetails();
@@ -1193,7 +960,6 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
         currentCustomer = customer;
 
         setLoading("pay-now-btn", true);
-        resetTimer();
         hide("payment-failed-banner");
 
         try {
@@ -1202,22 +968,6 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
           orderNumber = result.orderNumber;
           paymentSessionId = result.paymentSessionId;
           orderExpiryTime = new Date(Date.now() + SESSION_DURATION * 1000);
-
-          // Use Cashfree QR if backend returns it, else build UPI string QR
-          const qrImg = $("upi-qr-image");
-          if (result.upiQrUrl && qrImg) {
-            qrImg.src = result.upiQrUrl;
-          } else if (result.upiVpa) {
-            upiDetails.vpa = result.upiVpa;
-            upiDetails.name = result.upiName || upiDetails.name;
-          }
-          buildUpiLinks();
-
-          show("polling-status");
-          hide("pay-now-btn");
-          show("upi-payment-section");
-          startSessionTimer();
-          startPolling();
         } catch (err) {
           // Handle stock errors — show each unavailable item clearly
           if (err.stockErrors) {
@@ -1241,96 +991,54 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
         }
       }
 
-      $("pay-now-btn")?.addEventListener("click", initiatePayment);
-
-      // ── Retry after failure ───────────────────────────────────────────
-      $("retry-payment-btn")?.addEventListener("click", () => {
-        const now = new Date();
-        const orderStillValid =
-          cashfreeOrderId && orderExpiryTime && now < orderExpiryTime;
-
-        hide("payment-failed-banner");
-
-        if (orderStillValid) {
-          // Reuse existing order — just show QR again and resume polling
-          console.log("[Payment] Reusing existing order:", cashfreeOrderId);
-          show("qr-wrapper");
-          show("polling-status");
-          sessionExpired = false;
-          paymentDone = false;
-
-          // Resume timer from remaining time
-          const remainingSecs = Math.max(
-            0,
-            Math.floor((orderExpiryTime - now) / 1000),
-          );
-          resumeSessionTimer(remainingSecs);
-          // Start polling — with a short delay only if status was FAILED
-          // to give Cashfree time to register the new payment attempt
-          setTimeout(() => {
-            if (!paymentDone && !sessionExpired) {
-              setText("polling-msg", "Waiting for payment…");
-              startPolling();
-            }
-          }, 3000);
-        } else {
-          // Order expired or not set — create a new one
-          console.log("[Payment] Order expired, creating new order");
-          hide("upi-payment-section");
-          show("pay-now-btn");
-          cashfreeOrderId = "";
-          paymentDone = false;
-          paymentSessionId = "";
-          orderExpiryTime = null;
-          resetTimer();
-        }
-      });
-
-      // ── Cancel order ──────────────────────────────────────────────────
-      $("cancel-order-btn")?.addEventListener("click", async () => {
-        const btn = $("cancel-order-btn");
-        if (btn) {
-          btn.disabled = true;
-          btn.textContent = "Cancelling…";
-        }
-
-        // Try to cancel the order on Cashfree
-        if (cashfreeOrderId) {
-          try {
-            await fetch(
-              `${apiUrl}/api/payments/cashfree/cancel-order/${cashfreeOrderId}`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-              },
-            );
-          } catch (e) {
-            console.warn("[Payment] Cancel request failed:", e.message);
-          }
-        }
-
-        // Stop everything and go back to cart
-        stopPolling();
-        clearInterval(timerInterval);
-        window.location.href = "/cart";
-      });
-
-      // Refresh after QR expiry
-      $("refresh-qr-btn")?.addEventListener("click", () => {
-        hide("qr-expired-overlay");
-        hide("upi-payment-section");
-        show("pay-now-btn");
-        cashfreeOrderId = "";
-        paymentSessionId = "";
-        paymentDone = false;
-        show("polling-status");
-        resetTimer();
-      });
+      // $("pay-now-btn")?.addEventListener("click", initiatePayment);
+      $("pay-now-btn")?.addEventListener("click", startCheckout);
 
       // ── Init ──────────────────────────────────────────────────────────
       await loadRemoteData();
+      console.log("Payment page loaded", new Date().toISOString());
       loadCart();
       $("pincode")?.addEventListener("blur", checkPincode);
+
+      function loadCashfreeSdk() {
+        return new Promise((resolve, reject) => {
+          if (window.Cashfree) {
+            return resolve(window.Cashfree);
+          }
+          const script = document.createElement("script");
+          script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+          script.onload = () => resolve(window.Cashfree);
+          script.onerror = () => reject("Failed to load Cashfree SDK");
+          document.head.appendChild(script);
+        });
+      }
+
+      async function startCheckout() {
+        try {
+          // 1. Call your backend API to create order and get a paymentSessionId
+          await initiatePayment();
+          // 2. Wait for SDK to be ready
+          const Cashfree = await loadCashfreeSdk();
+          // 3. Initialize checkout
+          const cashfree = Cashfree({
+            mode:"sandbox"
+          });
+
+          cashfree.checkout({
+            paymentSessionId,
+            redirectTarget: "_modal"
+          })
+          .then(async function(result) {
+            //  console.log("Checkout Result:", result);
+             window.location.replace(`/order/pending?cf_order_id=${cashfreeOrderId}`)
+          })
+          .catch(function(error) {
+             console.error("Payment Error:", error);
+          });
+        } catch (err) {
+          console.error("Error starting checkout:", err);
+        }
+      }
     });
   </script>
 </Layout>

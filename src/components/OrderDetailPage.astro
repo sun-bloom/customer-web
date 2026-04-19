@@ -238,6 +238,7 @@ const { apiUrl } = Astro.props;
 
     // Load order when DOM is ready
     async function init() {
+      localStorage.removeItem("cart");
       showLoading();
       await loadSettings();
       await loadOrder();
