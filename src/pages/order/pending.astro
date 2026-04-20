@@ -218,7 +218,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:4040';
           animateRedirectBar();
 
           setTimeout(() => {
-            window.location.href = `/order/${orderNumber}`;
+            window.location.replace( `/order/${orderNumber}`);
           }, 3000);
           return;
         }
