@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from 'react';
-
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  image: string;
-}
+import { getSubcategories } from '../api/subcategories';
+import type { Category, Subcategory } from '../types';
 
 interface FilterBarProps {
   categories: Category[];
@@ -31,6 +25,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
     : [];
   const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCategories);
   const [categoryList, setCategoryList] = useState<Category[]>(categories);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string>('');
   const [priceBounds, setPriceBounds] = useState({ min: minPrice, max: maxPrice });
   const [priceRange, setPriceRange] = useState({
     min: initialMinPrice || minPrice.toString(),
@@ -40,6 +36,26 @@ const FilterBar: React.FC<FilterBarProps> = ({
     categories: true,
     price: true,
   });
+
+  useEffect(() => {
+    getSubcategories().then(setSubcategories).catch(console.error);
+  }, []);
+
+  const filteredSubcategories = selectedCategories.length === 1
+    ? subcategories.filter((s) => s.category?.slug === selectedCategories[0])
+    : [];
+
+  const handleSubcategoryChange = (subcategoryId: string) => {
+    setSelectedSubcategoryId(subcategoryId);
+    window.dispatchEvent(new CustomEvent('filter-change', {
+      detail: {
+        categories: selectedCategories,
+        subcategoryId: subcategoryId || null,
+        minPrice: parseInt(priceRange.min),
+        maxPrice: parseInt(priceRange.max),
+      }
+    }));
+  };
 
   useEffect(() => {
     const handleFilterChange = (e: CustomEvent) => {
@@ -73,7 +89,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
     return () => window.removeEventListener('filters:data', handleData as EventListener);
   }, [initialMinPrice, initialMaxPrice]);
 
-  const emitFilterChange = (filters: { categories: string[]; minPrice: number | null; maxPrice: number | null }) => {
+  const emitFilterChange = (filters: { categories: string[]; subcategoryId: string | null; minPrice: number | null; maxPrice: number | null }) => {
     window.dispatchEvent(new CustomEvent('filter-change', { detail: filters }));
   };
 
@@ -82,8 +98,10 @@ const FilterBar: React.FC<FilterBarProps> = ({
       ? selectedCategories.filter((c) => c !== categorySlug)
       : [...selectedCategories, categorySlug];
     setSelectedCategories(next);
+    setSelectedSubcategoryId('');
     emitFilterChange({
       categories: next,
+      subcategoryId: null,
       minPrice: parseInt(priceRange.min),
       maxPrice: parseInt(priceRange.max),
     });
@@ -111,8 +129,9 @@ const FilterBar: React.FC<FilterBarProps> = ({
 
   const handleClearFilters = () => {
     setSelectedCategories([]);
+    setSelectedSubcategoryId('');
     setPriceRange({ min: priceBounds.min.toString(), max: priceBounds.max.toString() });
-    emitFilterChange({ categories: [], minPrice: null, maxPrice: null });
+    emitFilterChange({ categories: [], subcategoryId: null, minPrice: null, maxPrice: null });
   };
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -163,6 +182,28 @@ const FilterBar: React.FC<FilterBarProps> = ({
           </div>
         )}
       </div>
+
+      {selectedCategories.length === 1 && filteredSubcategories.length > 0 && (
+        <div className="mb-6">
+          <div
+            className="flex justify-between items-center cursor-pointer mb-3"
+          >
+            <h3 className="font-medium">Subcategory</h3>
+          </div>
+          <select
+            value={selectedSubcategoryId}
+            onChange={(e) => handleSubcategoryChange(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-md text-sm"
+          >
+            <option value="">All Subcategories</option>
+            {filteredSubcategories.map((sub) => (
+              <option key={sub.id} value={sub.id}>
+                {sub.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="mb-6">
         <div
