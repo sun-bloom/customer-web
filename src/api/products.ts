@@ -1,6 +1,6 @@
-const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4040";
 
-import type { Product, Category } from '../types';
+import type { Product, Category } from "../types";
 
 const responseCache = new Map<string, Promise<any>>();
 
@@ -65,11 +65,13 @@ async function fetchFromAPI(endpoint: string, options?: { cache?: boolean; retri
 }
 
 export async function getAllProducts(): Promise<Product[]> {
-  const data = await fetchFromAPI('/api/products');
+  const data = await fetchFromAPI("/api/products");
   return data.products.filter((p: Product) => p.isActive);
 }
 
-export async function getProductBySlug(slug: string): Promise<Product | undefined> {
+export async function getProductBySlug(
+  slug: string,
+): Promise<Product | undefined> {
   try {
     const product = await fetchFromAPI(`/api/products/slug/${slug}`);
     return product;
@@ -87,17 +89,21 @@ export async function getProductById(id: string): Promise<Product | undefined> {
   }
 }
 
-export async function getProductsByCategory(categorySlug: string): Promise<Product[]> {
+export async function getProductsByCategory(
+  categorySlug: string,
+): Promise<Product[]> {
   const products = await getAllProducts();
   return products.filter((p) => p.category === categorySlug);
 }
 
 export async function getCategories(): Promise<Category[]> {
-  const data = await fetchFromAPI('/api/categories');
+  const data = await fetchFromAPI("/api/categories");
   return data.categories || [];
 }
 
-export async function getCategoryBySlug(slug: string): Promise<Category | undefined> {
+export async function getCategoryBySlug(
+  slug: string,
+): Promise<Category | undefined> {
   const categories = await getCategories();
   return categories.find((c) => c.slug === slug);
 }
@@ -108,7 +114,7 @@ export async function searchProducts(query: string): Promise<Product[]> {
   return products.filter(
     (p) =>
       p.name.toLowerCase().includes(lowerQuery) ||
-      p.description.toLowerCase().includes(lowerQuery)
+      p.description.toLowerCase().includes(lowerQuery),
   );
 }
 
@@ -134,26 +140,30 @@ export async function filterProducts(filters: {
 
   if (filters.colors && filters.colors.length > 0) {
     products = products.filter((p) =>
-      p.variants.some((v) => filters.colors!.includes(v.color))
+      p.variants.some((v) => filters.colors!.includes(v.color)),
     );
   }
 
   return products;
 }
 
-export function sortProducts(products: Product[], sortBy: 'price-asc' | 'price-desc' | 'newest' | 'name'): Product[] {
+export function sortProducts(
+  products: Product[],
+  sortBy: "price-asc" | "price-desc" | "newest" | "name",
+): Product[] {
   const sorted = [...products];
 
   switch (sortBy) {
-    case 'price-asc':
+    case "price-asc":
       return sorted.sort((a, b) => a.basePrice - b.basePrice);
-    case 'price-desc':
+    case "price-desc":
       return sorted.sort((a, b) => b.basePrice - a.basePrice);
-    case 'newest':
+    case "newest":
       return sorted.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
-    case 'name':
+    case "name":
       return sorted.sort((a, b) => a.name.localeCompare(b.name));
     default:
       return sorted;
@@ -164,7 +174,10 @@ export function getVariantById(product: Product, variantId: string) {
   return product.variants.find((v) => v.id === variantId);
 }
 
-export function isVariantAvailable(product: Product, variantId: string): boolean {
+export function isVariantAvailable(
+  product: Product,
+  variantId: string,
+): boolean {
   const variant = getVariantById(product, variantId);
   return variant?.isAvailable ?? false;
 }
@@ -194,22 +207,22 @@ export async function createOrder(orderData: {
   paymentMethod: string;
 }): Promise<any> {
   const response = await fetch(`${API_URL}/api/orders`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(orderData)
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(orderData),
   });
 
   if (!response.ok) {
-    throw new Error('Failed to create order');
+    throw new Error("Failed to create order");
   }
 
   return response.json();
 }
 
 export async function getSettings(): Promise<any> {
-  return fetchFromAPI('/api/settings');
+  return fetchFromAPI("/api/settings");
 }
 
 export async function getDeliverySettings(): Promise<any> {
-  return fetchFromAPI('/api/delivery');
+  return fetchFromAPI("/api/delivery");
 }
