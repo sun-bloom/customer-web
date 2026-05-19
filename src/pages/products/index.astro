@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import FilterBar from '../../components/FilterBar.tsx';
-const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:3001';
+const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:4040';
 
 const searchParams = Astro.url.searchParams;
 const initialCategory = searchParams.get('category') || '';

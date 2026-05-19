@@ -23,7 +23,7 @@ export default defineConfig({
       },
     },
     server: {
-      allowedHosts: ['.trycloudflare.com', '.ngrok-free.app', '.ngrok.io', '.loca.lt', 'localhost'],
+      allowedHosts: ['.trycloudflare.com', '.ngrok-free.app', '.ngrok.io', '.loca.lt', 'localhost','.cashfree.com'],
     },
   },
 
