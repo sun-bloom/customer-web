@@ -120,6 +120,7 @@ export async function searchProducts(query: string): Promise<Product[]> {
 
 export async function filterProducts(filters: {
   category?: string;
+  subcategoryId?: string;
   minPrice?: number;
   maxPrice?: number;
   colors?: string[];
@@ -128,6 +129,10 @@ export async function filterProducts(filters: {
 
   if (filters.category) {
     products = products.filter((p) => p.category === filters.category);
+  }
+
+  if (filters.subcategoryId) {
+    products = products.filter((p) => p.subcategoryId === filters.subcategoryId);
   }
 
   if (filters.minPrice !== undefined) {

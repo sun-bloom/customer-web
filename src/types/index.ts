@@ -42,6 +42,7 @@ export interface Product {
   name: string;
   slug: string;
   category: string;
+  subcategoryId?: string;
   description: string;
   basePrice: number;
   images: string[];
@@ -57,6 +58,20 @@ export interface Category {
   slug: string;
   description: string;
   image: string;
+}
+
+export interface Subcategory {
+  id: string;
+  name: string;
+  slug: string;
+  categoryId: string;
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface ProductsData {
