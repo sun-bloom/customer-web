@@ -5,6 +5,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:4040';
 
 const searchParams = Astro.url.searchParams;
 const initialCategory = searchParams.get('category') || '';
+const initialSubcategoryId = searchParams.get('subcategoryId') || '';
 const initialMinPrice = searchParams.get('minPrice') || '';
 const initialMaxPrice = searchParams.get('maxPrice') || '';
 const initialSearch = searchParams.get('search') || '';
@@ -130,7 +131,7 @@ const itemsPerPage = ITEMS_PER_PAGE;
     </div>
   </div>
 
-  <script is:inline define:vars={{ apiUrl, initialCategory, initialMinPrice, initialMaxPrice, initialSearch, itemsPerPage }}>
+  <script is:inline define:vars={{ apiUrl, initialCategory, initialSubcategoryId, initialMinPrice, initialMaxPrice, initialSearch, itemsPerPage }}>
     let products = [];
     let categories = [];
     
@@ -142,6 +143,7 @@ const itemsPerPage = ITEMS_PER_PAGE;
       categories: initialCategory
         ? initialCategory.split(',').map((c) => c.trim()).filter(Boolean)
         : [],
+      subcategoryId: initialSubcategoryId || null,
       minPrice: initialMinPrice ? parseInt(initialMinPrice) : null,
       maxPrice: initialMaxPrice ? parseInt(initialMaxPrice) : null,
       search: initialSearch,
@@ -154,6 +156,60 @@ const itemsPerPage = ITEMS_PER_PAGE;
       const response = await fetch(`${apiUrl}${endpoint}`);
       if (!response.ok) return null;
       return response.json();
+    }
+    
+    // Helper function to convert color name to hex or gradient marker
+    function getColorHex(colorName) {
+      const colorMap = {
+        'Red': '#DC2626',
+        'Blue': '#2563EB',
+        'Royal Blue': '#1D4ED8',
+        'Maroon': '#7F1D1D',
+        'Green': '#16A34A',
+        'Yellow': '#EAB308',
+        'Pink': '#EC4899',
+        'Pink-Purple': '#A855F7',
+        'Purple': '#9333EA',
+        'Orange': '#EA580C',
+        'Black': '#1F2937',
+        'White': '#F9FAFB',
+        'Multi-color': 'GRADIENT:linear-gradient(45deg, #EC4899, #EAB308, #2563EB)',
+        'Beige': '#D2B48C',
+        'Navy': '#1E3A5F',
+        'Cream': '#FFFDD0',
+        'Grey': '#6B7280',
+        'Gray': '#6B7280',
+        'Teal': '#14B8A6',
+        'Peach': '#FFDAB9',
+        'Lavender': '#E6E6FA',
+        'Coral': '#FF7F50',
+        'Burgundy': '#800020',
+        'Meroon': '#7F1D1D',
+      };
+      
+      // Return the color or generate a consistent hash-based color
+      if (colorMap[colorName]) return colorMap[colorName];
+      
+      // Fallback: generate a consistent color from the string
+      let hash = 0;
+      for (let i = 0; i < colorName.length; i++) {
+        hash = colorName.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const hue = Math.abs(hash) % 360;
+      return `hsl(${hue}, 60%, 50%)`;
+    }
+    
+    // Check if color value is a gradient
+    function isGradient(colorValue) {
+      return colorValue.startsWith('GRADIENT:');
+    }
+    
+    // Get CSS background property value
+    function getSwatchBackground(colorValue) {
+      if (isGradient(colorValue)) {
+        return colorValue.replace('GRADIENT:', '');
+      }
+      return colorValue;
     }
 
     function calculatePriceBounds(products) {
@@ -219,9 +275,13 @@ const itemsPerPage = ITEMS_PER_PAGE;
         });
 	      }
 	      
-	      if (currentFilters.categories.length > 0) {
-	        filtered = filtered.filter((p) => currentFilters.categories.includes(getProductCategorySlug(p)));
-	      }
+      if (currentFilters.categories.length > 0) {
+        filtered = filtered.filter((p) => currentFilters.categories.includes(getProductCategorySlug(p)));
+      }
+      
+      if (currentFilters.subcategoryId) {
+        filtered = filtered.filter(p => p.subcategoryId === currentFilters.subcategoryId);
+      }
       
       if (currentFilters.minPrice !== null) {
         filtered = filtered.filter(p => {
@@ -330,12 +390,20 @@ const itemsPerPage = ITEMS_PER_PAGE;
         const firstVariant = product.variants.find(v => v.isAvailable) || product.variants[0];
         const isOutOfStock = !firstVariant?.isAvailable || firstVariant?.stock <= 0;
         
+        // Get unique colors from variants
+        const colors = [...new Set(product.variants.map(v => v.color))];
+        const imageCount = product.images?.length || 1;
+        
+        // Use variant image as default if available, otherwise use first product image
+        const defaultImage = firstVariant?.image || product.images?.[0] || '';
+        
         return `
           <div class="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105 ${isOutOfStock ? 'opacity-60 grayscale' : ''}">
             <div class="relative">
               <a href="/products/${product.slug}">
                 <img 
-                  src="${product.images[0]}" 
+                  id="product-img-${product.id}"
+                  src="${defaultImage}" 
                   alt="${product.name}"
                   class="w-full h-64 object-cover"
                   loading="lazy"
@@ -343,6 +411,26 @@ const itemsPerPage = ITEMS_PER_PAGE;
                 />
               </a>
               ${isNew ? '<div class="absolute top-2 right-2"><span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full">New</span></div>' : ''}
+              ${colors.length > 1 ? `
+                <div class="absolute bottom-2 left-2 right-2 flex justify-center gap-1">
+                  ${colors.map((color, idx) => {
+                    const colorValue = getColorHex(color);
+                    const bgStyle = isGradient(colorValue) 
+                      ? `background: ${getSwatchBackground(colorValue)}`
+                      : `background-color: ${colorValue}`;
+                    return `
+                    <button 
+                      type="button"
+                      class="color-swatch w-5 h-5 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform ${idx === 0 ? 'ring-2 ring-gray-900 ring-offset-1' : ''}"
+                      data-product-id="${product.id}"
+                      data-color-index="${idx % imageCount}"
+                      data-color="${color}"
+                      style="${bgStyle}"
+                      title="${color}"
+                    ></button>
+                  `}).join('')}
+                </div>
+              ` : ''}
             </div>
             <div class="p-4">
               <div class="mb-2">
@@ -365,6 +453,42 @@ const itemsPerPage = ITEMS_PER_PAGE;
           </div>
         `;
       }).join('');
+      
+      // Add color swatch click handlers
+      document.querySelectorAll('.color-swatch').forEach(swatch => {
+        swatch.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const productId = swatch.dataset.productId;
+          const colorIndex = parseInt(swatch.dataset.colorIndex);
+          const color = swatch.dataset.color;
+          
+          // Update image - prefer variant-specific image
+          const product = products.find(p => p.id === productId);
+          if (product) {
+            const img = document.getElementById(`product-img-${productId}`);
+            if (img) {
+              // First try to find variant with this color and use its image
+              const variantWithImage = product.variants?.find(v => v.color === color && v.image);
+              if (variantWithImage?.image) {
+                img.src = variantWithImage.image;
+              } else if (product.images && product.images[colorIndex]) {
+                // Fallback to product images array
+                img.src = product.images[colorIndex];
+              }
+            }
+          }
+          
+          // Update swatch selection
+          const parent = swatch.parentElement;
+          if (parent) {
+            parent.querySelectorAll('.color-swatch').forEach(s => {
+              s.classList.remove('ring-2', 'ring-gray-900', 'ring-offset-1');
+            });
+            swatch.classList.add('ring-2', 'ring-gray-900', 'ring-offset-1');
+          }
+        });
+      });
     }
     
     function updatePageTitle() {
@@ -397,6 +521,7 @@ const itemsPerPage = ITEMS_PER_PAGE;
     function updateUrl() {
       const params = new URLSearchParams();
       if (currentFilters.categories.length > 0) params.set('category', currentFilters.categories.join(','));
+      if (currentFilters.subcategoryId) params.set('subcategoryId', currentFilters.subcategoryId);
       if (currentFilters.minPrice) params.set('minPrice', currentFilters.minPrice.toString());
       if (currentFilters.maxPrice) params.set('maxPrice', currentFilters.maxPrice.toString());
       if (currentFilters.search) params.set('search', currentFilters.search);
@@ -419,7 +544,7 @@ const itemsPerPage = ITEMS_PER_PAGE;
       });
       
       document.getElementById('clear-filters')?.addEventListener('click', () => {
-        currentFilters = { categories: [], minPrice: null, maxPrice: null, search: '' };
+        currentFilters = { categories: [], subcategoryId: null, minPrice: null, maxPrice: null, search: '' };
         currentPage = 1;
         window.location.href = '/products';
       });
@@ -472,6 +597,10 @@ const itemsPerPage = ITEMS_PER_PAGE;
 	      if (currentFilters.categories.length > 0) {
 	        filtered = filtered.filter((p) => currentFilters.categories.includes(getProductCategorySlug(p)));
 	      }
+      
+      if (currentFilters.subcategoryId) {
+        filtered = filtered.filter(p => p.subcategoryId === currentFilters.subcategoryId);
+      }
       
       if (currentFilters.minPrice !== null) {
         filtered = filtered.filter(p => {

@@ -122,15 +122,37 @@ const { apiUrl } = Astro.props;
   }
 
   function updateVariant(color, pattern) {
-    const variant = variants.find(
+    let variant = variants.find(
       (v) => v.color === color && v.pattern === pattern && v.isAvailable,
     );
 
-    if (variant) {
-      selectedVariant = variant;
-      updatePrice();
-      updateStockStatus();
-      updateAddToCartButton();
+    if (!variant) {
+      variant = variants.find((v) => v.color === color && v.isAvailable);
+    }
+    if (!variant) {
+      variant = variants.find((v) => v.pattern === pattern && v.isAvailable);
+    }
+    if (!variant) {
+      variant = variants.find((v) => v.isAvailable) || variants[0];
+    }
+
+    if (!variant) return;
+
+    selectedVariant = variant;
+    setText("product-sku", selectedVariant.sku || "-");
+    updatePrice();
+    updateStockStatus();
+    updateAddToCartButton();
+
+    if (variant.image) {
+      setImage("main-image", variant.image, product?.name || "");
+      document.querySelectorAll(".thumbnail").forEach((thumb) => {
+        if (thumb.getAttribute("src") === variant.image) {
+          thumb.classList.add("ring-2", "ring-gray-900");
+        } else {
+          thumb.classList.remove("ring-2", "ring-gray-900");
+        }
+      });
     }
   }
 
@@ -209,20 +231,28 @@ const { apiUrl } = Astro.props;
     }
 
     const colorsWrap = document.getElementById("color-options");
+    const colorLabel = colorsWrap?.previousElementSibling;
     if (colorsWrap) {
-      colorsWrap.innerHTML = colors
-        .map(
-          (color, idx) => `
-          <button
-            type="button"
-            data-color="${color}"
-            class="color-option py-2 px-4 rounded-md border-2 transition-colors ${idx === 0 ? "selected border-gray-900 bg-gray-50" : "border-gray-300"}"
-          >
-            ${color}
-          </button>
-        `,
-        )
-        .join("");
+      if (colors.length > 1) {
+        colorsWrap.innerHTML = colors
+          .map(
+            (color, idx) => `
+            <button
+              type="button"
+              data-color="${color}"
+              class="color-option py-2 px-4 rounded-md border-2 transition-colors ${idx === 0 ? "selected border-gray-900 bg-gray-50" : "border-gray-300"}"
+            >
+              ${color}
+            </button>
+          `,
+          )
+          .join("");
+        colorsWrap.classList.remove("hidden");
+        if (colorLabel) colorLabel.classList.remove("hidden");
+      } else {
+        colorsWrap.classList.add("hidden");
+        if (colorLabel) colorLabel.classList.add("hidden");
+      }
     }
 
     const patternsWrap = document.getElementById("pattern-options");
@@ -248,6 +278,9 @@ const { apiUrl } = Astro.props;
     updatePrice();
     updateStockStatus();
     updateAddToCartButton();
+    if (selectedVariant) {
+      updateVariant(selectedVariant.color, selectedVariant.pattern);
+    }
 
     const colorButtons = document.querySelectorAll(".color-option");
     const patternButtons = document.querySelectorAll(".pattern-option");
@@ -271,18 +304,18 @@ const { apiUrl } = Astro.props;
       );
     }
 
-    colorButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const selectedColor = button.getAttribute("data-color");
-        const currentPattern =
-          document
-            .querySelector(".pattern-option.selected")
-            ?.getAttribute("data-pattern") || patterns[0];
-        setSelectedButton(colorButtons, button);
-        if (selectedColor && currentPattern)
-          updateVariant(selectedColor, currentPattern);
-      });
-    });
+	    colorButtons.forEach((button) => {
+	      button.addEventListener("click", () => {
+	        const selectedColor = button.getAttribute("data-color");
+	        const currentPattern =
+	          document
+	            .querySelector(".pattern-option.selected")
+	            ?.getAttribute("data-pattern") || patterns[0];
+	        setSelectedButton(colorButtons, button);
+	        if (selectedColor && currentPattern)
+	          updateVariant(selectedColor, currentPattern);
+	      });
+	    });
 
     patternButtons.forEach((button) => {
       button.addEventListener("click", () => {
@@ -417,11 +450,17 @@ const { apiUrl } = Astro.props;
     }
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    console.log("Document ready, initializing product page...");
-    loadProduct();
-  });
-</script>
+	  function initProductPage() {
+	    console.log("ProductDetailPage: DOM readyState:", document.readyState);
+	    loadProduct();
+	  }
+
+	  if (document.readyState === "loading") {
+	    document.addEventListener("DOMContentLoaded", initProductPage);
+	  } else {
+	    initProductPage();
+	  }
+	</script>
 
 <div class='container mx-auto px-4 py-8'>
   <style>

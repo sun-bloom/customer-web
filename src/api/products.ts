@@ -4,26 +4,54 @@ import type { Product, Category } from "../types";
 
 const responseCache = new Map<string, Promise<any>>();
 
-async function fetchFromAPI(endpoint: string, options?: { cache?: boolean }) {
-  // In dev, avoid caching across requests so admin changes appear immediately.
+async function fetchFromAPI(endpoint: string, options?: { cache?: boolean; retries?: number }) {
   const useCache = options?.cache ?? !import.meta.env.DEV;
   if (useCache) {
     const cached = responseCache.get(endpoint);
     if (cached) return cached;
   }
 
+  const maxRetries = options?.retries ?? 2;
+  let attempt = 0;
+  const baseDelay = 500; // Start with 500ms
+
   const request = (async () => {
-    try {
-      const response = await fetch(`${API_URL}${endpoint}`);
-      if (!response.ok) {
-        console.error(`API error: ${response.status} for ${endpoint}`);
-        throw new Error(`API error: ${response.status}`);
+    while (attempt <= maxRetries) {
+      const timeoutMs = 10000;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        const response = await fetch(`${API_URL}${endpoint}`, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          if (response.status === 404) throw new Error('Not Found');
+          throw new Error(`API error: ${response.status}`);
+        }
+        return await response.json();
+      } catch (error) {
+        clearTimeout(timeoutId);
+        attempt++;
+
+        if (attempt > maxRetries) {
+          if (error.name === 'AbortError') {
+            console.error(`Request timeout for ${endpoint}`);
+            throw new Error('Request timeout');
+          }
+          console.error(`Fetch error for ${endpoint}:`, error);
+          throw error;
+        }
+
+        // Exponential backoff: 500ms, 1000ms, 2000ms
+        const delay = baseDelay * Math.pow(2, attempt - 1);
+        console.log(`Retrying ${endpoint} in ${delay}ms (attempt ${attempt}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-      return await response.json();
-    } catch (error) {
-      console.error(`Fetch error for ${endpoint}:`, error);
-      throw error;
     }
+    throw new Error('Max retries exceeded');
   })();
 
   if (useCache) {
@@ -92,6 +120,7 @@ export async function searchProducts(query: string): Promise<Product[]> {
 
 export async function filterProducts(filters: {
   category?: string;
+  subcategoryId?: string;
   minPrice?: number;
   maxPrice?: number;
   colors?: string[];
@@ -100,6 +129,10 @@ export async function filterProducts(filters: {
 
   if (filters.category) {
     products = products.filter((p) => p.category === filters.category);
+  }
+
+  if (filters.subcategoryId) {
+    products = products.filter((p) => p.subcategoryId === filters.subcategoryId);
   }
 
   if (filters.minPrice !== undefined) {
