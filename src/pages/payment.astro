@@ -724,6 +724,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-900 truncate">${item.productName}</p>
               <p class="text-xs text-gray-500">${item.color} / ${item.pattern} × ${item.quantity}</p>
+              <p class="text-[11px] text-gray-400">SKU: ${variant.sku || '-'}</p>
               <p class="text-sm font-semibold text-gray-900">₹${itemTotal}</p>
             </div>
           `;
