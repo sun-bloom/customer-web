@@ -34,6 +34,7 @@ export interface Variant {
   stock: number;
   additionalPrice: number;
   sku: string;
+  images: string[];
   isAvailable: boolean;
 }
 
