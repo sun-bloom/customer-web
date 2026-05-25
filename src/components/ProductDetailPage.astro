@@ -106,11 +106,15 @@ const { apiUrl } = Astro.props;
   }
 
   function showImage(index) {
-    if (!product?.images?.length) return;
+    const activeImages = selectedVariant?.images?.length
+      ? selectedVariant.images
+      : product?.images || [];
+    if (!activeImages.length) return;
+
     const mainImage = document.getElementById("main-image");
     const thumbnails = document.querySelectorAll(".thumbnail");
 
-    if (mainImage) mainImage.src = product.images[index] || "";
+    if (mainImage) mainImage.src = activeImages[index] || "";
 
     thumbnails.forEach((thumb, i) => {
       if (i === index) {
@@ -144,14 +148,39 @@ const { apiUrl } = Astro.props;
     updateStockStatus();
     updateAddToCartButton();
 
-    if (variant.image) {
-      setImage("main-image", variant.image, product?.name || "");
-      document.querySelectorAll(".thumbnail").forEach((thumb) => {
-        if (thumb.getAttribute("src") === variant.image) {
-          thumb.classList.add("ring-2", "ring-gray-900");
-        } else {
-          thumb.classList.remove("ring-2", "ring-gray-900");
-        }
+    renderVariantGallery();
+  }
+
+  function renderVariantGallery() {
+    if (!product) return;
+
+    const activeImages = selectedVariant?.images?.length
+      ? selectedVariant.images
+      : product.images || [];
+
+    setImage("main-image", activeImages[0] || "", product.name);
+
+    const thumbnails = document.getElementById("image-thumbnails");
+    if (thumbnails) {
+      thumbnails.innerHTML = (activeImages || [])
+        .map(
+          (image, index) => `
+          <img
+            src="${image}"
+            alt="${product.name} view ${index + 1}"
+            class="thumbnail w-20 h-20 object-cover rounded cursor-pointer border-2 border-gray-200 hover:border-gray-900 transition-colors ${index === 0 ? "ring-2 ring-gray-900" : ""}"
+            data-index="${index}"
+            loading="lazy"
+            decoding="async"
+          />
+        `,
+        )
+        .join("");
+
+      thumbnails.querySelectorAll(".thumbnail").forEach((thumb) => {
+        thumb.addEventListener("click", () =>
+          showImage(parseInt(thumb.dataset.index)),
+        );
       });
     }
   }
@@ -204,31 +233,8 @@ const { apiUrl } = Astro.props;
     setText("product-description", product.description || "");
     setText("product-category", categoryLabel.replace("_", " "));
     setText("product-sku", variants[0]?.sku || "-");
-    setImage("main-image", product.images?.[0] || "", product.name);
-
-    const thumbnails = document.getElementById("image-thumbnails");
-    if (thumbnails) {
-      thumbnails.innerHTML = (product.images || [])
-        .map(
-          (image, index) => `
-          <img
-            src="${image}"
-            alt="${product.name} view ${index + 1}"
-            class="thumbnail w-20 h-20 object-cover rounded cursor-pointer border-2 border-gray-200 hover:border-gray-900 transition-colors"
-            data-index="${index}"
-            loading="lazy"
-            decoding="async"
-          />
-        `,
-        )
-        .join("");
-
-      thumbnails.querySelectorAll(".thumbnail").forEach((thumb) => {
-        thumb.addEventListener("click", () =>
-          showImage(parseInt(thumb.dataset.index)),
-        );
-      });
-    }
+    // Gallery is variant-driven (with product-level fallback)
+    renderVariantGallery();
 
     const colorsWrap = document.getElementById("color-options");
     const colorLabel = colorsWrap?.previousElementSibling;
@@ -286,7 +292,7 @@ const { apiUrl } = Astro.props;
     const patternButtons = document.querySelectorAll(".pattern-option");
 
     if (colorButtons.length > 0) {
-      const initialColor = colors[0];
+      const initialColor = selectedVariant?.color || colors[0];
       const initialColorButton = Array.from(colorButtons).find(
         (btn) => btn.getAttribute("data-color") === initialColor,
       );
@@ -294,7 +300,7 @@ const { apiUrl } = Astro.props;
     }
 
     if (patternButtons.length > 0) {
-      const initialPattern = patterns[0];
+      const initialPattern = selectedVariant?.pattern || patterns[0];
       const initialPatternButton = Array.from(patternButtons).find(
         (btn) => btn.getAttribute("data-pattern") === initialPattern,
       );
@@ -378,7 +384,10 @@ const { apiUrl } = Astro.props;
       variantId: selectedVariant.id,
       productName: product.name,
       productSlug: product.slug,
-      productImage: product.images?.[0] || "",
+      productImage:
+        selectedVariant.images?.[0] ||
+        product.images?.[0] ||
+        "",
       color: selectedVariant.color,
       pattern: selectedVariant.pattern,
       quantity: quantity,
