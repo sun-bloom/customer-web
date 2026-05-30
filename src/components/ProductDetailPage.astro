@@ -147,8 +147,22 @@ const { apiUrl } = Astro.props;
     updatePrice();
     updateStockStatus();
     updateAddToCartButton();
-
     renderVariantGallery();
+
+    const colorButtons = document.querySelectorAll(".color-option");
+    const patternButtons = document.querySelectorAll(".pattern-option");
+    setSelectedButton(
+      colorButtons,
+      Array.from(colorButtons).find(
+        (btn) => btn.getAttribute("data-color") === selectedVariant.color,
+      ),
+    );
+    setSelectedButton(
+      patternButtons,
+      Array.from(patternButtons).find(
+        (btn) => btn.getAttribute("data-pattern") === selectedVariant.pattern,
+      ),
+    );
   }
 
   function renderVariantGallery() {
