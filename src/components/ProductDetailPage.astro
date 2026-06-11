@@ -226,7 +226,7 @@ const { apiUrl } = Astro.props;
       content.classList.add("flex");
     }
     product = productData;
-    variants = product.variants || [];
+    variants = (product.variants || []).filter((v) => v.isAvailable);
     colors = [...new Set(variants.map((v) => v.color))];
     patterns = [...new Set(variants.map((v) => v.pattern))];
 
@@ -594,7 +594,7 @@ const { apiUrl } = Astro.props;
             id='main-image'
             src=''
             alt=''
-            class='w-full h-96 object-cover'
+            class='w-full h-96 object-contain'
           />
         </div>
 
@@ -746,8 +746,6 @@ const { apiUrl } = Astro.props;
           <ul class='space-y-2 text-sm text-gray-600'>
             <li>SKU: <span id='product-sku'>-</span></li>
             <li>Category: <span id='product-category'>-</span></li>
-            <li>Material: Cotton blend</li>
-            <li>Care: Machine wash, gentle cycle</li>
           </ul>
         </div>
       </div>
