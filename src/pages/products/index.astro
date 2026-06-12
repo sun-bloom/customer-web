@@ -390,8 +390,8 @@ const itemsPerPage = ITEMS_PER_PAGE;
         const firstVariant = product.variants.find(v => v.isAvailable) || product.variants[0];
         const isOutOfStock = !firstVariant?.isAvailable || firstVariant?.stock <= 0;
         
-        // Get unique colors from variants
-        const colors = [...new Set(product.variants.map(v => v.color))];
+        // Get unique colors from available variants only
+        const colors = [...new Set(product.variants.filter(v => v.isAvailable).map(v => v.color))];
         const imageCount = product.images?.length || 1;
         
         // Use variant image as default if available, otherwise use first product image
