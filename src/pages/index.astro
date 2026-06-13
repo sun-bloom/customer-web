@@ -44,6 +44,14 @@ const site = { name: 'Fashion Store', tagline: 'Discover your style' };
 			</div>
             
 			<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-8">
+				<!-- Skeleton shown while categories load -->
+				<div id="categories-skeleton" class="contents">
+					{[...Array(5)].map((_, i) => (
+						<div key={i} class="animate-pulse">
+							<div class="aspect-[4/5] bg-gray-200 rounded-2xl"></div>
+						</div>
+					))}
+				</div>
 				<div id="categories-grid" class="contents"></div>
 			</div>
 			<p id="categories-empty" class="hidden text-center text-gray-500 mt-8">No categories found.</p>
@@ -72,8 +80,10 @@ const site = { name: 'Fashion Store', tagline: 'Discover your style' };
 
   function renderCategories(categories) {
     const grid = document.getElementById('categories-grid');
+    const skeleton = document.getElementById('categories-skeleton');
     const empty = document.getElementById('categories-empty');
     if (!grid) return;
+    if (skeleton) skeleton.innerHTML = '';
     if (!Array.isArray(categories) || categories.length === 0) {
       grid.innerHTML = '';
       if (empty) empty.classList.remove('hidden');

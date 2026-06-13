@@ -47,6 +47,7 @@ const { apiUrl } = Astro.props;
     if (!selectedVariant || !product) return;
     const price = product.basePrice + selectedVariant.additionalPrice;
     setText("price-display", `₹${price}`);
+    setText("sticky-price", `₹${price}`);
   }
 
   function updateStockStatus() {
@@ -69,9 +70,12 @@ const { apiUrl } = Astro.props;
         const current = parseInt(quantityInput.value) || 1;
         if (current > max) quantityInput.value = String(max);
       }
+      setText("sticky-stock", "In Stock");
+      const stickyBtn = document.getElementById("sticky-add-to-cart-btn");
+      if (stickyBtn) { stickyBtn.disabled = false; stickyBtn.classList.remove("opacity-50", "cursor-not-allowed"); }
     } else {
       if (stockElement) {
-        stockElement.className = "text-gray-500 font-medium";
+        stockElement.className = "text-red-500 font-medium";
         stockElement.textContent = "Out of Stock";
       }
       if (stockCount) stockCount.textContent = "";
@@ -80,6 +84,9 @@ const { apiUrl } = Astro.props;
         quantityInput.max = "1";
         quantityInput.value = "1";
       }
+      setText("sticky-stock", "Out of Stock");
+      const stickyBtn = document.getElementById("sticky-add-to-cart-btn");
+      if (stickyBtn) { stickyBtn.disabled = true; stickyBtn.classList.add("opacity-50", "cursor-not-allowed"); }
     }
   }
 
@@ -353,6 +360,9 @@ const { apiUrl } = Astro.props;
     const addToCartBtn = document.getElementById("add-to-cart-btn");
     if (addToCartBtn) addToCartBtn.addEventListener("click", addToCart);
 
+    const stickyBtn = document.getElementById("sticky-add-to-cart-btn");
+    if (stickyBtn) stickyBtn.addEventListener("click", addToCart);
+
     const quantityInput = document.getElementById("quantity-input");
     const decreaseBtn = document.getElementById("decrease-qty");
     const increaseBtn = document.getElementById("increase-qty");
@@ -373,9 +383,18 @@ const { apiUrl } = Astro.props;
     }
   }
 
+  function showCartError(msg) {
+    const el = document.getElementById("cart-message");
+    if (!el) return;
+    el.textContent = msg;
+    el.className = "mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm";
+    el.classList.remove("hidden");
+    setTimeout(() => el.classList.add("hidden"), 3500);
+  }
+
   function addToCart() {
     if (!product || !selectedVariant) {
-      alert("This product is currently unavailable.");
+      showCartError("This product is currently unavailable.");
       return;
     }
 
@@ -384,11 +403,11 @@ const { apiUrl } = Astro.props;
 
     const maxAllowed = Math.max(0, Math.min(10, selectedVariant.stock || 0));
     if (maxAllowed <= 0) {
-      alert("This variant is out of stock.");
+      showCartError("This variant is out of stock.");
       return;
     }
     if (quantity > maxAllowed) {
-      alert(`Only ${maxAllowed} units available for this variant.`);
+      showCartError(`Only ${maxAllowed} units available for this variant.`);
       if (quantityInput) quantityInput.value = String(maxAllowed);
       return;
     }
@@ -421,9 +440,7 @@ const { apiUrl } = Astro.props;
     if (existingItemIndex >= 0) {
       const nextQty = cart[existingItemIndex].quantity + quantity;
       if (nextQty > maxAllowed) {
-        alert(
-          `Only ${maxAllowed} units available for this variant. Your cart already has ${cart[existingItemIndex].quantity}.`,
-        );
+        showCartError(`Only ${maxAllowed} units available. Your cart already has ${cart[existingItemIndex].quantity}.`);
         return;
       }
       cart[existingItemIndex].quantity = nextQty;
@@ -448,21 +465,20 @@ const { apiUrl } = Astro.props;
 
     const message = document.getElementById("cart-message");
     if (message) {
-      message.textContent = "Item added to cart!";
+      message.textContent = "Added to cart!";
+      message.className = "mb-4 p-3 bg-green-50 text-green-800 rounded-md text-sm";
       message.classList.remove("hidden");
       setTimeout(() => message.classList.add("hidden"), 3000);
     }
   }
 
   async function loadProduct() {
-    console.log("Loading product details...");
     const slug = getSlugFromPath();
     if (!slug) return renderNotFound();
     try {
       const response = await fetch(
         `${apiUrl}/api/products/slug/${encodeURIComponent(slug)}`,
       );
-      console.log("Fetch response:", response);
       if (!response.ok) return renderNotFound();
       const found = await response.json();
       if (!found || !found.isActive) return renderNotFound();
@@ -474,7 +490,6 @@ const { apiUrl } = Astro.props;
   }
 
 	  function initProductPage() {
-	    console.log("ProductDetailPage: DOM readyState:", document.readyState);
 	    loadProduct();
 	  }
 
@@ -485,7 +500,21 @@ const { apiUrl } = Astro.props;
 	  }
 	</script>
 
-<div class='container mx-auto px-4 py-8'>
+<!-- Sticky mobile Add to Cart bar -->
+<div class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-4 py-3 flex items-center gap-3">
+  <div class="min-w-0">
+    <div id="sticky-price" class="text-base font-bold text-gray-900">₹0</div>
+    <div id="sticky-stock" class="text-xs text-gray-500">In Stock</div>
+  </div>
+  <button
+    id="sticky-add-to-cart-btn"
+    class="flex-1 bg-black text-white py-3 px-4 rounded-xl font-medium text-sm transition-colors active:bg-gray-800"
+  >
+    Add to Cart
+  </button>
+</div>
+
+<div class='container mx-auto px-4 py-8 pb-24 lg:pb-8'>
   <style>
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button {
@@ -588,26 +617,28 @@ const { apiUrl } = Astro.props;
     class='hidden flex-col lg:flex-row gap-8'
   >
     <div class='w-full lg:w-1/2'>
-      <div class='bg-white rounded-lg shadow-md overflow-hidden'>
-        <div class='relative'>
-          <img
-            id='main-image'
-            src=''
-            alt=''
-            class='w-full h-96 object-contain'
-          />
+      <div class='bg-white rounded-xl overflow-hidden border border-gray-100'>
+        <div class='relative bg-gray-50'>
+          <div class='aspect-square overflow-hidden'>
+            <img
+              id='main-image'
+              src=''
+              alt=''
+              class='w-full h-full object-contain'
+            />
+          </div>
         </div>
 
         <div
           id='image-thumbnails'
-          class='flex p-4 space-x-2 overflow-x-auto'
+          class='flex p-3 gap-2 overflow-x-auto scrollbar-hide'
         >
         </div>
       </div>
     </div>
 
     <div class='w-full lg:w-1/2'>
-      <div class='bg-white rounded-lg shadow-md p-6'>
+      <div class='bg-white rounded-xl border border-gray-100 p-5 lg:p-6'>
         <h1
           id='product-name'
           class='text-2xl font-bold mb-4'

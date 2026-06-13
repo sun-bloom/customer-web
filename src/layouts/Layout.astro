@@ -42,7 +42,19 @@ const { title } = Astro.props;
 		<slot />
 		<Footer />
 
-		<!-- WhatsApp floating button (mobile) -->
+		<!-- Back to top button -->
+		<button
+			id="back-to-top"
+			aria-label="Back to top"
+			onclick="window.scrollTo({ top: 0, behavior: 'smooth' })"
+			class="fixed bottom-6 left-4 z-50 bg-gray-900 hover:bg-black text-white rounded-full p-3 shadow-lg transition-all duration-200 opacity-0 pointer-events-none"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+			</svg>
+		</button>
+
+		<!-- WhatsApp floating button -->
 		<a
 			id="whatsapp-float"
 			href="#"
@@ -95,6 +107,19 @@ const { title } = Astro.props;
 					}
 				})
 				.catch(() => {});
+
+			// Back to top
+			const backToTop = document.getElementById('back-to-top');
+			window.addEventListener('scroll', () => {
+				if (!backToTop) return;
+				if (window.scrollY > 400) {
+					backToTop.classList.remove('opacity-0', 'pointer-events-none');
+					backToTop.classList.add('opacity-100');
+				} else {
+					backToTop.classList.add('opacity-0', 'pointer-events-none');
+					backToTop.classList.remove('opacity-100');
+				}
+			}, { passive: true });
 		</script>
 	</body>
 </html>
