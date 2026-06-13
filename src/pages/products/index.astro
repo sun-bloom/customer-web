@@ -28,7 +28,7 @@ const itemsPerPage = ITEMS_PER_PAGE;
           <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
         </svg>
         Filters
-        <span id="mobile-filter-count" class="hidden bg-orange-600 text-white text-[10px] rounded-full min-w-[16px] h-4 items-center justify-center px-1 leading-none">0</span>
+        <span id="mobile-filter-count" class="hidden bg-amber-500 text-white text-[10px] rounded-full min-w-[16px] h-4 items-center justify-center px-1 leading-none">0</span>
       </button>
       <div class="flex-1 relative">
         <select id="sort-select-mobile" class="w-full border border-gray-300 rounded-full pl-4 pr-8 py-2.5 text-sm bg-white appearance-none cursor-pointer">
@@ -88,7 +88,7 @@ const itemsPerPage = ITEMS_PER_PAGE;
         <div class="lg:hidden sticky bottom-0 bg-white border-t border-gray-100 p-4">
           <button
             onclick="closeFilterDrawer()"
-            class="w-full bg-orange-600 text-white py-3.5 rounded-xl font-medium tracking-wide active:bg-orange-700 transition-colors"
+            class="w-full bg-amber-500 text-white py-3.5 rounded-xl font-medium tracking-wide active:bg-amber-600 transition-colors"
           >
             Show Results
           </button>
@@ -174,7 +174,7 @@ const itemsPerPage = ITEMS_PER_PAGE;
             <p class="mt-2 text-gray-500 text-lg">No products found matching your criteria.</p>
           </div>
 
-          <button id="clear-filters" class="mt-4 px-6 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors">Browse All Products</button>
+          <button id="clear-filters" class="mt-4 px-6 py-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition-colors">Browse All Products</button>
         </div>
 
       </main>
@@ -447,7 +447,7 @@ const itemsPerPage = ITEMS_PER_PAGE;
                   href="/products/${product.slug}"
                   class="text-xs lg:text-sm font-medium px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${isOutOfStock
                     ? 'bg-gray-100 text-gray-400 pointer-events-none'
-                    : 'bg-orange-600 text-white hover:bg-orange-700 active:bg-orange-700'}"
+                    : 'bg-amber-500 text-white hover:bg-amber-600 active:bg-amber-600'}"
                 >
                   ${isOutOfStock ? 'Sold Out' : 'View'}
                 </a>
