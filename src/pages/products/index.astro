@@ -389,13 +389,12 @@ const itemsPerPage = ITEMS_PER_PAGE;
         
         const firstVariant = product.variants.find(v => v.isAvailable) || product.variants[0];
         const isOutOfStock = !firstVariant?.isAvailable || firstVariant?.stock <= 0;
-        
+
         // Get unique colors from available variants only
         const colors = [...new Set(product.variants.filter(v => v.isAvailable).map(v => v.color))];
-        const imageCount = product.images?.length || 1;
-        
-        // Use variant image as default if available, otherwise use first product image
-        const defaultImage = firstVariant?.image || product.images?.[0] || '';
+
+        // Use first available variant image, fall back to product-level image
+        const defaultImage = firstVariant?.images?.[0] || product.images?.[0] || '';
         
         return `
           <div class="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105 ${isOutOfStock ? 'opacity-60 grayscale' : ''}">
@@ -423,7 +422,7 @@ const itemsPerPage = ITEMS_PER_PAGE;
                       type="button"
                       class="color-swatch w-5 h-5 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform ${idx === 0 ? 'ring-2 ring-gray-900 ring-offset-1' : ''}"
                       data-product-id="${product.id}"
-                      data-color-index="${idx % imageCount}"
+                      data-color-index="${idx}"
                       data-color="${color}"
                       style="${bgStyle}"
                       title="${color}"
@@ -469,9 +468,9 @@ const itemsPerPage = ITEMS_PER_PAGE;
             const img = document.getElementById(`product-img-${productId}`);
             if (img) {
               // First try to find variant with this color and use its image
-              const variantWithImage = product.variants?.find(v => v.color === color && v.image);
-              if (variantWithImage?.image) {
-                img.src = variantWithImage.image;
+              const variantWithImage = product.variants?.find(v => v.color === color && v.images?.[0]);
+              if (variantWithImage?.images?.[0]) {
+                img.src = variantWithImage.images[0];
               } else if (product.images && product.images[colorIndex]) {
                 // Fallback to product images array
                 img.src = product.images[colorIndex];
