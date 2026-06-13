@@ -272,7 +272,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:4040';
               onclick="closeSearch()"
             >
               <img
-                src="${product.images[0]}"
+                src="${product.images[0] || product.variants?.find(v => v.isAvailable)?.images?.[0] || product.variants?.[0]?.images?.[0] || ''}"
                 alt="${product.name}"
                 class="w-16 h-16 object-cover rounded-md bg-gray-100"
                 loading="lazy"

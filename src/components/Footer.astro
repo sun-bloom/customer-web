@@ -53,10 +53,9 @@ const currentYear = new Date().getFullYear();
       <div class="col-span-1">
         <h3 class="text-white font-bold mb-4 uppercase text-sm tracking-wider">Support</h3>
         <ul class="space-y-3">
-            <li><a href="/contact" class="text-gray-400 hover:text-white transition-colors text-sm">Contact Us</a></li>
-            <li><a href="/shipping" class="text-gray-400 hover:text-white transition-colors text-sm">Shipping Policy</a></li>
-            <li><a href="/returns" class="text-gray-400 hover:text-white transition-colors text-sm">Returns & Exchanges</a></li>
-            <li><a href="/faq" class="text-gray-400 hover:text-white transition-colors text-sm">FAQs</a></li>
+            <li><a id="footer-whatsapp-link" href="#" class="text-gray-400 hover:text-white transition-colors text-sm">WhatsApp Us</a></li>
+            <li><a href="/track-order" class="text-gray-400 hover:text-white transition-colors text-sm">Track Order</a></li>
+            <li><a href="/orders" class="text-gray-400 hover:text-white transition-colors text-sm">My Orders</a></li>
         </ul>
       </div>
 
@@ -104,6 +103,15 @@ const currentYear = new Date().getFullYear();
       if (email && site.contactEmail) email.textContent = site.contactEmail;
       if (phone && site.contactPhone) phone.textContent = site.contactPhone;
       if (siteName && site.name) siteName.textContent = site.name;
+
+      const waNumber = settings?.social?.whatsapp || site?.whatsappNumber;
+      const waLink = document.getElementById('footer-whatsapp-link');
+      if (waLink && waNumber) {
+        const cleaned = waNumber.replace(/\D/g, '');
+        waLink.href = `https://wa.me/${cleaned}`;
+        waLink.target = '_blank';
+        waLink.rel = 'noopener noreferrer';
+      }
     } catch (error) {
       console.error('Footer settings fetch failed', error);
     }
