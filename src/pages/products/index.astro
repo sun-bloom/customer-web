@@ -428,7 +428,7 @@ const itemsPerPage = ITEMS_PER_PAGE;
                       : `background-color: ${colorValue}`;
                     return `<button
                       type="button"
-                      class="color-swatch w-6 h-6 rounded-full border-2 border-white shadow-sm hover:scale-110 active:scale-95 transition-transform ${idx === 0 ? 'ring-2 ring-orange-500 ring-offset-1' : ''}"
+                      class="color-swatch w-6 h-6 rounded-full border-2 border-white shadow-sm hover:scale-110 active:scale-95 transition-transform ${idx === 0 ? 'ring-2 ring-amber-500 ring-offset-1' : ''}"
                       data-product-id="${product.id}"
                       data-color-index="${idx}"
                       data-color="${color}"
@@ -477,9 +477,9 @@ const itemsPerPage = ITEMS_PER_PAGE;
           const parent = swatch.parentElement;
           if (parent) {
             parent.querySelectorAll('.color-swatch').forEach(s => {
-              s.classList.remove('ring-2', 'ring-orange-500', 'ring-offset-1');
+              s.classList.remove('ring-2', 'ring-amber-500', 'ring-offset-1');
             });
-            swatch.classList.add('ring-2', 'ring-orange-500', 'ring-offset-1');
+            swatch.classList.add('ring-2', 'ring-amber-500', 'ring-offset-1');
           }
         });
       });

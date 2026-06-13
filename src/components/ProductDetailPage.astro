@@ -100,10 +100,10 @@ const { apiUrl } = Astro.props;
         "text-gray-500",
         "cursor-not-allowed",
       );
-      button.classList.add("bg-gray-900", "text-white", "hover:bg-amber-600");
+      button.classList.add("bg-amber-500", "text-white", "hover:bg-amber-600");
     } else {
       button.disabled = true;
-      button.classList.remove("bg-gray-900", "text-white", "hover:bg-amber-600");
+      button.classList.remove("bg-amber-500", "text-white", "hover:bg-amber-600");
       button.classList.add(
         "bg-gray-300",
         "text-gray-500",
@@ -125,9 +125,9 @@ const { apiUrl } = Astro.props;
 
     thumbnails.forEach((thumb, i) => {
       if (i === index) {
-        thumb.classList.add("ring-2", "ring-orange-500");
+        thumb.classList.add("ring-2", "ring-amber-500");
       } else {
-        thumb.classList.remove("ring-2", "ring-orange-500");
+        thumb.classList.remove("ring-2", "ring-amber-500");
       }
     });
   }
@@ -189,7 +189,7 @@ const { apiUrl } = Astro.props;
           <img
             src="${image}"
             alt="${product.name} view ${index + 1}"
-            class="thumbnail w-20 h-20 object-cover rounded cursor-pointer border-2 border-gray-200 hover:border-orange-500 transition-colors ${index === 0 ? "ring-2 ring-orange-500" : ""}"
+            class="thumbnail w-20 h-20 object-cover rounded cursor-pointer border-2 border-gray-200 hover:border-amber-500 transition-colors ${index === 0 ? "ring-2 ring-amber-500" : ""}"
             data-index="${index}"
             loading="lazy"
             decoding="async"
