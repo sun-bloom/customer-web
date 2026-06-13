@@ -179,7 +179,7 @@ const CartDrawer: React.FC = () => {
                 <a
                   href="/cart"
                   onClick={closeCart}
-                  className="block w-full bg-gray-900 text-white py-2 px-4 rounded-md text-center font-medium hover:bg-black transition-colors"
+                  className="block w-full bg-orange-600 text-white py-2 px-4 rounded-md text-center font-medium hover:bg-orange-700 transition-colors"
                 >
                   View Cart
                 </a>

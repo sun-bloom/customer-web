@@ -100,10 +100,10 @@ const { apiUrl } = Astro.props;
         "text-gray-500",
         "cursor-not-allowed",
       );
-      button.classList.add("bg-gray-900", "text-white", "hover:bg-black");
+      button.classList.add("bg-gray-900", "text-white", "hover:bg-orange-700");
     } else {
       button.disabled = true;
-      button.classList.remove("bg-gray-900", "text-white", "hover:bg-black");
+      button.classList.remove("bg-gray-900", "text-white", "hover:bg-orange-700");
       button.classList.add(
         "bg-gray-300",
         "text-gray-500",
@@ -125,9 +125,9 @@ const { apiUrl } = Astro.props;
 
     thumbnails.forEach((thumb, i) => {
       if (i === index) {
-        thumb.classList.add("ring-2", "ring-gray-900");
+        thumb.classList.add("ring-2", "ring-orange-500");
       } else {
-        thumb.classList.remove("ring-2", "ring-gray-900");
+        thumb.classList.remove("ring-2", "ring-orange-500");
       }
     });
   }
@@ -189,7 +189,7 @@ const { apiUrl } = Astro.props;
           <img
             src="${image}"
             alt="${product.name} view ${index + 1}"
-            class="thumbnail w-20 h-20 object-cover rounded cursor-pointer border-2 border-gray-200 hover:border-gray-900 transition-colors ${index === 0 ? "ring-2 ring-gray-900" : ""}"
+            class="thumbnail w-20 h-20 object-cover rounded cursor-pointer border-2 border-gray-200 hover:border-orange-500 transition-colors ${index === 0 ? "ring-2 ring-orange-500" : ""}"
             data-index="${index}"
             loading="lazy"
             decoding="async"
@@ -508,7 +508,7 @@ const { apiUrl } = Astro.props;
   </div>
   <button
     id="sticky-add-to-cart-btn"
-    class="flex-1 bg-black text-white py-3 px-4 rounded-xl font-medium text-sm transition-colors active:bg-gray-800"
+    class="flex-1 bg-orange-600 text-white py-3 px-4 rounded-xl font-medium text-sm transition-colors active:bg-orange-700"
   >
     Add to Cart
   </button>
@@ -752,7 +752,7 @@ const { apiUrl } = Astro.props;
         <div class='flex flex-col sm:flex-row gap-4 mb-6'>
           <button
             id='add-to-cart-btn'
-            class='flex-1 bg-gray-900 text-white py-3 px-6 rounded-md font-medium hover:bg-black transition-colors'
+            class='flex-1 bg-orange-600 text-white py-3 px-6 rounded-md font-medium hover:bg-orange-700 transition-colors'
           >
             Add to Cart
           </button>
@@ -796,7 +796,7 @@ const { apiUrl } = Astro.props;
       </p>
       <a
         href='/products'
-        class='inline-flex items-center justify-center bg-gray-900 text-white px-6 py-3 text-sm hover:bg-black transition-colors'
+        class='inline-flex items-center justify-center bg-orange-600 text-white px-6 py-3 text-sm hover:bg-orange-700 transition-colors'
       >
         Browse Products
       </a>
