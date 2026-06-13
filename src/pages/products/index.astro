@@ -9,213 +9,292 @@ const initialSubcategoryId = searchParams.get('subcategoryId') || '';
 const initialMinPrice = searchParams.get('minPrice') || '';
 const initialMaxPrice = searchParams.get('maxPrice') || '';
 const initialSearch = searchParams.get('search') || '';
-const initialPage = parseInt(searchParams.get('page') || '1');
 
 const ITEMS_PER_PAGE = 9;
-
 const itemsPerPage = ITEMS_PER_PAGE;
 ---
 
 <Layout title={initialSearch ? `Search: ${initialSearch} - Fashion Store` : 'Products - Fashion Store'}>
-  <div class="container mx-auto px-4 py-8">
-    <div class="flex flex-col lg:flex-row gap-8">
-      <div class="w-full lg:w-1/4">
-        <FilterBar
-          client:load
-          categories={[]}
-          minPrice={0}
-          maxPrice={5000}
-          initialCategory={initialCategory}
-          initialMinPrice={initialMinPrice}
-          initialMaxPrice={initialMaxPrice}
-        />
-      </div>
+  <div class="container mx-auto px-4 py-6 lg:py-8">
 
-      <div class="w-full lg:w-3/4">
-        <div
-          class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"
-        >
+    <!-- Mobile sticky filter/sort bar -->
+    <div class="lg:hidden flex items-center gap-3 sticky top-0 z-30 bg-white border-b border-gray-100 -mx-4 px-4 py-3 mb-5">
+      <button
+        id="open-filter-btn"
+        onclick="openFilterDrawer()"
+        class="flex items-center gap-2 border border-gray-300 rounded-full px-4 py-2.5 text-sm font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors flex-shrink-0"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+        </svg>
+        Filters
+        <span id="mobile-filter-count" class="hidden bg-black text-white text-[10px] rounded-full min-w-[16px] h-4 items-center justify-center px-1 leading-none">0</span>
+      </button>
+      <div class="flex-1 relative">
+        <select id="sort-select-mobile" class="w-full border border-gray-300 rounded-full pl-4 pr-8 py-2.5 text-sm bg-white appearance-none cursor-pointer">
+          <option value="">Sort by</option>
+          <option value="new">Newest First</option>
+          <option value="price-low">Price: Low to High</option>
+          <option value="price-high">Price: High to Low</option>
+        </select>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 absolute right-3 top-3 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+
+      <!-- Filter backdrop (mobile only) -->
+      <div
+        id="filter-backdrop"
+        class="fixed inset-0 bg-black/50 z-40 opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden"
+        onclick="closeFilterDrawer()"
+      ></div>
+
+      <!-- Filter container: bottom drawer on mobile, sidebar on desktop -->
+      <aside
+        id="filter-container"
+        class="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] overflow-y-auto overscroll-contain bg-white rounded-t-2xl shadow-2xl translate-y-full transition-transform duration-300 ease-out lg:static lg:translate-y-0 lg:w-1/4 lg:bg-transparent lg:shadow-none lg:rounded-none lg:max-h-none lg:overflow-visible lg:transition-none lg:z-auto"
+      >
+        <!-- Mobile drawer handle + header -->
+        <div class="lg:hidden sticky top-0 bg-white z-10 border-b border-gray-100">
+          <div class="flex justify-center pt-3 pb-1">
+            <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
+          </div>
+          <div class="flex items-center justify-between px-5 py-3">
+            <h2 class="font-semibold text-base">Filters</h2>
+            <button onclick="closeFilterDrawer()" class="p-1.5 text-gray-500 hover:text-gray-900 transition-colors rounded-full hover:bg-gray-100">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="px-1 pb-2 lg:p-0">
+          <FilterBar
+            client:load
+            categories={[]}
+            minPrice={0}
+            maxPrice={5000}
+            initialCategory={initialCategory}
+            initialMinPrice={initialMinPrice}
+            initialMaxPrice={initialMaxPrice}
+          />
+        </div>
+
+        <!-- Mobile apply button -->
+        <div class="lg:hidden sticky bottom-0 bg-white border-t border-gray-100 p-4">
+          <button
+            onclick="closeFilterDrawer()"
+            class="w-full bg-black text-white py-3.5 rounded-xl font-medium tracking-wide active:bg-gray-800 transition-colors"
+          >
+            Show Results
+          </button>
+        </div>
+      </aside>
+
+      <!-- Products main column -->
+      <main class="w-full lg:w-3/4 min-w-0">
+
+        <!-- Desktop title + count + sort -->
+        <div class="hidden lg:flex flex-row justify-between items-center gap-4 mb-6">
           <h1 id="page-title" class="text-2xl font-bold">{initialSearch ? `Search: "${initialSearch}"` : 'Products'}</h1>
           <div class="flex items-center gap-4">
-            <div id="product-count" class="text-gray-600">
-              Showing 0 products
-            </div>
+            <span id="product-count" class="text-gray-500 text-sm">Showing 0 products</span>
             <div class="relative">
-              <select
-                id="sort-select"
-                class="appearance-none bg-white border border-gray-300 rounded-md py-2 px-4 pr-8 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent cursor-pointer"
-              >
+              <select id="sort-select-desktop" class="appearance-none bg-white border border-gray-300 rounded-md py-2 px-4 pr-8 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm cursor-pointer">
                 <option value="">Sort by</option>
                 <option value="new">Newest First</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
               </select>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="w-4 h-4 absolute right-2 top-3 text-gray-400 pointer-events-none"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 9l-7 7-7-7"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 absolute right-2 top-2.5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Mobile title + count -->
+        <div class="lg:hidden flex justify-between items-center mb-4">
+          <h1 id="page-title-mobile" class="text-xl font-bold">{initialSearch ? `Search: "${initialSearch}"` : 'Products'}</h1>
+          <span id="product-count-mobile" class="text-gray-500 text-sm">0 products</span>
         </div>
+
+        <!-- Skeleton loading state (shown until JS renders products) -->
+        <div id="products-skeleton" class="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div class="animate-pulse" key={i}>
+              <div class="aspect-[3/4] bg-gray-200 rounded-xl mb-3"></div>
+              <div class="h-4 bg-gray-200 rounded-lg w-3/4 mb-2"></div>
+              <div class="h-4 bg-gray-200 rounded-lg w-1/2"></div>
+            </div>
+          ))}
+        </div>
+
+        <!-- Product grid (populated by JS) -->
+        <div id="products-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-6 hidden"></div>
 
         <!-- Pagination -->
-        <div id="pagination" class="flex justify-center items-center gap-2 mt-8">
-          <button
-            id="prev-page"
-            class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled
-          >
-            Previous
-          </button>
-          <span id="page-info" class="text-gray-600">Page 1 of 1</span>
-          <button
-            id="next-page"
-            class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled
-          >
-            Next
-          </button>
+        <div id="pagination" class="flex justify-center items-center gap-2 mt-8 hidden">
+          <button id="prev-page" class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>Previous</button>
+          <span id="page-info" class="text-gray-600 text-sm">Page 1 of 1</span>
+          <button id="next-page" class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>Next</button>
         </div>
 
-	        <div id="no-products" class="hidden text-center py-12">
-	          <div id="no-products-category" class="hidden max-w-xl mx-auto">
-	            <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-	              <svg class="w-8 h-8 text-gray-700" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-	                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" stroke="currentColor" stroke-width="1.5" />
-	                <path d="M3.3 7.8 12 12.7l8.7-4.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-	                <path d="M12 22V12.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-	              </svg>
-	            </div>
-	            <h3 class="text-xl font-semibold text-gray-900">Coming soon</h3>
-	            <p class="mt-2 text-gray-500">
-	              We’re adding products to <span id="empty-category-name" class="font-medium text-gray-800"></span>.
-	              Check back soon.
-	            </p>
-	          </div>
+        <!-- No products state -->
+        <div id="no-products" class="hidden text-center py-12">
+          <div id="no-products-category" class="hidden max-w-xl mx-auto">
+            <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+              <svg class="w-8 h-8 text-gray-700" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" stroke="currentColor" stroke-width="1.5" />
+                <path d="M3.3 7.8 12 12.7l8.7-4.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M12 22V12.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900">Coming soon</h3>
+            <p class="mt-2 text-gray-500">
+              We're adding products to <span id="empty-category-name" class="font-medium text-gray-800"></span>.
+              Check back soon.
+            </p>
+          </div>
 
-	          <div id="no-products-generic" class="hidden max-w-xl mx-auto">
-	            <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-	              <svg class="w-8 h-8 text-gray-700" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-	                <path d="M10 3H3v7h7V3Z" stroke="currentColor" stroke-width="1.5" />
-	                <path d="M21 3h-7v7h7V3Z" stroke="currentColor" stroke-width="1.5" />
-	                <path d="M21 14h-7v7h7v-7Z" stroke="currentColor" stroke-width="1.5" />
-	                <path d="M10 14H3v7h7v-7Z" stroke="currentColor" stroke-width="1.5" />
-	              </svg>
-	            </div>
-	            <h3 class="text-xl font-semibold text-gray-900">No matches</h3>
-	            <p class="mt-2 text-gray-500 text-lg">
-	              No products found matching your criteria.
-	            </p>
-	          </div>
-	          <button
-	            id="clear-filters"
-	            class="mt-4 px-6 py-2 bg-gray-900 text-white rounded-md hover:bg-black transition-colors"
-	          >
-	            Browse All Products
-	          </button>
-	        </div>
-      </div>
+          <div id="no-products-generic" class="hidden max-w-xl mx-auto">
+            <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+              <svg class="w-8 h-8 text-gray-700" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M10 3H3v7h7V3Z" stroke="currentColor" stroke-width="1.5" />
+                <path d="M21 3h-7v7h7V3Z" stroke="currentColor" stroke-width="1.5" />
+                <path d="M21 14h-7v7h7v-7Z" stroke="currentColor" stroke-width="1.5" />
+                <path d="M10 14H3v7h7v-7Z" stroke="currentColor" stroke-width="1.5" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900">No matches</h3>
+            <p class="mt-2 text-gray-500 text-lg">No products found matching your criteria.</p>
+          </div>
+
+          <button id="clear-filters" class="mt-4 px-6 py-2 bg-gray-900 text-white rounded-md hover:bg-black transition-colors">Browse All Products</button>
+        </div>
+
+      </main>
     </div>
   </div>
 
   <script is:inline define:vars={{ apiUrl, initialCategory, initialSubcategoryId, initialMinPrice, initialMaxPrice, initialSearch, itemsPerPage }}>
     let products = [];
     let categories = [];
-    
+
     const NEW_DAYS = 30;
     const newThresholdDate = new Date();
     newThresholdDate.setDate(newThresholdDate.getDate() - NEW_DAYS);
-    
+
     let currentFilters = {
-      categories: initialCategory
-        ? initialCategory.split(',').map((c) => c.trim()).filter(Boolean)
-        : [],
+      categories: initialCategory ? initialCategory.split(',').map((c) => c.trim()).filter(Boolean) : [],
       subcategoryId: initialSubcategoryId || null,
       minPrice: initialMinPrice ? parseInt(initialMinPrice) : null,
       maxPrice: initialMaxPrice ? parseInt(initialMaxPrice) : null,
       search: initialSearch,
     };
-    
+
     let currentPage = 1;
     let currentSort = new URLSearchParams(window.location.search).get('sort') || '';
 
-    async function fetchJson(endpoint) {
-      const response = await fetch(`${apiUrl}${endpoint}`);
-      if (!response.ok) return null;
-      return response.json();
+    // ── Mobile filter drawer ──────────────────────────────────────
+    function openFilterDrawer() {
+      const container = document.getElementById('filter-container');
+      const backdrop = document.getElementById('filter-backdrop');
+      if (container) { container.classList.remove('translate-y-full'); container.classList.add('translate-y-0'); }
+      if (backdrop) { backdrop.classList.remove('opacity-0', 'pointer-events-none'); backdrop.classList.add('opacity-100'); }
+      document.body.style.overflow = 'hidden';
     }
-    
-    // Helper function to convert color name to hex or gradient marker
+
+    function closeFilterDrawer() {
+      const container = document.getElementById('filter-container');
+      const backdrop = document.getElementById('filter-backdrop');
+      if (container) { container.classList.add('translate-y-full'); container.classList.remove('translate-y-0'); }
+      if (backdrop) { backdrop.classList.add('opacity-0', 'pointer-events-none'); backdrop.classList.remove('opacity-100'); }
+      document.body.style.overflow = '';
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────
+    function setSort(val) {
+      currentSort = val;
+      const mobile = document.getElementById('sort-select-mobile');
+      const desktop = document.getElementById('sort-select-desktop');
+      if (mobile) mobile.value = val;
+      if (desktop) desktop.value = val;
+    }
+
+    function setProductCount(filtered, total) {
+      const text = `Showing ${filtered} of ${total} products`;
+      const mobileText = `${filtered} products`;
+      const desktop = document.getElementById('product-count');
+      const mobile = document.getElementById('product-count-mobile');
+      if (desktop) desktop.textContent = text;
+      if (mobile) mobile.textContent = mobileText;
+    }
+
+    function setPageTitle(text) {
+      const desktop = document.getElementById('page-title');
+      const mobile = document.getElementById('page-title-mobile');
+      if (desktop) desktop.textContent = text;
+      if (mobile) mobile.textContent = text;
+    }
+
+    function updateFilterBadge() {
+      const catCount = currentFilters.categories.length;
+      const hasPriceFilter =
+        (currentFilters.minPrice !== null && currentFilters.minPrice > 0) ||
+        (currentFilters.maxPrice !== null && currentFilters.maxPrice < 5000);
+      const count = catCount + (hasPriceFilter ? 1 : 0);
+      const badge = document.getElementById('mobile-filter-count');
+      if (!badge) return;
+      if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+        badge.classList.add('flex');
+      } else {
+        badge.classList.add('hidden');
+        badge.classList.remove('flex');
+      }
+    }
+
     function getColorHex(colorName) {
       const colorMap = {
-        'Red': '#DC2626',
-        'Blue': '#2563EB',
-        'Royal Blue': '#1D4ED8',
-        'Maroon': '#7F1D1D',
-        'Green': '#16A34A',
-        'Yellow': '#EAB308',
-        'Pink': '#EC4899',
-        'Pink-Purple': '#A855F7',
-        'Purple': '#9333EA',
-        'Orange': '#EA580C',
-        'Black': '#1F2937',
-        'White': '#F9FAFB',
+        'Red': '#DC2626', 'Blue': '#2563EB', 'Royal Blue': '#1D4ED8',
+        'Maroon': '#7F1D1D', 'Green': '#16A34A', 'Yellow': '#EAB308',
+        'Pink': '#EC4899', 'Pink-Purple': '#A855F7', 'Purple': '#9333EA',
+        'Orange': '#EA580C', 'Black': '#1F2937', 'White': '#F9FAFB',
         'Multi-color': 'GRADIENT:linear-gradient(45deg, #EC4899, #EAB308, #2563EB)',
-        'Beige': '#D2B48C',
-        'Navy': '#1E3A5F',
-        'Cream': '#FFFDD0',
-        'Grey': '#6B7280',
-        'Gray': '#6B7280',
-        'Teal': '#14B8A6',
-        'Peach': '#FFDAB9',
-        'Lavender': '#E6E6FA',
-        'Coral': '#FF7F50',
-        'Burgundy': '#800020',
-        'Meroon': '#7F1D1D',
+        'Beige': '#D2B48C', 'Navy': '#1E3A5F', 'Cream': '#FFFDD0',
+        'Grey': '#6B7280', 'Gray': '#6B7280', 'Teal': '#14B8A6',
+        'Peach': '#FFDAB9', 'Lavender': '#E6E6FA', 'Coral': '#FF7F50',
+        'Burgundy': '#800020', 'Meroon': '#7F1D1D',
       };
-      
-      // Return the color or generate a consistent hash-based color
       if (colorMap[colorName]) return colorMap[colorName];
-      
-      // Fallback: generate a consistent color from the string
       let hash = 0;
       for (let i = 0; i < colorName.length; i++) {
         hash = colorName.charCodeAt(i) + ((hash << 5) - hash);
       }
-      const hue = Math.abs(hash) % 360;
-      return `hsl(${hue}, 60%, 50%)`;
+      return `hsl(${Math.abs(hash) % 360}, 60%, 50%)`;
     }
-    
-    // Check if color value is a gradient
-    function isGradient(colorValue) {
-      return colorValue.startsWith('GRADIENT:');
+
+    function isGradient(v) { return v.startsWith('GRADIENT:'); }
+    function getSwatchBackground(v) { return isGradient(v) ? v.replace('GRADIENT:', '') : v; }
+
+    function isNewProduct(product) {
+      return new Date(product.createdAt) >= newThresholdDate;
     }
-    
-    // Get CSS background property value
-    function getSwatchBackground(colorValue) {
-      if (isGradient(colorValue)) {
-        return colorValue.replace('GRADIENT:', '');
-      }
-      return colorValue;
+
+    function getProductCategorySlug(product) {
+      if (!product) return '';
+      if (typeof product.category === 'string') return product.category;
+      return product.category?.slug || product.categoryDetails?.slug || '';
     }
 
     function calculatePriceBounds(products) {
-      let min = Infinity;
-      let max = 0;
-
+      let min = Infinity, max = 0;
       products.forEach((product) => {
         product.variants.forEach((variant) => {
           if (variant.isAvailable) {
@@ -225,11 +304,13 @@ const itemsPerPage = ITEMS_PER_PAGE;
           }
         });
       });
+      return { min: min === Infinity ? 0 : min, max: max === 0 ? 5000 : max };
+    }
 
-      return {
-        min: min === Infinity ? 0 : min,
-        max: max === 0 ? 5000 : max
-      };
+    async function fetchJson(endpoint) {
+      const response = await fetch(`${apiUrl}${endpoint}`);
+      if (!response.ok) return null;
+      return response.json();
     }
 
     async function loadProductsData() {
@@ -243,60 +324,204 @@ const itemsPerPage = ITEMS_PER_PAGE;
 
       const bounds = calculatePriceBounds(products);
       window.dispatchEvent(new CustomEvent('filters:data', {
-        detail: {
-          categories,
-          minPrice: bounds.min,
-          maxPrice: bounds.max
-        }
+        detail: { categories, minPrice: bounds.min, maxPrice: bounds.max }
       }));
     }
-    
-	    function isNewProduct(product) {
-	      const productDate = new Date(product.createdAt);
-	      return productDate >= newThresholdDate;
-	    }
 
-	    function getProductCategorySlug(product) {
-	      if (!product) return '';
-	      if (typeof product.category === 'string') return product.category;
-	      return product.category?.slug || product.categoryDetails?.slug || '';
-	    }
-	    
-	    function filterAndRenderProducts() {
-	      let filtered = [...products];
-      
-      // Apply search filter
-      if (currentFilters.search) {
-        const searchQuery = currentFilters.search.toLowerCase().trim();
-        filtered = filtered.filter(p => {
-          const nameMatch = p.name.toLowerCase().includes(searchQuery);
-          const descMatch = p.description.toLowerCase().includes(searchQuery);
-          return nameMatch || descMatch;
-        });
-	      }
-	      
-      if (currentFilters.categories.length > 0) {
-        filtered = filtered.filter((p) => currentFilters.categories.includes(getProductCategorySlug(p)));
+    // ── Render ────────────────────────────────────────────────────
+    function renderProducts(filteredProducts) {
+      const grid = document.getElementById('products-grid');
+      const skeleton = document.getElementById('products-skeleton');
+      const noProducts = document.getElementById('no-products');
+      const noProductsCategory = document.getElementById('no-products-category');
+      const noProductsGeneric = document.getElementById('no-products-generic');
+      const emptyCategoryName = document.getElementById('empty-category-name');
+      const pagination = document.getElementById('pagination');
+      const prevBtn = document.getElementById('prev-page');
+      const nextBtn = document.getElementById('next-page');
+      const pageInfo = document.getElementById('page-info');
+
+      // Hide skeleton once we have data
+      if (skeleton) skeleton.classList.add('hidden');
+
+      const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+      if (currentPage > totalPages) currentPage = 1;
+
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+
+      setProductCount(filteredProducts.length, products.length);
+
+      if (filteredProducts.length === 0) {
+        grid.classList.add('hidden');
+        pagination.classList.add('hidden');
+        noProducts.classList.remove('hidden');
+
+        const isCategoryOnlyFilter =
+          currentFilters.categories.length === 1 &&
+          !currentFilters.search &&
+          currentFilters.minPrice === null &&
+          currentFilters.maxPrice === null &&
+          !currentSort;
+
+        if (isCategoryOnlyFilter) {
+          const slug = currentFilters.categories[0];
+          const category = categories.find((c) => c.slug === slug);
+          if (emptyCategoryName) emptyCategoryName.textContent = category?.name || slug;
+          noProductsCategory?.classList.remove('hidden');
+          noProductsGeneric?.classList.add('hidden');
+        } else {
+          noProductsCategory?.classList.add('hidden');
+          noProductsGeneric?.classList.remove('hidden');
+        }
+        return;
       }
-      
+
+      grid.classList.remove('hidden');
+      noProducts.classList.add('hidden');
+
+      if (filteredProducts.length > itemsPerPage) {
+        pagination.classList.remove('hidden');
+        prevBtn.disabled = currentPage === 1;
+        nextBtn.disabled = currentPage === totalPages;
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+      } else {
+        pagination.classList.add('hidden');
+      }
+
+      grid.innerHTML = paginatedProducts.map(product => {
+        const activeVariants = product.variants.filter(v => v.isAvailable);
+        const variantsForPrice = activeVariants.length ? activeVariants : product.variants;
+        const minPrice = variantsForPrice.length ? Math.min(...variantsForPrice.map(v => product.basePrice + v.additionalPrice)) : product.basePrice;
+        const maxPrice = variantsForPrice.length ? Math.max(...variantsForPrice.map(v => product.basePrice + v.additionalPrice)) : product.basePrice;
+        const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} – ₹${maxPrice}`;
+
+        const isNew = isNewProduct(product);
+        const firstVariant = product.variants.find(v => v.isAvailable) || product.variants[0];
+        const isOutOfStock = !firstVariant?.isAvailable || firstVariant?.stock <= 0;
+        const colors = [...new Set(product.variants.filter(v => v.isAvailable).map(v => v.color))];
+        const defaultImage = firstVariant?.images?.[0] || product.images?.[0] || '';
+
+        return `
+          <div class="group bg-white rounded-xl overflow-hidden border border-gray-100 hover:shadow-md transition-shadow duration-300 ${isOutOfStock ? 'opacity-60' : ''}">
+            <div class="relative">
+              <a href="/products/${product.slug}" class="block">
+                <div class="aspect-[3/4] overflow-hidden bg-gray-50">
+                  <img
+                    id="product-img-${product.id}"
+                    src="${defaultImage}"
+                    alt="${product.name}"
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+              </a>
+              ${isNew ? '<div class="absolute top-2 left-2"><span class="bg-black text-white text-[10px] px-2 py-1 rounded-full uppercase tracking-wider font-medium">New</span></div>' : ''}
+              ${isOutOfStock ? '<div class="absolute top-2 right-2"><span class="bg-white/90 text-gray-600 text-[10px] px-2 py-1 rounded-full uppercase tracking-wider font-medium border border-gray-200">Sold Out</span></div>' : ''}
+              ${colors.length > 1 ? `
+                <div class="absolute bottom-2 left-2 flex gap-1">
+                  ${colors.map((color, idx) => {
+                    const colorValue = getColorHex(color);
+                    const bgStyle = isGradient(colorValue)
+                      ? `background: ${getSwatchBackground(colorValue)}`
+                      : `background-color: ${colorValue}`;
+                    return `<button
+                      type="button"
+                      class="color-swatch w-6 h-6 rounded-full border-2 border-white shadow-sm hover:scale-110 active:scale-95 transition-transform ${idx === 0 ? 'ring-2 ring-gray-900 ring-offset-1' : ''}"
+                      data-product-id="${product.id}"
+                      data-color-index="${idx}"
+                      data-color="${color}"
+                      style="${bgStyle}"
+                      title="${color}"
+                    ></button>`;
+                  }).join('')}
+                </div>
+              ` : ''}
+            </div>
+            <div class="p-3 lg:p-4">
+              <h3 class="font-medium text-gray-900 text-sm lg:text-base truncate mb-1">${product.name}</h3>
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-semibold text-gray-900 text-sm lg:text-base">${priceDisplay}</span>
+                <a
+                  href="/products/${product.slug}"
+                  class="text-xs lg:text-sm font-medium px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${isOutOfStock
+                    ? 'bg-gray-100 text-gray-400 pointer-events-none'
+                    : 'bg-black text-white hover:bg-gray-800 active:bg-gray-900'}"
+                >
+                  ${isOutOfStock ? 'Sold Out' : 'View'}
+                </a>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Color swatch click handlers
+      document.querySelectorAll('.color-swatch').forEach(swatch => {
+        swatch.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const productId = swatch.dataset.productId;
+          const color = swatch.dataset.color;
+          const product = products.find(p => p.id === productId);
+          if (product) {
+            const img = document.getElementById(`product-img-${productId}`);
+            if (img) {
+              const variantWithImage = product.variants?.find(v => v.color === color && v.images?.[0]);
+              if (variantWithImage?.images?.[0]) {
+                img.src = variantWithImage.images[0];
+              }
+            }
+          }
+          const parent = swatch.parentElement;
+          if (parent) {
+            parent.querySelectorAll('.color-swatch').forEach(s => {
+              s.classList.remove('ring-2', 'ring-gray-900', 'ring-offset-1');
+            });
+            swatch.classList.add('ring-2', 'ring-gray-900', 'ring-offset-1');
+          }
+        });
+      });
+    }
+
+    function filterAndRenderProducts() {
+      renderProducts(getFilteredProducts());
+      updatePageTitle();
+    }
+
+    function getFilteredProducts() {
+      let filtered = [...products];
+
+      if (currentFilters.search) {
+        const q = currentFilters.search.toLowerCase().trim();
+        filtered = filtered.filter(p =>
+          p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
+        );
+      }
+
+      if (currentFilters.categories.length > 0) {
+        filtered = filtered.filter(p => currentFilters.categories.includes(getProductCategorySlug(p)));
+      }
+
       if (currentFilters.subcategoryId) {
         filtered = filtered.filter(p => p.subcategoryId === currentFilters.subcategoryId);
       }
-      
+
       if (currentFilters.minPrice !== null) {
         filtered = filtered.filter(p => {
-          const minPrice = Math.min(...p.variants.map(v => p.basePrice + v.additionalPrice));
-          return minPrice >= currentFilters.minPrice;
+          const min = Math.min(...p.variants.map(v => p.basePrice + v.additionalPrice));
+          return min >= currentFilters.minPrice;
         });
       }
-      
+
       if (currentFilters.maxPrice !== null) {
         filtered = filtered.filter(p => {
-          const maxPrice = Math.max(...p.variants.map(v => p.basePrice + v.additionalPrice));
-          return maxPrice <= currentFilters.maxPrice;
+          const max = Math.max(...p.variants.map(v => p.basePrice + v.additionalPrice));
+          return max <= currentFilters.maxPrice;
         });
       }
-      
+
       if (currentSort === 'new') {
         filtered = filtered.filter(p => isNewProduct(p));
         filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -313,210 +538,25 @@ const itemsPerPage = ITEMS_PER_PAGE;
           return maxB - maxA;
         });
       }
-      
-      renderProducts(filtered);
-      updatePageTitle();
+
+      return filtered;
     }
-    
-	    function renderProducts(filteredProducts) {
-	      const grid = document.getElementById('products-grid');
-	      const noProducts = document.getElementById('no-products');
-	      const noProductsCategory = document.getElementById('no-products-category');
-	      const noProductsGeneric = document.getElementById('no-products-generic');
-	      const emptyCategoryName = document.getElementById('empty-category-name');
-	      const countEl = document.getElementById('product-count');
-	      const pagination = document.getElementById('pagination');
-	      const prevBtn = document.getElementById('prev-page');
-	      const nextBtn = document.getElementById('next-page');
-      const pageInfo = document.getElementById('page-info');
-      
-      const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-      
-      // Reset to page 1 if current page is out of bounds
-      if (currentPage > totalPages) {
-        currentPage = 1;
-      }
-      
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
-      
-	      countEl.textContent = `Showing ${filteredProducts.length} of ${products.length} products`;
-	      
-	      if (filteredProducts.length === 0) {
-	        grid.classList.add('hidden');
-	        pagination.classList.add('hidden');
-	        noProducts.classList.remove('hidden');
 
-	        const isCategoryOnlyFilter =
-	          currentFilters.categories.length === 1 &&
-	          !currentFilters.search &&
-	          currentFilters.minPrice === null &&
-	          currentFilters.maxPrice === null &&
-	          !currentSort;
-
-	        if (isCategoryOnlyFilter) {
-	          const slug = currentFilters.categories[0];
-	          const category = categories.find((c) => c.slug === slug);
-	          if (emptyCategoryName) emptyCategoryName.textContent = category?.name || slug;
-	          noProductsCategory?.classList.remove('hidden');
-	          noProductsGeneric?.classList.add('hidden');
-	        } else {
-	          noProductsCategory?.classList.add('hidden');
-	          noProductsGeneric?.classList.remove('hidden');
-	        }
-	        return;
-	      }
-      
-      grid.classList.remove('hidden');
-      noProducts.classList.add('hidden');
-      
-      // Show pagination if more than one page
-      if (filteredProducts.length > itemsPerPage) {
-        pagination.classList.remove('hidden');
-        prevBtn.disabled = currentPage === 1;
-        nextBtn.disabled = currentPage === totalPages;
-        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
-      } else {
-        pagination.classList.add('hidden');
-      }
-      
-      grid.innerHTML = paginatedProducts.map(product => {
-        const minPrice = Math.min(...product.variants.map(v => product.basePrice + v.additionalPrice));
-        const maxPrice = Math.max(...product.variants.map(v => product.basePrice + v.additionalPrice));
-        const priceDisplay = minPrice === maxPrice ? `₹${minPrice}` : `₹${minPrice} - ₹${maxPrice}`;
-        const isNew = isNewProduct(product);
-        
-        const firstVariant = product.variants.find(v => v.isAvailable) || product.variants[0];
-        const isOutOfStock = !firstVariant?.isAvailable || firstVariant?.stock <= 0;
-
-        // Get unique colors from available variants only
-        const colors = [...new Set(product.variants.filter(v => v.isAvailable).map(v => v.color))];
-
-        // Use first available variant image, fall back to product-level image
-        const defaultImage = firstVariant?.images?.[0] || product.images?.[0] || '';
-        
-        return `
-          <div class="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105 ${isOutOfStock ? 'opacity-60 grayscale' : ''}">
-            <div class="relative">
-              <a href="/products/${product.slug}">
-                <img 
-                  id="product-img-${product.id}"
-                  src="${defaultImage}" 
-                  alt="${product.name}"
-                  class="w-full h-64 object-cover"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </a>
-              ${isNew ? '<div class="absolute top-2 right-2"><span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full">New</span></div>' : ''}
-              ${colors.length > 1 ? `
-                <div class="absolute bottom-2 left-2 right-2 flex justify-center gap-1">
-                  ${colors.map((color, idx) => {
-                    const colorValue = getColorHex(color);
-                    const bgStyle = isGradient(colorValue) 
-                      ? `background: ${getSwatchBackground(colorValue)}`
-                      : `background-color: ${colorValue}`;
-                    return `
-                    <button 
-                      type="button"
-                      class="color-swatch w-5 h-5 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform ${idx === 0 ? 'ring-2 ring-gray-900 ring-offset-1' : ''}"
-                      data-product-id="${product.id}"
-                      data-color-index="${idx}"
-                      data-color="${color}"
-                      style="${bgStyle}"
-                      title="${color}"
-                    ></button>
-                  `}).join('')}
-                </div>
-              ` : ''}
-            </div>
-            <div class="p-4">
-              <div class="mb-2">
-                <h3 class="text-lg font-semibold text-gray-800 truncate">${product.name}</h3>
-                <p class="text-sm text-gray-600 line-clamp-2">${product.description}</p>
-              </div>
-              <div class="flex justify-between items-center">
-                <span class="text-lg font-bold text-gray-900">${priceDisplay}</span>
-                ${isOutOfStock 
-                  ? '<span class="px-3 py-1 rounded-md text-sm font-medium bg-gray-300 text-gray-500 cursor-not-allowed text-center inline-block">Out of Stock</span>'
-                  : `<a 
-                      href="/products/${product.slug}"
-                      class="px-3 py-1 rounded-md text-sm font-medium transition-colors bg-gray-900 text-white hover:bg-black"
-                    >
-                      View Details
-                    </a>`
-                }
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-      
-      // Add color swatch click handlers
-      document.querySelectorAll('.color-swatch').forEach(swatch => {
-        swatch.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const productId = swatch.dataset.productId;
-          const colorIndex = parseInt(swatch.dataset.colorIndex);
-          const color = swatch.dataset.color;
-          
-          // Update image - prefer variant-specific image
-          const product = products.find(p => p.id === productId);
-          if (product) {
-            const img = document.getElementById(`product-img-${productId}`);
-            if (img) {
-              // First try to find variant with this color and use its image
-              const variantWithImage = product.variants?.find(v => v.color === color && v.images?.[0]);
-              if (variantWithImage?.images?.[0]) {
-                img.src = variantWithImage.images[0];
-              } else if (product.images && product.images[colorIndex]) {
-                // Fallback to product images array
-                img.src = product.images[colorIndex];
-              }
-            }
-          }
-          
-          // Update swatch selection
-          const parent = swatch.parentElement;
-          if (parent) {
-            parent.querySelectorAll('.color-swatch').forEach(s => {
-              s.classList.remove('ring-2', 'ring-gray-900', 'ring-offset-1');
-            });
-            swatch.classList.add('ring-2', 'ring-gray-900', 'ring-offset-1');
-          }
-        });
-      });
-    }
-    
     function updatePageTitle() {
-      const titleEl = document.getElementById('page-title');
+      let title = 'Products';
       if (currentFilters.search) {
-        titleEl.textContent = `Search: "${currentFilters.search}"`;
+        title = `Search: "${currentFilters.search}"`;
       } else if (currentFilters.categories.length > 0) {
         const names = currentFilters.categories
-          .map((slug) => categories.find((c) => c.slug === slug)?.name)
+          .map(slug => categories.find(c => c.slug === slug)?.name)
           .filter(Boolean);
-        titleEl.textContent = names.length > 0 ? names.join(', ') : 'Products';
+        if (names.length > 0) title = names.join(', ');
       } else if (currentSort === 'new') {
-        titleEl.textContent = 'New Arrivals';
-      } else {
-        titleEl.textContent = 'Products';
+        title = 'New Arrivals';
       }
+      setPageTitle(title);
     }
-    
-    function updateSortUrl() {
-      const params = new URLSearchParams(window.location.search);
-      if (currentSort) {
-        params.set('sort', currentSort);
-      } else {
-        params.delete('sort');
-      }
-      const newUrl = `/products${params.toString() ? '?' + params.toString() : ''}`;
-      window.history.replaceState({}, '', newUrl);
-    }
-    
+
     function updateUrl() {
       const params = new URLSearchParams();
       if (currentFilters.categories.length > 0) params.set('category', currentFilters.categories.join(','));
@@ -524,31 +564,31 @@ const itemsPerPage = ITEMS_PER_PAGE;
       if (currentFilters.minPrice) params.set('minPrice', currentFilters.minPrice.toString());
       if (currentFilters.maxPrice) params.set('maxPrice', currentFilters.maxPrice.toString());
       if (currentFilters.search) params.set('search', currentFilters.search);
-      
-      const newUrl = `/products${params.toString() ? '?' + params.toString() : ''}`;
-      window.history.replaceState({}, '', newUrl);
+      if (currentSort) params.set('sort', currentSort);
+      window.history.replaceState({}, '', `/products${params.toString() ? '?' + params.toString() : ''}`);
     }
-    
+
+    // ── Init ──────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', async () => {
-      // Set sort dropdown to current URL value
-      document.getElementById('sort-select').value = currentSort;
+      setSort(currentSort);
+
       await loadProductsData();
       filterAndRenderProducts();
-      
-      document.getElementById('sort-select')?.addEventListener('change', (e) => {
-        currentSort = e.target.value;
-        currentPage = 1;
-        filterAndRenderProducts();
-        updateSortUrl();
+
+      // Dual sort selects
+      ['sort-select-mobile', 'sort-select-desktop'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', (e) => {
+          setSort(e.target.value);
+          currentPage = 1;
+          filterAndRenderProducts();
+          updateUrl();
+        });
       });
-      
+
       document.getElementById('clear-filters')?.addEventListener('click', () => {
-        currentFilters = { categories: [], subcategoryId: null, minPrice: null, maxPrice: null, search: '' };
-        currentPage = 1;
         window.location.href = '/products';
       });
-      
-      // Pagination controls
+
       document.getElementById('prev-page')?.addEventListener('click', () => {
         if (currentPage > 1) {
           currentPage--;
@@ -556,17 +596,16 @@ const itemsPerPage = ITEMS_PER_PAGE;
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       });
-      
+
       document.getElementById('next-page')?.addEventListener('click', () => {
-        const filtered = getFilteredProducts();
-        const totalPages = Math.ceil(filtered.length / itemsPerPage);
+        const totalPages = Math.ceil(getFilteredProducts().length / itemsPerPage);
         if (currentPage < totalPages) {
           currentPage++;
           filterAndRenderProducts();
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       });
-      
+
       window.addEventListener('filter-change', (e) => {
         const detail = e.detail || {};
         const normalized = detail.categories
@@ -578,44 +617,8 @@ const itemsPerPage = ITEMS_PER_PAGE;
         currentPage = 1;
         filterAndRenderProducts();
         updateUrl();
+        updateFilterBadge();
       });
     });
-    
-	    function getFilteredProducts() {
-	      let filtered = [...products];
-      
-      if (currentFilters.search) {
-        const searchQuery = currentFilters.search.toLowerCase().trim();
-        filtered = filtered.filter(p => {
-          const nameMatch = p.name.toLowerCase().includes(searchQuery);
-          const descMatch = p.description.toLowerCase().includes(searchQuery);
-          return nameMatch || descMatch;
-        });
-      }
-	      
-	      if (currentFilters.categories.length > 0) {
-	        filtered = filtered.filter((p) => currentFilters.categories.includes(getProductCategorySlug(p)));
-	      }
-      
-      if (currentFilters.subcategoryId) {
-        filtered = filtered.filter(p => p.subcategoryId === currentFilters.subcategoryId);
-      }
-      
-      if (currentFilters.minPrice !== null) {
-        filtered = filtered.filter(p => {
-          const minPrice = Math.min(...p.variants.map(v => p.basePrice + v.additionalPrice));
-          return minPrice >= currentFilters.minPrice;
-        });
-      }
-      
-      if (currentFilters.maxPrice !== null) {
-        filtered = filtered.filter(p => {
-          const maxPrice = Math.max(...p.variants.map(v => p.basePrice + v.additionalPrice));
-          return maxPrice <= currentFilters.maxPrice;
-        });
-      }
-      
-      return filtered;
-    }
   </script>
 </Layout>
