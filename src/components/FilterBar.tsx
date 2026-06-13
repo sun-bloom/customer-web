@@ -174,7 +174,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
                   value={category.slug}
                   checked={selectedCategories.includes(category.slug)}
                   onChange={() => handleCategoryChange(category.slug)}
-                  className="mr-2 h-4 w-4 text-black focus:ring-gray-900"
+                  className="mr-2 h-4 w-4 text-black focus:ring-orange-500"
                 />
                 <span className="text-sm">{category.name}</span>
               </label>
