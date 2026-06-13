@@ -29,7 +29,7 @@ const { title } = Astro.props;
 
 		<!-- Announcement bar -->
 		<div id="announcement-bar" class="bg-gray-900 text-white text-xs py-2 px-4 text-center relative">
-			<span id="announcement-text">Free Shipping on orders above ₹1500 &nbsp;·&nbsp; COD Available</span>
+			<span id="announcement-text">Free Shipping on orders above ₹1500</span>
 			<button
 				id="close-announcement"
 				aria-label="Dismiss"
@@ -81,7 +81,7 @@ const { title } = Astro.props;
 
 					if (policies?.freeShippingAbove) {
 						const el = document.getElementById('announcement-text');
-						if (el) el.textContent = `Free Shipping on orders above ₹${policies.freeShippingAbove} · COD Available`;
+						if (el) el.textContent = `Free Shipping on orders above ₹${policies.freeShippingAbove}`;
 					}
 
 					const waNumber = social?.whatsapp || site?.whatsappNumber;
