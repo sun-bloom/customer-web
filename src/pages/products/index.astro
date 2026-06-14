@@ -204,7 +204,7 @@ const itemsPerPage = ITEMS_PER_PAGE;
     function openFilterDrawer() {
       const container = document.getElementById('filter-container');
       const backdrop = document.getElementById('filter-backdrop');
-      if (container) container.style.transform = 'translateY(0)';
+      if (container) container.style.translate = '0 0';
       if (backdrop) { backdrop.style.opacity = '1'; backdrop.style.pointerEvents = 'auto'; }
       document.body.style.overflow = 'hidden';
     }
@@ -212,7 +212,7 @@ const itemsPerPage = ITEMS_PER_PAGE;
     function closeFilterDrawer() {
       const container = document.getElementById('filter-container');
       const backdrop = document.getElementById('filter-backdrop');
-      if (container) container.style.transform = '';
+      if (container) container.style.translate = '';
       if (backdrop) { backdrop.style.opacity = ''; backdrop.style.pointerEvents = ''; }
       document.body.style.overflow = '';
     }
