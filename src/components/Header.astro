@@ -103,77 +103,44 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:4040';
     </div>
   </div>
 
-  <!-- Mobile Menu Overlay -->
-  <div id="mobile-menu" class="fixed inset-0 z-50 hidden">
-    <!-- Backdrop -->
-    <div 
-      class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
-      onclick="closeMobileMenu()"
-    ></div>
-    <!-- Menu Panel -->
-    <div class="absolute right-0 top-0 h-full w-80 max-w-[85vw] bg-white shadow-xl transform transition-transform duration-300 translate-x-full" id="mobile-menu-panel">
-      <div class="p-6">
-        <!-- Close Button -->
-        <div class="flex justify-end mb-6">
-          <button 
-            onclick="closeMobileMenu()"
-            class="p-2 text-gray-500 hover:text-gray-900"
-            aria-label="Close menu"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        
-        <!-- Mobile Nav Links -->
-        <nav class="space-y-4">
-          <a 
-            href="/"
-            class="block text-lg font-medium text-gray-900 hover:text-gray-600 transition-colors py-2 border-b border-gray-100"
-            onclick="closeMobileMenu()"
-          >
-            Home
-          </a>
-          <a 
-            href="/products"
-            class="block text-lg font-medium text-gray-900 hover:text-gray-600 transition-colors py-2 border-b border-gray-100"
-            onclick="closeMobileMenu()"
-          >
-            Shop All
-          </a>
-          <a 
-            href="/products?sort=new"
-            class="block text-lg font-medium text-gray-900 hover:text-gray-600 transition-colors py-2 border-b border-gray-100"
-            onclick="closeMobileMenu()"
-          >
-            New Arrivals
-          </a>
-          <a 
-            href="/cart"
-            class="block text-lg font-medium text-gray-900 hover:text-gray-600 transition-colors py-2 border-b border-gray-100"
-            onclick="closeMobileMenu()"
-          >
-            Cart
-          </a>
-          <a 
-            href="/orders"
-            class="block text-lg font-medium text-gray-900 hover:text-gray-600 transition-colors py-2 border-b border-gray-100"
-            onclick="closeMobileMenu()"
-          >
-            My Orders
-          </a>
-        </nav>
+</header>
 
-        <!-- Contact Info -->
-        <div class="mt-8 pt-6 border-t border-gray-100">
-          <p class="text-sm text-gray-500">Sunbloom Adorn</p>
-          <p class="text-sm text-gray-400 mt-1">Jewellery That Blooms With You ✨</p>
-        </div>
+<!-- Mobile Menu Overlay — outside <header> so it isn't scoped to header's stacking context -->
+<div id="mobile-menu" class="fixed inset-0 z-[200] hidden">
+  <!-- Backdrop -->
+  <div
+    class="absolute inset-0 bg-black/60"
+    onclick="closeMobileMenu()"
+  ></div>
+  <!-- Panel -->
+  <div class="absolute right-0 top-0 h-full w-72 max-w-[85vw] bg-white shadow-2xl transition-[translate] duration-300" id="mobile-menu-panel">
+    <div class="p-6 h-full overflow-y-auto flex flex-col">
+      <!-- Close Button -->
+      <div class="flex justify-end mb-6">
+        <button onclick="closeMobileMenu()" class="p-2 text-gray-500 hover:text-gray-900" aria-label="Close menu">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Nav Links -->
+      <nav class="space-y-1 flex-1">
+        <a href="/" onclick="closeMobileMenu()" class="block text-base font-medium text-gray-800 hover:text-amber-500 transition-colors py-3 border-b border-gray-100">Home</a>
+        <a href="/products" onclick="closeMobileMenu()" class="block text-base font-medium text-gray-800 hover:text-amber-500 transition-colors py-3 border-b border-gray-100">Shop All</a>
+        <a href="/products?sort=new" onclick="closeMobileMenu()" class="block text-base font-medium text-gray-800 hover:text-amber-500 transition-colors py-3 border-b border-gray-100">New Arrivals</a>
+        <a href="/cart" onclick="closeMobileMenu()" class="block text-base font-medium text-gray-800 hover:text-amber-500 transition-colors py-3 border-b border-gray-100">Cart</a>
+        <a href="/orders" onclick="closeMobileMenu()" class="block text-base font-medium text-gray-800 hover:text-amber-500 transition-colors py-3 border-b border-gray-100">My Orders</a>
+      </nav>
+
+      <!-- Brand info -->
+      <div class="pt-6 border-t border-gray-100 mt-6">
+        <p class="text-sm font-semibold text-gray-800">Sunbloom Adorn</p>
+        <p class="text-xs text-gray-400 mt-1">Jewellery That Blooms With You ✨</p>
       </div>
     </div>
   </div>
-</header>
+</div>
 
 <script is:inline define:vars={{ apiUrl }}>
   // Search functionality
@@ -319,6 +286,12 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:4040';
   });
 
   // Mobile Menu — use style.translate to bypass Tailwind v4 class scanning
+  // Set initial off-screen position
+  (function() {
+    const panel = document.getElementById('mobile-menu-panel');
+    if (panel) panel.style.translate = '100% 0';
+  })();
+
   window.toggleMobileMenu = function() {
     const menu = document.getElementById('mobile-menu');
     const panel = document.getElementById('mobile-menu-panel');
@@ -326,7 +299,7 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:4040';
     if (menu.classList.contains('hidden')) {
       menu.classList.remove('hidden');
       document.body.style.overflow = 'hidden';
-      setTimeout(() => { panel.style.translate = '0 0'; }, 10);
+      requestAnimationFrame(() => { panel.style.translate = '0 0'; });
     } else {
       window.closeMobileMenu();
     }
@@ -339,7 +312,6 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:4040';
     panel.style.translate = '100% 0';
     setTimeout(() => {
       menu.classList.add('hidden');
-      panel.style.translate = '';
       document.body.style.overflow = '';
     }, 300);
   };
