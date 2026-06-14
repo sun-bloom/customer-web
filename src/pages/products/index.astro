@@ -201,21 +201,21 @@ const itemsPerPage = ITEMS_PER_PAGE;
     let currentSort = new URLSearchParams(window.location.search).get('sort') || '';
 
     // ── Mobile filter drawer ──────────────────────────────────────
-    function openFilterDrawer() {
+    window.openFilterDrawer = function() {
       const container = document.getElementById('filter-container');
       const backdrop = document.getElementById('filter-backdrop');
       if (container) container.style.translate = '0 0';
       if (backdrop) { backdrop.style.opacity = '1'; backdrop.style.pointerEvents = 'auto'; }
       document.body.style.overflow = 'hidden';
-    }
+    };
 
-    function closeFilterDrawer() {
+    window.closeFilterDrawer = function() {
       const container = document.getElementById('filter-container');
       const backdrop = document.getElementById('filter-backdrop');
       if (container) container.style.translate = '';
       if (backdrop) { backdrop.style.opacity = ''; backdrop.style.pointerEvents = ''; }
       document.body.style.overflow = '';
-    }
+    };
 
     // ── Helpers ───────────────────────────────────────────────────
     function setSort(val) {
