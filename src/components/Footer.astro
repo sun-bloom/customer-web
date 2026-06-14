@@ -1,11 +1,12 @@
 ---
 const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:4040';
-const site = { 
-  name: 'Fashion Store', 
-  tagline: 'Discover your style',
-  address: '123 Fashion Street, Style City',
-  contactEmail: 'support@example.com',
-  contactPhone: '+91 98765 43210'
+const site = {
+  name: 'Sunbloom Adorn',
+  tagline: 'Jewellery That Blooms With You ✨',
+  description: 'From anti-tarnish essentials to statement imitation jewellery and trendy Korean accessories, find pieces that complement every outfit and every occasion.',
+  address: 'No. 15, Apple Garden, Coimbatore.',
+  contactEmail: 'sunbloomadorn@gmail.com',
+  contactPhone: '+91 99522 53464'
 };
 const currentYear = new Date().getFullYear();
 ---
@@ -20,7 +21,7 @@ const currentYear = new Date().getFullYear();
           {site.name}
         </a>
         <p id="footer-tagline" class="text-gray-400 text-sm leading-relaxed mb-6">
-          {site.tagline}. Making fashion accessible and stylish for everyone.
+          {site.description}
         </p>
         <div class="flex space-x-4">
             <!-- Social Icons would go here -->
@@ -98,7 +99,7 @@ const currentYear = new Date().getFullYear();
       const siteName = document.getElementById('footer-site-name');
 
       if (brand && site.name) brand.textContent = site.name;
-      if (tagline && site.tagline) tagline.textContent = `${site.tagline}. Making fashion accessible and stylish for everyone.`;
+      if (tagline && site.description) tagline.textContent = site.description;
       if (address && site.address) address.textContent = site.address;
       if (email && site.contactEmail) email.textContent = site.contactEmail;
       if (phone && site.contactPhone) phone.textContent = site.contactPhone;
