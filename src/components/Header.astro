@@ -200,32 +200,32 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:4040';
   }
   
   // Toggle search dropdown
-  async function toggleSearch() {
+  window.toggleSearch = async function() {
     const dropdown = document.getElementById('search-dropdown');
     const input = document.getElementById('search-input');
-    
+
     if (dropdown.classList.contains('hidden')) {
       dropdown.classList.remove('hidden');
       await loadProductsData();
       input.focus();
     } else {
-      closeSearch();
+      window.closeSearch();
     }
-  }
-  
+  };
+
   // Close search dropdown
-  function closeSearch() {
+  window.closeSearch = function() {
     const dropdown = document.getElementById('search-dropdown');
     const input = document.getElementById('search-input');
     const results = document.getElementById('search-results');
-    
+
     dropdown.classList.add('hidden');
     input.value = '';
     results.innerHTML = '<div class="text-center text-gray-500 py-4">Type to search products</div>';
-  }
-  
+  };
+
   // Handle search input
-  async function handleSearch(query) {
+  window.handleSearch = async function handleSearch(query) {
     clearTimeout(searchTimeout);
     
     const resultsContainer = document.getElementById('search-results');
@@ -305,56 +305,50 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:4040';
   }
   
   // Handle search keydown
-  function handleSearchKeydown(event) {
-    if (event.key === 'Escape') {
-      closeSearch();
-    }
-  }
-  
+  window.handleSearchKeydown = function(event) {
+    if (event.key === 'Escape') window.closeSearch();
+  };
+
   // Close search when clicking outside
   document.addEventListener('click', (event) => {
     const dropdown = document.getElementById('search-dropdown');
     const button = document.getElementById('search-button');
-    
     if (dropdown && !dropdown.contains(event.target) && !button.contains(event.target)) {
-      closeSearch();
+      window.closeSearch();
     }
   });
 
-  // Mobile Menu Functions
-  function toggleMobileMenu() {
+  // Mobile Menu — use style.translate to bypass Tailwind v4 class scanning
+  window.toggleMobileMenu = function() {
     const menu = document.getElementById('mobile-menu');
     const panel = document.getElementById('mobile-menu-panel');
-    
+
     if (menu.classList.contains('hidden')) {
       menu.classList.remove('hidden');
       document.body.style.overflow = 'hidden';
-      setTimeout(() => {
-        panel.classList.remove('translate-x-full');
-      }, 10);
+      setTimeout(() => { panel.style.translate = '0 0'; }, 10);
     } else {
-      closeMobileMenu();
+      window.closeMobileMenu();
     }
-  }
-  
-  function closeMobileMenu() {
+  };
+
+  window.closeMobileMenu = function() {
     const menu = document.getElementById('mobile-menu');
     const panel = document.getElementById('mobile-menu-panel');
-    
-    panel.classList.add('translate-x-full');
+
+    panel.style.translate = '100% 0';
     setTimeout(() => {
       menu.classList.add('hidden');
+      panel.style.translate = '';
       document.body.style.overflow = '';
     }, 300);
-  }
-  
+  };
+
   // Close mobile menu on escape key
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       const menu = document.getElementById('mobile-menu');
-      if (!menu.classList.contains('hidden')) {
-        closeMobileMenu();
-      }
+      if (!menu.classList.contains('hidden')) window.closeMobileMenu();
     }
   });
 </script>
