@@ -204,16 +204,16 @@ const itemsPerPage = ITEMS_PER_PAGE;
     function openFilterDrawer() {
       const container = document.getElementById('filter-container');
       const backdrop = document.getElementById('filter-backdrop');
-      if (container) { container.classList.remove('translate-y-full'); container.classList.add('translate-y-0'); }
-      if (backdrop) { backdrop.classList.remove('opacity-0', 'pointer-events-none'); backdrop.classList.add('opacity-100'); }
+      if (container) container.style.transform = 'translateY(0)';
+      if (backdrop) { backdrop.style.opacity = '1'; backdrop.style.pointerEvents = 'auto'; }
       document.body.style.overflow = 'hidden';
     }
 
     function closeFilterDrawer() {
       const container = document.getElementById('filter-container');
       const backdrop = document.getElementById('filter-backdrop');
-      if (container) { container.classList.add('translate-y-full'); container.classList.remove('translate-y-0'); }
-      if (backdrop) { backdrop.classList.add('opacity-0', 'pointer-events-none'); backdrop.classList.remove('opacity-100'); }
+      if (container) container.style.transform = '';
+      if (backdrop) { backdrop.style.opacity = ''; backdrop.style.pointerEvents = ''; }
       document.body.style.overflow = '';
     }
 
