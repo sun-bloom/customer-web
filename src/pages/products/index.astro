@@ -510,15 +510,21 @@ const itemsPerPage = ITEMS_PER_PAGE;
 
       if (currentFilters.minPrice !== null) {
         filtered = filtered.filter(p => {
-          const min = Math.min(...p.variants.map(v => p.basePrice + v.additionalPrice));
+          const available = p.variants.filter(v => v.isAvailable);
+          const variants = available.length ? available : p.variants;
+          if (!variants.length) return true;
+          const min = Math.min(...variants.map(v => p.basePrice + v.additionalPrice));
           return min >= currentFilters.minPrice;
         });
       }
 
       if (currentFilters.maxPrice !== null) {
         filtered = filtered.filter(p => {
-          const max = Math.max(...p.variants.map(v => p.basePrice + v.additionalPrice));
-          return max <= currentFilters.maxPrice;
+          const available = p.variants.filter(v => v.isAvailable);
+          const variants = available.length ? available : p.variants;
+          if (!variants.length) return true;
+          const min = Math.min(...variants.map(v => p.basePrice + v.additionalPrice));
+          return min <= currentFilters.maxPrice;
         });
       }
 
