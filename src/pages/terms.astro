@@ -1,0 +1,96 @@
+---
+import Layout from '../layouts/Layout.astro';
+const lastUpdated = 'June 2025';
+const site = {
+  name: 'Sunbloom Adorn',
+  email: 'sunbloomadorn@gmail.com',
+  phone: '+91 99522 53464',
+};
+---
+
+<Layout title="Terms & Conditions">
+  <main class="min-h-screen bg-gray-50 py-12 md:py-16">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <div class="text-center mb-10">
+        <h1 class="text-3xl md:text-4xl font-bold font-heading tracking-tight text-gray-900 uppercase">
+          Terms &amp; Conditions
+        </h1>
+        <p class="mt-3 text-gray-400 text-sm">Last updated: {lastUpdated}</p>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 md:p-10 prose prose-gray max-w-none">
+
+        <p class="text-gray-600 text-sm leading-relaxed">
+          Welcome to {site.name}. By accessing or placing an order through our website, you agree to be bound by the following terms and conditions. Please read them carefully before using our services.
+        </p>
+
+        <h2 class="text-lg font-bold text-gray-900 mt-8 mb-3">1. General</h2>
+        <p class="text-gray-600 text-sm leading-relaxed">
+          These Terms and Conditions apply to all visitors, users, and customers of {site.name}. We reserve the right to update or modify these terms at any time without prior notice. Continued use of the website after any such changes constitutes your acceptance of the new terms.
+        </p>
+
+        <h2 class="text-lg font-bold text-gray-900 mt-8 mb-3">2. Products</h2>
+        <ul class="text-gray-600 text-sm leading-relaxed list-disc pl-5 space-y-2">
+          <li>All products are subject to availability. We reserve the right to discontinue any product at any time.</li>
+          <li>Product images are for illustration purposes only. Actual colours and appearance may vary slightly due to screen settings and photography conditions.</li>
+          <li>We make every effort to display product descriptions and specifications accurately, but we do not warrant that product descriptions or other content are accurate, complete, or error-free.</li>
+        </ul>
+
+        <h2 class="text-lg font-bold text-gray-900 mt-8 mb-3">3. Pricing & Payment</h2>
+        <ul class="text-gray-600 text-sm leading-relaxed list-disc pl-5 space-y-2">
+          <li>All prices are listed in Indian Rupees (₹) and are inclusive of applicable taxes unless stated otherwise.</li>
+          <li>We reserve the right to change prices at any time. Orders placed before a price change will be honoured at the original price.</li>
+          <li>Payment must be made in full at the time of placing the order. We accept UPI, cards, net banking, and other available payment methods via our payment gateway.</li>
+          <li>In the event of a pricing error on our website, we reserve the right to cancel the order and issue a full refund.</li>
+        </ul>
+
+        <h2 class="text-lg font-bold text-gray-900 mt-8 mb-3">4. Orders</h2>
+        <ul class="text-gray-600 text-sm leading-relaxed list-disc pl-5 space-y-2">
+          <li>Placing an order constitutes an offer to purchase. We reserve the right to accept or decline any order.</li>
+          <li>You will receive an order confirmation via the details you provide at checkout.</li>
+          <li>Orders cannot be cancelled or modified once they have been dispatched. Please contact us immediately after placing the order if you need to make changes.</li>
+        </ul>
+
+        <h2 class="text-lg font-bold text-gray-900 mt-8 mb-3">5. Shipping & Delivery</h2>
+        <ul class="text-gray-600 text-sm leading-relaxed list-disc pl-5 space-y-2">
+          <li>We ship across India. Delivery timelines are estimates and may vary depending on your location and courier partner.</li>
+          <li>Shipping charges, if any, will be clearly shown at checkout.</li>
+          <li>We are not responsible for delays caused by third-party courier services, natural disasters, or other circumstances beyond our control.</li>
+          <li>Risk of loss and title for items purchased pass to you upon delivery to the courier.</li>
+        </ul>
+
+        <h2 class="text-lg font-bold text-gray-900 mt-8 mb-3">6. Returns & Refunds</h2>
+        <p class="text-gray-600 text-sm leading-relaxed">
+          Our return and refund policy is limited to products that arrive in a damaged or defective condition. Please refer to our <a href="/refund-policy" class="text-amber-500 hover:text-amber-600 underline">Refund Policy</a> page for full details.
+        </p>
+
+        <h2 class="text-lg font-bold text-gray-900 mt-8 mb-3">7. Intellectual Property</h2>
+        <p class="text-gray-600 text-sm leading-relaxed">
+          All content on this website — including logos, images, text, and design — is the property of {site.name} and is protected by applicable intellectual property laws. You may not reproduce, distribute, or use any content without our prior written permission.
+        </p>
+
+        <h2 class="text-lg font-bold text-gray-900 mt-8 mb-3">8. Limitation of Liability</h2>
+        <p class="text-gray-600 text-sm leading-relaxed">
+          To the fullest extent permitted by law, {site.name} shall not be liable for any indirect, incidental, special, or consequential damages arising from the use of our website or products. Our total liability shall not exceed the purchase price of the product in question.
+        </p>
+
+        <h2 class="text-lg font-bold text-gray-900 mt-8 mb-3">9. Governing Law</h2>
+        <p class="text-gray-600 text-sm leading-relaxed">
+          These terms are governed by and construed in accordance with the laws of India. Any disputes arising from these terms or your use of our website shall be subject to the exclusive jurisdiction of the courts in Coimbatore, Tamil Nadu.
+        </p>
+
+        <h2 class="text-lg font-bold text-gray-900 mt-8 mb-3">10. Contact Us</h2>
+        <p class="text-gray-600 text-sm leading-relaxed">
+          If you have any questions about these Terms &amp; Conditions, please reach out to us:
+        </p>
+        <ul class="text-gray-600 text-sm leading-relaxed list-none pl-0 space-y-1 mt-2">
+          <li>Email: <a href={`mailto:${site.email}`} class="text-amber-500 hover:text-amber-600">{site.email}</a></li>
+          <li>Phone: {site.phone}</li>
+          <li>Or visit our <a href="/contact" class="text-amber-500 hover:text-amber-600">Contact page</a>.</li>
+        </ul>
+
+      </div>
+    </div>
+  </main>
+</Layout>
