@@ -22,12 +22,12 @@ const site = {
       <!-- Key notice banner -->
       <div class="bg-amber-50 border border-amber-200 rounded-xl px-6 py-5 mb-8 flex items-start gap-4">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-amber-500 shrink-0 mt-0.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.94949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
         </svg>
         <div>
           <p class="font-semibold text-amber-800 text-sm">Important Notice</p>
           <p class="text-amber-700 text-sm mt-1 leading-relaxed">
-            Refunds at {site.name} are applicable <strong>only for products that arrive damaged or defective</strong>. We do not accept returns or issue refunds for change of mind, incorrect size selection, or any reason other than damage during transit.
+            Refunds at {site.name} are applicable <strong>only for products that arrive damaged or defective</strong>. We do not accept returns or issue refunds for change of mind, incorrect size selection, or any reason other than damage during transit. All refunds are processed to the original payment method — <strong>no cash refunds</strong>.
           </p>
         </div>
       </div>
@@ -46,7 +46,8 @@ const site = {
           <ul class="text-gray-600 text-sm leading-relaxed list-disc pl-5 space-y-2">
             <li>The product you received is <strong>physically damaged</strong> (broken, cracked, bent, or otherwise compromised).</li>
             <li>The product is <strong>defective</strong> and not in the condition as described at the time of purchase.</li>
-            <li>You report the issue within <strong>48 hours</strong> of delivery.</li>
+            <li>You report the issue within <strong>7 days</strong> of delivery.</li>
+            <li>The product is returned in its original packaging with all tags and accessories intact.</li>
           </ul>
           <p class="text-gray-500 text-sm mt-3 bg-gray-50 rounded-lg px-4 py-3 border border-gray-100">
             Refunds are <strong>not</strong> applicable for: change of mind, colour variation due to screen settings, minor design variations within acceptable manufacturing tolerances, or damage caused by misuse after delivery.
@@ -69,7 +70,7 @@ const site = {
             </li>
             <li class="flex items-start gap-3">
               <span class="bg-stone-100 text-stone-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</span>
-              <span><strong>Contact us within 48 hours</strong> of receiving your order via WhatsApp or email (details below). Late reports will not be eligible for refund.</span>
+              <span><strong>Contact us within 7 days</strong> of receiving your order via WhatsApp or email (details below). Late reports will not be eligible for refund.</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="bg-stone-100 text-stone-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</span>
@@ -86,30 +87,60 @@ const site = {
         <div>
           <h2 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
             <span class="bg-amber-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold shrink-0">3</span>
-            Refund Process
+            Refund Process & Timelines
           </h2>
+          <p class="text-gray-600 text-sm leading-relaxed mb-3">
+            <strong>Refunds are processed within 7 business days</strong> of claim approval. Here is the detailed timeline:
+          </p>
           <ul class="text-gray-600 text-sm leading-relaxed list-disc pl-5 space-y-2">
-            <li>Once your damaged product claim is approved, we will process a refund to your original payment method.</li>
-            <li>Refunds typically reflect within <strong>5–7 business days</strong> depending on your bank or payment provider.</li>
+            <li>Once your damaged product claim is approved, we initiate the refund within <strong>2 business days</strong>.</li>
+            <li>Refund is processed to your original payment method. <strong>No cash refunds will be issued under any circumstances.</strong></li>
+            <li>Refund reflection in your account: Typically <strong>5–7 business days</strong> for UPI/cards, <strong>7–10 business days</strong> for net banking, depending on your bank or payment provider.</li>
             <li>In some cases, we may offer a <strong>replacement</strong> instead of a refund, at our discretion.</li>
             <li>Shipping charges are non-refundable unless the error was on our part.</li>
           </ul>
         </div>
 
-        <!-- Section 4 -->
+        <!-- Section 4 - Chargeback & Payment Gateway Alignment -->
         <div>
           <h2 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
             <span class="bg-amber-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold shrink-0">4</span>
+            Chargebacks & Payment Gateway Compliance
+          </h2>
+          <p class="text-gray-600 text-sm leading-relaxed mb-3">
+            We process payments through Cashfree Payments. The following rules apply in alignment with Cashfree's chargeback policies:
+          </p>
+          <ul class="text-gray-600 text-sm leading-relaxed list-disc pl-5 space-y-2">
+            <li>Customers must first attempt resolution directly with us before filing a chargeback with their bank.</li>
+            <li>Chargebacks filed without prior communication may be contested with supporting evidence (delivery proof, communication logs, product photos).</li>
+            <li>If a chargeback is filed, the refund process via our policy will be paused pending the chargeback outcome.</li>
+            <li>We comply with RBI guidelines and Cashfree's merchant terms regarding dispute resolution timelines.</li>
+          </ul>
+        </div>
+
+        <!-- Section 5 -->
+        <div>
+          <h2 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <span class="bg-amber-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-xs font-bold shrink-0">5</span>
             Non-Refundable Situations
           </h2>
           <p class="text-gray-600 text-sm leading-relaxed mb-3">We are unable to process refunds in the following situations:</p>
           <ul class="text-gray-600 text-sm leading-relaxed list-disc pl-5 space-y-2">
-            <li>The return request is made after 48 hours of delivery.</li>
+            <li>The return request is made after 7 days of delivery.</li>
             <li>The product shows signs of use, wear, or damage after delivery.</li>
             <li>The product was damaged due to mishandling by the customer.</li>
             <li>The customer changed their mind or ordered the wrong item.</li>
             <li>Minor colour differences due to screen calibration or photography lighting.</li>
+            <li>Cash refund requests — all refunds are processed to the original payment method only.</li>
           </ul>
+        </div>
+
+        <!-- Cross-link to Terms & Conditions -->
+        <div class="bg-blue-50 border border-blue-100 rounded-xl p-6">
+          <h2 class="text-base font-bold text-gray-900 mb-2">Related Policies</h2>
+          <p class="text-gray-600 text-sm leading-relaxed mb-3">
+            This Refund Policy should be read in conjunction with our <a href="/terms" class="text-amber-500 hover:text-amber-600 underline font-medium">Terms &amp; Conditions</a> and <a href="/privacy" class="text-amber-500 hover:text-amber-600 underline font-medium">Privacy Policy</a> for a complete understanding of your rights and obligations.
+          </p>
         </div>
 
         <!-- Contact -->

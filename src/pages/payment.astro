@@ -349,6 +349,26 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
                 >
               </div>
 
+              <!-- T&C acceptance -->
+              <div class='mb-4'>
+                <label class='flex items-start gap-2 cursor-pointer'>
+                  <input
+                    type='checkbox'
+                    id='accept-terms'
+                    class='mt-1 h-4 w-4 rounded border-gray-300 text-amber-500 focus:ring-amber-400'
+                  />
+                  <span class='text-xs text-gray-500 leading-relaxed'>
+                    I accept the
+                    <a href='/terms' target='_blank' class='text-amber-500 hover:text-amber-600 underline'>Terms &amp; Conditions</a>
+                    and
+                    <a href='/privacy' target='_blank' class='text-amber-500 hover:text-amber-600 underline'>Privacy Policy</a>.
+                    View our
+                    <a href='/refund-policy' target='_blank' class='text-amber-500 hover:text-amber-600 underline'>Refund Policy</a>.
+                    <span class='text-red-500'>*</span>
+                  </span>
+                </label>
+              </div>
+
               <!-- Pay button -->
               <button
                 id='pay-now-btn'
@@ -1016,6 +1036,13 @@ const apiUrl = import.meta.env.PUBLIC_API_URL || "http://localhost:3001";
 
       async function startCheckout() {
         try {
+          // Validate T&C acceptance
+          const termsCheckbox = $("accept-terms");
+          if (!termsCheckbox || !termsCheckbox.checked) {
+            showError("Please accept the Terms & Conditions and Privacy Policy to proceed.");
+            termsCheckbox?.focus();
+            return;
+          }
           // 1. Call your backend API to create order and get a paymentSessionId
           await initiatePayment();
           // 2. Wait for SDK to be ready
