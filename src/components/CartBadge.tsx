@@ -1,6 +1,6 @@
 import { useStore } from '@nanostores/react';
 import { useEffect } from 'react';
-import { $cartCount, initCart, syncCartFromStorage } from '../stores/cartStore';
+import { $cartCount, initCart, openCart } from '../stores/cartStore';
 
 export default function CartBadge() {
   const count = useStore($cartCount);
@@ -9,15 +9,17 @@ export default function CartBadge() {
     initCart();
   }, []);
 
-  const handleClick = () => {
-    window.location.href = '/cart';
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    openCart();
   };
 
   return (
     <button
       onClick={handleClick}
-      className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors"
-      aria-label="View cart"
+      className="relative p-2 text-stone-600 hover:text-stone-950 hover:bg-stone-200/50 rounded-full transition-all cursor-pointer"
+      aria-label="View Shopping Bag"
+      title="Shopping Bag"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -25,7 +27,7 @@ export default function CartBadge() {
         viewBox="0 0 24 24"
         strokeWidth={1.5}
         stroke="currentColor"
-        className="w-6 h-6"
+        className="w-5 h-5"
       >
         <path
           strokeLinecap="round"
@@ -36,7 +38,7 @@ export default function CartBadge() {
       {count > 0 && (
         <span
           id="cart-badge"
-          className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full"
+          className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold leading-none text-stone-950 bg-[#C5A059] rounded-full shadow-2xs"
         >
           {count}
         </span>

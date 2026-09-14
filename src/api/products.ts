@@ -1,5 +1,4 @@
-const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:4040";
-
+import { API_BASE_URL as API_URL } from "../lib/api";
 import type { Product, Category } from "../types";
 
 const responseCache = new Map<string, Promise<any>>();

@@ -1,12 +1,13 @@
-import { map, computed } from 'nanostores';
+// src/stores/cartStore.ts
+import { atom, computed } from 'nanostores';
 import type { CartItem } from '../types';
 
 export type { CartItem };
 
 const CART_STORAGE_KEY = 'cart';
 
-export const $cartItems = map<CartItem[]>([]);
-export const $isCartOpen = map<boolean>(false);
+export const $cartItems = atom<CartItem[]>([]);
+export const $isCartOpen = atom<boolean>(false);
 
 export const $cartCount = computed($cartItems, (items) =>
   items.reduce((sum, item) => sum + item.quantity, 0)
@@ -27,7 +28,9 @@ function loadCartFromStorage(): CartItem[] {
 }
 
 function saveCartToStorage(items: CartItem[]) {
-  localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  }
 }
 
 function dispatchCartEvent(eventName: string, items: CartItem[]) {
@@ -77,12 +80,6 @@ export function addToCart(item: CartItem) {
   $cartItems.set(newItems);
   saveCartToStorage(newItems);
   dispatchCartEvent('cart:updated', newItems);
-  
-  // Also dispatch item-added for backward compatibility
-  if (existingIndex < 0) {
-    dispatchCartEvent('cart:item-added', newItems);
-  }
-  
   openCart();
 }
 
@@ -127,8 +124,7 @@ if (typeof window !== 'undefined') {
       syncCartFromStorage();
     }
   });
-  
-  // Listen for legacy custom events from cart page
+
   window.addEventListener('cart:updated', () => syncCartFromStorage());
   window.addEventListener('cart:item-added', () => syncCartFromStorage());
   window.addEventListener('cart:item-removed', () => syncCartFromStorage());
