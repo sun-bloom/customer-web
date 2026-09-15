@@ -1,14 +1,16 @@
 // src/pages/PaymentPending.tsx
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { checkCashfreeStatusApi, getOrderByCfIdApi } from '../lib/api';
+import { checkRazorpayStatusApi, getOrderByRzpIdApi } from '../lib/api';
 import { clearCart } from '../stores/cartStore';
-import { CheckCircle2, XCircle, Clock, AlertTriangle, ArrowRight } from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
 
 export const PaymentPending: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const cfOrderId = searchParams.get('cf_order_id') || searchParams.get('order_id') || '';
+
+  // Support both rzp_order_id (new) and cf_order_id (legacy redirect fallback)
+  const rzpOrderId = searchParams.get('rzp_order_id') || searchParams.get('order_id') || '';
 
   const [statusState, setStatusState] = useState<'checking' | 'success' | 'failed' | 'pending' | 'not-found'>('checking');
   const [orderNumber, setOrderNumber] = useState<string>('');
@@ -19,7 +21,7 @@ export const PaymentPending: React.FC = () => {
   const RETRY_INTERVAL = 3500;
 
   const verifyStatus = async () => {
-    if (!cfOrderId) {
+    if (!rzpOrderId) {
       setStatusState('not-found');
       return;
     }
@@ -27,17 +29,17 @@ export const PaymentPending: React.FC = () => {
     setStatusState('checking');
 
     try {
-      const res = await checkCashfreeStatusApi(cfOrderId);
+      const res = await checkRazorpayStatusApi(rzpOrderId);
       const status = res?.status;
 
       if (status === 'PAID') {
         clearCart();
         let num = res.orderNumber;
         if (!num) {
-          const byCf = await getOrderByCfIdApi(cfOrderId).catch(() => null);
-          num = byCf?.orderNumber;
+          const byRzp = await getOrderByRzpIdApi(rzpOrderId).catch(() => null);
+          num = byRzp?.orderNumber;
         }
-        setOrderNumber(num || cfOrderId);
+        setOrderNumber(num || rzpOrderId);
         setStatusState('success');
 
         if (num) {
@@ -48,21 +50,9 @@ export const PaymentPending: React.FC = () => {
         return;
       }
 
-      if (status === 'CANCELLED') {
-        setStatusState('failed');
-        setFailureReason('Payment transaction was cancelled before completion.');
-        return;
-      }
-
-      if (status === 'EXPIRED') {
-        setStatusState('failed');
-        setFailureReason('Payment session expired. Please return to your shopping bag to initiate a new session.');
-        return;
-      }
-
       if (status === 'FAILED') {
         setStatusState('failed');
-        setFailureReason(res.reason || 'Payment transaction was declined by the bank or gateway.');
+        setFailureReason(res.reason || 'Payment transaction was declined. Please try again.');
         return;
       }
 
@@ -90,7 +80,7 @@ export const PaymentPending: React.FC = () => {
       }, retryCount === 0 ? 500 : RETRY_INTERVAL);
     }
     return () => clearTimeout(timer);
-  }, [retryCount, cfOrderId]);
+  }, [retryCount, rzpOrderId]);
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center bg-[#FAF7F2] px-4 py-16">
@@ -104,7 +94,7 @@ export const PaymentPending: React.FC = () => {
               Verifying Payment
             </h1>
             <p className="text-xs text-[#7D7063] font-light">
-              Authoritatively confirming your transaction with Cashfree…
+              Confirming your transaction with Razorpay…
             </p>
             {retryCount > 0 && (
               <p className="text-[11px] text-[#8A7E72]">
@@ -177,14 +167,11 @@ export const PaymentPending: React.FC = () => {
               Verification Taking Longer
             </h1>
             <p className="text-xs text-amber-800">
-              Your payment is still being processed by the bank or gateway.
+              Your payment is still being processed. Please check your orders page in a minute.
             </p>
             <div className="pt-4 space-y-2">
               <button
-                onClick={() => {
-                  setRetryCount(0);
-                  verifyStatus();
-                }}
+                onClick={() => { setRetryCount(0); verifyStatus(); }}
                 className="w-full py-3 rounded-2xl bg-[#C5A059] text-[#1C1612] text-xs font-semibold uppercase tracking-widest shadow-gold cursor-pointer"
               >
                 Check Status Again

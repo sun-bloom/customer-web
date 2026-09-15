@@ -32,7 +32,7 @@ export const Privacy: React.FC = () => {
           <div>
             <h2 className="font-heading text-xl text-[#1C1612] mb-2">3. Payment &amp; Financial Security</h2>
             <p>
-              All online payments are securely processed through Cashfree Payments India Private Limited. We do not store full credit card numbers, debit card PINs, or UPI MPINs on our servers.
+              All online payments are securely processed through Razorpay Software Private Limited. We do not store full credit card numbers, debit card PINs, or UPI MPINs on our servers.
             </p>
           </div>
 

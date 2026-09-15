@@ -12,17 +12,25 @@ import {
 } from '../stores/cartStore';
 import { ShoppingBag, ArrowRight, Trash2, ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react';
 
+import { getDeliverySettingsApi } from '../lib/api';
+
 export const Cart: React.FC = () => {
   const cartItems = useStore($cartItems);
   const subtotal = useStore($cartSubtotal);
+  const [shippingThreshold, setShippingThreshold] = React.useState(1500);
 
   useEffect(() => {
     initCart();
+    getDeliverySettingsApi()
+      .then((settings) => {
+        if (settings?.freeShippingThreshold) {
+          setShippingThreshold(settings.freeShippingThreshold);
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  const shippingThreshold = 1500;
-  const shippingCharge = subtotal >= shippingThreshold || subtotal === 0 ? 0 : 50;
-  const total = subtotal + shippingCharge;
+  const isComplimentary = subtotal >= shippingThreshold && subtotal > 0;
   const amountToFreeShipping = Math.max(0, shippingThreshold - subtotal);
   const progressPercent = Math.min(100, Math.round((subtotal / shippingThreshold) * 100));
 
@@ -197,16 +205,22 @@ export const Cart: React.FC = () => {
               <div className="flex justify-between text-[#7D7063]">
                 <span>Insured Shipping</span>
                 <span className="font-medium text-[#1C1612]">
-                  {shippingCharge === 0 ? <span className="text-emerald-700">COMPLIMENTARY</span> : `₹${shippingCharge}`}
+                  {isComplimentary ? (
+                    <span className="text-emerald-700 font-semibold">COMPLIMENTARY</span>
+                  ) : (
+                    <span className="text-xs text-[#8A7E72]">Calculated at checkout</span>
+                  )}
                 </span>
               </div>
               <div className="pt-3 border-t border-[#F0EAE1] flex justify-between items-baseline">
                 <div>
                   <span className="font-heading text-lg font-medium text-[#1C1612] block">Total</span>
-                  <span className="text-[11px] text-[#8A7E72]">All taxes & duties inclusive</span>
+                  <span className="text-[11px] text-[#8A7E72]">
+                    {isComplimentary ? 'Includes complimentary insured delivery' : 'Delivery region resolved at payment'}
+                  </span>
                 </div>
                 <span className="font-heading text-2xl font-bold text-[#1C1612]">
-                  ₹{total.toLocaleString('en-IN')}
+                  ₹{subtotal.toLocaleString('en-IN')}
                 </span>
               </div>
             </div>

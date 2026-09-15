@@ -5,17 +5,16 @@ import { useStore } from '@nanostores/react';
 import { $cartItems, $cartSubtotal } from '../stores/cartStore';
 import { useAuth } from '../hooks/useAuth';
 import {
-  createCashfreeOrderApi,
-  getDeliverySettingsApi,
-  getProductsApi,
+  createRazorpayOrderApi,
+  verifyRazorpayPaymentApi,
+  calculateShippingApi,
   submitOrderConsultantRequestApi,
 } from '../lib/api';
-import type { DeliveryRegion, Product } from '../types';
-import { ShieldCheck, Lock, AlertCircle, ArrowLeft, Video, Smartphone, QrCode, CreditCard, Building2 } from 'lucide-react';
+import { ShieldCheck, Lock, AlertCircle, ArrowLeft, CreditCard, Building2 } from 'lucide-react';
 
 declare global {
   interface Window {
-    Cashfree?: any;
+    Razorpay?: any;
   }
 }
 
@@ -39,28 +38,15 @@ export const Payment: React.FC = () => {
   const [acceptTerms, setAcceptTerms] = useState(false);
 
   // Delivery & Processing States
-  const [deliveryRegions, setDeliveryRegions] = useState<DeliveryRegion[]>([]);
-  const [shippingCharge, setShippingCharge] = useState(50);
+  const [shippingCharge, setShippingCharge] = useState(0);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(1500);
   const [pincodeStatus, setPincodeStatus] = useState<string | null>(null);
   const [pincodeValid, setPincodeValid] = useState<boolean | null>(null);
+  const [pincodeChecking, setPincodeChecking] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [stockErrors, setStockErrors] = useState<any[]>([]);
   const [consultantSent, setConsultantSent] = useState(false);
-
-  useEffect(() => {
-    async function loadConfig() {
-      try {
-        const res = await getDeliverySettingsApi();
-        if (res?.regions && res.regions.length > 0) {
-          setDeliveryRegions(res.regions);
-        }
-      } catch (e) {
-        console.warn('Unable to load delivery regions:', e);
-      }
-    }
-    loadConfig();
-  }, []);
 
   // Update form fields if profile arrives
   useEffect(() => {
@@ -76,39 +62,63 @@ export const Payment: React.FC = () => {
     }
   }, [profile]);
 
-  const validatePincode = (code: string) => {
-    const cleanPin = code.trim();
-    if (cleanPin.length !== 6 || isNaN(Number(cleanPin))) {
-      setPincodeStatus('Please enter a valid 6-digit postal pincode.');
-      setPincodeValid(false);
+  const validatePincode = async (code: string) => {
+    const cleanPin = code.trim().replace(/\D/g, '');
+
+    if (cleanPin.length === 0) {
+      setPincodeStatus(null);
+      setPincodeValid(null);
+      setShippingCharge(0);
       return;
     }
 
-    const num = parseInt(cleanPin, 10);
-    const matchedRegion = deliveryRegions.find(
-      (r) => r.isEnabled && num >= parseInt(r.pincodeStart, 10) && num <= parseInt(r.pincodeEnd, 10)
-    );
+    if (cleanPin.length < 6) {
+      // Don't validate partial pincodes
+      return;
+    }
 
-    if (matchedRegion) {
-      setShippingCharge(subtotal >= 1500 ? 0 : matchedRegion.deliveryCharge);
-      setPincodeStatus(`✓ ${matchedRegion.regionName} — Delivery in ${matchedRegion.estimatedDays} day${matchedRegion.estimatedDays > 1 ? 's' : ''}`);
-      setPincodeValid(true);
-    } else {
-      setShippingCharge(0);
-      setPincodeStatus('Delivery is currently unavailable for this pincode.');
-      setPincodeValid(false);
+    setPincodeChecking(true);
+    setPincodeStatus(null);
+    try {
+      const result = await calculateShippingApi({
+        subtotal,
+        pincode: cleanPin,
+      });
+
+      setFreeShippingThreshold(result.freeShippingThreshold ?? 1500);
+
+      if (result.isSupported) {
+        setShippingCharge(result.shippingCharge);
+        const regionCity = result.matchedRegion?.city;
+        const regionState = result.matchedRegion?.state;
+        const locationText = regionCity ? `${regionCity}${regionState ? ', ' + regionState : ''}` : cleanPin;
+        const freeText = result.isFreeShipping ? ' (Free Shipping!)' : '';
+        setPincodeStatus(`✓ Delivery available — ${locationText}${freeText}`);
+        setPincodeValid(true);
+      } else {
+        setShippingCharge(0);
+        setPincodeStatus(
+          result.message ||
+          `Delivery is currently unavailable for pincode ${cleanPin}.`
+        );
+        setPincodeValid(false);
+      }
+    } catch (e: any) {
+      console.warn('[Payment] Pincode validation error:', e);
+      setPincodeStatus('Could not verify delivery availability. You may still proceed.');
+      setPincodeValid(null);
+    } finally {
+      setPincodeChecking(false);
     }
   };
 
-  const loadCashfreeSdk = (): Promise<any> => {
+  const loadRazorpaySdk = (): Promise<void> => {
     return new Promise((resolve, reject) => {
-      if (window.Cashfree) {
-        return resolve(window.Cashfree);
-      }
+      if (window.Razorpay) return resolve();
       const script = document.createElement('script');
-      script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-      script.onload = () => resolve(window.Cashfree);
-      script.onerror = () => reject(new Error('Failed to load Cashfree payment gateway SDK.'));
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload  = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load Razorpay payment gateway SDK.'));
       document.head.appendChild(script);
     });
   };
@@ -161,19 +171,21 @@ export const Payment: React.FC = () => {
       return;
     }
 
-    if (pincodeValid !== true) {
-      setErrorMessage('Please enter a supported delivery pincode before proceeding.');
+    if (pincodeValid === false) {
+      setErrorMessage('Delivery is not available for your pincode. Please enter a valid 6-digit delivery pincode.');
+      return;
+    }
+
+    if (!pincode.trim() || !/^\d{6}$/.test(pincode.trim())) {
+      setErrorMessage('Please enter a valid 6-digit pincode.');
       return;
     }
 
     setLoading(true);
 
     try {
-      const totalAmount = subtotal + shippingCharge;
-
-      // 1. Create order on backend and acquire Cashfree session
-      const result = await createCashfreeOrderApi({
-        amount: totalAmount,
+      // 1. Create order on backend — backend recalculates all prices, ignores frontend totals
+      const result = await createRazorpayOrderApi({
         currency: 'INR',
         customer: {
           name: name.trim(),
@@ -188,55 +200,54 @@ export const Payment: React.FC = () => {
           addressConfirmed,
         },
         cartItems,
-        shippingCharge,
-        subtotal,
-        totalAmount,
       });
 
-      if (!result || !result.paymentSessionId || !result.orderId) {
+      if (!result?.razorpayOrderId || !result?.keyId) {
         throw new Error('Payment session could not be established. Please try again.');
       }
 
-      // 2. Device-aware Checkout: '_self' on mobile for seamless UPI Intent app launch, '_modal' on desktop for dynamic QR code overlay
-      const CashfreeSdk = await loadCashfreeSdk();
-      const activeEnv = result.environment === 'production' ? 'production' : 'sandbox';
-      const cashfree = CashfreeSdk({ mode: activeEnv });
+      // 2. Load Razorpay SDK
+      await loadRazorpaySdk();
 
-      // Robust mobile detection: userAgent pattern + screen width + touch capability
-      const isMobileDevice = (): boolean => {
-        if (typeof window === 'undefined') return false;
-        const ua = (navigator.userAgent || navigator.vendor || (window as any).opera || '').toLowerCase();
-        const mobileKeywords = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i;
-        const isTouch = navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
-        const isNarrow = window.innerWidth <= 768;
-        return mobileKeywords.test(ua) || (isTouch && isNarrow);
-      };
-
-      const redirectTarget = isMobileDevice() ? '_self' : '_modal';
-
-      cashfree.checkout({
-        paymentSessionId: result.paymentSessionId,
-        redirectTarget,
-      })
-      .then((checkoutResult: any) => {
-        if (checkoutResult?.error) {
-          console.warn('[Cashfree] Checkout response:', checkoutResult.error);
-          if (checkoutResult.error.message && !checkoutResult.error.message.includes('closed')) {
-            setErrorMessage(checkoutResult.error.message);
+      // 3. Open Razorpay checkout
+      const rzp = new window.Razorpay({
+        key: result.keyId,
+        order_id: result.razorpayOrderId,
+        amount: Math.round(result.amount * 100),
+        currency: result.currency || 'INR',
+        name: 'Sunbloom Adorn',
+        description: `Order ${result.orderNumber}`,
+        prefill: result.prefill,
+        theme: { color: '#C5A059' },
+        modal: { ondismiss: () => setLoading(false) },
+        handler: async (response: any) => {
+          // 4. Verify payment signature on backend
+          try {
+            const verification = await verifyRazorpayPaymentApi({
+              razorpay_order_id:   response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature:  response.razorpay_signature,
+            });
+            if (verification?.success) {
+              navigate(`/order/pending?rzp_order_id=${encodeURIComponent(result.razorpayOrderId)}`);
+            } else {
+              setErrorMessage('Payment verification failed. Please contact support with your order number.');
+              setLoading(false);
+            }
+          } catch (verifyErr: any) {
+            setErrorMessage(verifyErr.message || 'Payment verification failed.');
+            setLoading(false);
           }
-          return;
-        }
-
-        // For mobile redirect, browser navigates away; for modal completion or dismissal:
-        if (checkoutResult?.redirect) {
-          return;
-        }
-        navigate(`/order/pending?cf_order_id=${encodeURIComponent(result.orderId)}`);
-      })
-      .catch((err: any) => {
-        console.error('[Cashfree] Checkout error:', err);
-        setErrorMessage('Unable to complete payment transaction. Please try again.');
+        },
       });
+
+      rzp.on('payment.failed', (response: any) => {
+        console.error('[Razorpay] Payment failed:', response.error);
+        setErrorMessage(response.error?.description || 'Payment failed. Please try again.');
+        setLoading(false);
+      });
+
+      rzp.open();
 
     } catch (err: any) {
       console.error('Checkout error:', err);
@@ -245,7 +256,6 @@ export const Payment: React.FC = () => {
       } else {
         setErrorMessage(err.message || 'Could not initiate checkout.');
       }
-    } finally {
       setLoading(false);
     }
   };
@@ -379,7 +389,15 @@ export const Payment: React.FC = () => {
                     type="text"
                     required
                     value={city}
-                    onChange={(e) => setCity(e.target.value)}
+                    onChange={(e) => {
+                      setCity(e.target.value);
+                      // Reset delivery check when city changes
+                      setPincodeValid(null);
+                      setPincodeStatus(null);
+                    }}
+                    onBlur={(e) => {
+                      // City is for address only — not used for shipping calculation
+                    }}
                     placeholder="e.g. Coimbatore"
                     className="w-full px-3.5 py-2.5 bg-[#FAF7F2]/60 border border-[#E8E1D5] rounded-xl text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
                   />
@@ -410,16 +428,35 @@ export const Payment: React.FC = () => {
                     value={pincode}
                     onChange={(e) => {
                       setPincode(e.target.value);
-                      if (e.target.value.trim().length === 6) {
-                        validatePincode(e.target.value);
+                      const val = e.target.value.trim().replace(/\D/g, '');
+                      if (val.length === 6) {
+                        validatePincode(val);
+                      } else {
+                        setPincodeValid(null);
+                        setPincodeStatus(null);
+                        setShippingCharge(0);
                       }
                     }}
-                    onBlur={() => validatePincode(pincode)}
+                    onBlur={() => {
+                      if (pincode.trim()) validatePincode(pincode);
+                    }}
                     placeholder="6 digit PIN (e.g. 641001)"
-                    className="w-full px-3.5 py-2.5 bg-[#FAF7F2]/60 border border-[#E8E1D5] rounded-xl text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
+                    className={`w-full px-3.5 py-2.5 bg-[#FAF7F2]/60 border rounded-xl text-xs sm:text-sm text-[#1C1612] focus:outline-none transition-colors ${
+                      pincodeValid === true
+                        ? 'border-emerald-400 focus:border-emerald-500'
+                        : pincodeValid === false
+                        ? 'border-red-400 focus:border-red-500'
+                        : 'border-[#E8E1D5] focus:border-[#C5A059]'
+                    }`}
                   />
-                  {pincodeStatus && (
-                    <p className={`mt-1.5 text-xs ${pincodeValid ? 'text-emerald-700' : 'text-red-600'}`}>
+                  {pincodeChecking && (
+                    <p className="mt-1.5 text-xs text-[#7D7063] flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-3 rounded-full border-2 border-[#C5A059]/40 border-t-[#C5A059] animate-spin"></span>
+                      Checking delivery availability…
+                    </p>
+                  )}
+                  {!pincodeChecking && pincodeStatus && (
+                    <p className={`mt-1.5 text-xs ${pincodeValid === true ? 'text-emerald-700' : pincodeValid === false ? 'text-red-600' : 'text-[#7D7063]'}`}>
                       {pincodeStatus}
                     </p>
                   )}
@@ -460,7 +497,7 @@ export const Payment: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Order Summary & Cashfree Button (5 Cols) */}
+          {/* Right Column: Order Summary & Razorpay Button (5 Cols) */}
           <div className="lg:col-span-5 bg-white rounded-3xl border border-[#E8E1D5] shadow-sm p-5 sm:p-7 lg:sticky lg:top-24 space-y-5">
             <h2 className="font-heading text-xl font-normal text-[#1C1612] flex items-center justify-between pb-3 border-b border-[#F0EAE1]">
               <span>Order Summary</span>
@@ -496,9 +533,24 @@ export const Payment: React.FC = () => {
               <div className="flex justify-between text-[#7D7063]">
                 <span>Shipping</span>
                 <span className="font-medium text-[#1C1612]">
-                  {shippingCharge === 0 ? <span className="text-emerald-700">COMPLIMENTARY</span> : `₹${shippingCharge}`}
+                  {pincodeValid === null && !pincodeChecking ? (
+                    <span className="text-[#8A7E72] italic text-[11px]">Enter pincode/city</span>
+                  ) : pincodeChecking ? (
+                    <span className="text-[#8A7E72] italic text-[11px]">Calculating…</span>
+                  ) : shippingCharge === 0 && pincodeValid === true ? (
+                    <span className="text-emerald-700">COMPLIMENTARY</span>
+                  ) : pincodeValid === true ? (
+                    `₹${shippingCharge}`
+                  ) : (
+                    <span className="text-[#8A7E72] italic text-[11px]">Not available</span>
+                  )}
                 </span>
               </div>
+              {pincodeValid === true && shippingCharge > 0 && freeShippingThreshold > subtotal && (
+                <p className="text-[11px] text-emerald-700">
+                  Add ₹{(freeShippingThreshold - subtotal).toLocaleString('en-IN')} more for free shipping!
+                </p>
+              )}
               <div className="pt-2 flex justify-between items-baseline">
                 <div>
                   <span className="font-heading text-lg font-medium text-[#1C1612] block">Total Amount</span>
@@ -605,7 +657,7 @@ export const Payment: React.FC = () => {
                   Supported Payment Methods
                 </span>
                 <span className="text-[10px] text-[#C5A059] font-medium uppercase tracking-wider">
-                  Cashfree Gateway
+                  Razorpay
                 </span>
               </div>
 
@@ -660,7 +712,7 @@ export const Payment: React.FC = () => {
               </div>
             </div>
 
-            {/* Submit / Cashfree Checkout Button */}
+            {/* Submit / Razorpay Checkout Button */}
             <div className="space-y-2">
               <button
                 type="submit"
@@ -670,7 +722,7 @@ export const Payment: React.FC = () => {
                 {loading ? (
                   <>
                     <div className="w-4 h-4 rounded-full border-2 border-[#FEF3C7]/40 border-t-[#FEF3C7] animate-spin"></div>
-                    <span>Initiating Cashfree Gateway…</span>
+                    <span>Opening Razorpay…</span>
                   </>
                 ) : (
                   <>
@@ -680,7 +732,7 @@ export const Payment: React.FC = () => {
                 )}
               </button>
               <p className="text-center text-[10px] text-[#8A7E72]">
-                Secured by 256-bit SSL encryption via Cashfree Payments
+                Secured by 256-bit SSL encryption via Razorpay
               </p>
             </div>
 

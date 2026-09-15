@@ -139,9 +139,8 @@ export async function trackOrderApi(orderNumber: string, phone: string): Promise
   );
 }
 
-// ── Cashfree Payments ────────────────────────────────────────────────────
-export async function createCashfreeOrderApi(data: {
-  amount: number;
+// ── Razorpay Payments ─────────────────────────────────────────────────────
+export async function createRazorpayOrderApi(data: {
   currency?: string;
   customer: {
     name: string;
@@ -156,32 +155,49 @@ export async function createCashfreeOrderApi(data: {
     addressConfirmed: boolean;
   };
   cartItems: any[];
-  shippingCharge: number;
-  subtotal: number;
-  totalAmount: number;
 }) {
   return apiFetch<{
-    orderId: string;
+    razorpayOrderId: string;
     orderNumber: string;
-    paymentSessionId: string;
+    amount: number;
+    currency: string;
+    keyId: string;
     environment: string;
-  }>('/api/payments/cashfree/create-order', {
+    prefill: { name: string; email: string; contact: string };
+  }>('/api/payments/razorpay/create-order', {
     method: 'POST',
     body: JSON.stringify(data),
   });
 }
 
-export async function checkCashfreeStatusApi(cfOrderId: string) {
+export async function verifyRazorpayPaymentApi(data: {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}) {
   return apiFetch<{
-    status: 'PAID' | 'FAILED' | 'CANCELLED' | 'EXPIRED' | 'ACTIVE' | string;
-    orderNumber?: string;
-    reason?: string;
-  }>(`/api/payments/cashfree/status/${encodeURIComponent(cfOrderId)}`);
+    success: boolean;
+    orderNumber: string;
+    orderId: string;
+    status: string;
+  }>('/api/payments/razorpay/verify-payment', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
-export async function getOrderByCfIdApi(cfOrderId: string) {
-  return apiFetch<{ orderNumber: string }>(`/api/payments/cashfree/order-by-cf-id/${encodeURIComponent(cfOrderId)}`);
+export async function checkRazorpayStatusApi(rzpOrderId: string) {
+  return apiFetch<{
+    status: 'PAID' | 'FAILED' | 'ACTIVE' | 'PENDING' | string;
+    orderNumber?: string;
+    reason?: string;
+  }>(`/api/payments/razorpay/status/${encodeURIComponent(rzpOrderId)}`);
 }
+
+export async function getOrderByRzpIdApi(rzpOrderId: string) {
+  return apiFetch<{ orderNumber: string }>(`/api/payments/razorpay/order-by-rzp-id/${encodeURIComponent(rzpOrderId)}`);
+}
+
 
 // ── Support ──────────────────────────────────────────────────────────────
 export async function submitSupportQueryApi(data: {
@@ -217,6 +233,24 @@ export async function getSettingsApi(): Promise<{ site?: SiteSettings; upi?: any
 
 export async function getDeliverySettingsApi(): Promise<DeliverySettingsData> {
   return apiFetch<DeliverySettingsData>('/api/delivery');
+}
+
+export async function calculateShippingApi(data: {
+  subtotal: number;
+  pincode?: string;
+  city?: string;
+}) {
+  return apiFetch<{
+    isSupported: boolean;
+    shippingCharge: number;
+    isFreeShipping: boolean;
+    freeShippingThreshold: number;
+    message?: string;
+    matchedRegion?: any;
+  }>('/api/delivery/calculate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function submitOrderConsultantRequestApi(token: string, data: any) {
