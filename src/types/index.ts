@@ -198,6 +198,7 @@ export interface DeliveryAvailability {
 
 export interface DeliverySettingsData {
   regions: DeliveryRegion[];
+  freeShippingThreshold?: number;
 }
 
 // ===========================================

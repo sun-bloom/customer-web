@@ -10,7 +10,7 @@ import {
   calculateShippingApi,
   submitOrderConsultantRequestApi,
 } from '../lib/api';
-import { ShieldCheck, Lock, AlertCircle, ArrowLeft, CreditCard, Building2 } from 'lucide-react';
+import { ShieldCheck, Lock, AlertCircle, ArrowLeft, CreditCard, Building2, Video } from 'lucide-react';
 
 declare global {
   interface Window {
