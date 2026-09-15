@@ -118,6 +118,7 @@ export interface Order {
   upiTransactionId?: string;
   paidAt?: string;
   orderStatus: OrderStatus;
+  status?: string;
   trackingCarrier?: string;
   trackingNumber?: string;
   trackingUrl?: string;
@@ -199,6 +200,42 @@ export interface DeliveryAvailability {
 export interface DeliverySettingsData {
   regions: DeliveryRegion[];
   freeShippingThreshold?: number;
+}
+
+export interface CustomerQueryMessage {
+  id: string;
+  queryId: string;
+  senderType: 'CUSTOMER' | 'ADMIN';
+  senderId?: string | null;
+  senderName?: string | null;
+  message: string;
+  attachment?: string | null;
+  createdAt: string;
+}
+
+export interface CustomerQuery {
+  id: string;
+  queryNumber: string;
+  customerId: string;
+  orderId?: string | null;
+  category: string;
+  subject: string;
+  status: 'OPEN' | 'IN_PROGRESS' | 'WAITING_FOR_CUSTOMER' | 'RESOLVED' | 'CLOSED';
+  priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt?: string | null;
+  order?: {
+    id: string;
+    orderNumber: string;
+    status: string;
+    totalAmount: number;
+    createdAt?: string;
+  } | null;
+  messages?: CustomerQueryMessage[];
+  _count?: {
+    messages: number;
+  };
 }
 
 // ===========================================

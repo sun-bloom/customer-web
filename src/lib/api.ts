@@ -1,7 +1,15 @@
 // src/lib/api.ts
 // Central API Client for Sunbloom Adorn Customer Web
 
-import type { Product, Category, Order, DeliverySettingsData, SiteSettings } from '../types';
+import type {
+  Product,
+  Category,
+  Order,
+  DeliverySettingsData,
+  SiteSettings,
+  CustomerQuery,
+  CustomerQueryMessage,
+} from '../types';
 
 const RENDER_BACKEND_URL = 'https://backend-api-bonr.onrender.com';
 const RAW_ENV_URL = (
@@ -257,4 +265,59 @@ export async function submitOrderConsultantRequestApi(token: string, data: any) 
   return apiFetch<{ success: boolean; requestId: string; message: string }>('/api/customer/order-consultants', {
     method: 'POST', token, body: JSON.stringify(data),
   });
+}
+
+// ── Customer Support & Queries ───────────────────────────────────────────
+export async function createCustomerQueryApi(
+  data: {
+    category: string;
+    subject: string;
+    message: string;
+    orderId?: string;
+    priority?: string;
+  },
+  token: string
+): Promise<{ success: boolean; query: CustomerQuery; message: string }> {
+  return apiFetch<{ success: boolean; query: CustomerQuery; message: string }>(
+    '/api/customer/queries',
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+export async function getCustomerQueriesApi(
+  token: string
+): Promise<{ queries: CustomerQuery[] }> {
+  return apiFetch<{ queries: CustomerQuery[] }>('/api/customer/queries', {
+    method: 'GET',
+    token,
+  });
+}
+
+export async function getCustomerQueryByIdApi(
+  id: string,
+  token: string
+): Promise<{ query: CustomerQuery }> {
+  return apiFetch<{ query: CustomerQuery }>(`/api/customer/queries/${encodeURIComponent(id)}`, {
+    method: 'GET',
+    token,
+  });
+}
+
+export async function sendCustomerQueryReplyApi(
+  id: string,
+  message: string,
+  token: string
+): Promise<{ success: boolean; message: CustomerQueryMessage; queryStatus: string }> {
+  return apiFetch<{ success: boolean; message: CustomerQueryMessage; queryStatus: string }>(
+    `/api/customer/queries/${encodeURIComponent(id)}/messages`,
+    {
+      method: 'POST',
+      token,
+      body: JSON.stringify({ message }),
+    }
+  );
 }
