@@ -1,7 +1,7 @@
 // src/pages/Home.tsx
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { SunbloomScrollExperience } from '../components/home/SunbloomScrollExperience';
+import { JewelleryHeroExperience } from '../components/home/JewelleryHeroExperience';
 import { ProductCard } from '../components/products/ProductCard';
 import { CategoryCard } from '../components/products/CategoryCard';
 import { getProductsApi, getCategoriesApi } from '../lib/api';
@@ -33,8 +33,8 @@ export const Home: React.FC = () => {
 
   return (
     <div className="w-full">
-      {/* 3D Scroll Hero Medallion Experience */}
-      <SunbloomScrollExperience />
+      {/* 3D Cinematic Jewellery Scroll Hero with Official Logo */}
+      <JewelleryHeroExperience />
 
       {/* Atelier Values Banner */}
       <section className="border-y border-[#E8E1D5] bg-white py-8">
