@@ -77,9 +77,9 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
     if (!res.ok) {
       const errBody = await res.json().catch(() => null);
       if (import.meta.env.DEV) {
-        console.error('[Customer Sync Error]:', errBody);
+        console.warn('[Customer Sync Warning]:', errBody);
       }
-      throw new Error("Your account was authenticated, but we couldn't finish setting up your customer profile. Please try again.");
+      return null;
     }
 
     return await res.json();
@@ -256,29 +256,29 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
   if (user) {
     const initial = user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase() || 'U';
     return (
-      <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl border border-[#E8E1D5] max-w-md w-full mx-auto text-center space-y-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A059]/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="bg-white p-8 sm:p-10 rounded-2xl sm:rounded-3xl shadow-xs border border-[#E8DCCF] max-w-md w-full mx-auto text-center space-y-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#FCE7EC]/40 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#FAF7F2] to-[#F5EFEB] border-2 border-[#C5A059]/40 text-[#C5A059] flex items-center justify-center font-serif text-3xl mx-auto shadow-xs">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#FDF2F5] to-[#FAF5EB] border-2 border-[#DFC598]/50 text-[#7A223B] flex items-center justify-center font-serif text-3xl mx-auto shadow-xs">
           {initial}
         </div>
 
         <div>
-          <span className="text-[11px] uppercase tracking-[0.25em] text-[#C5A059] font-medium block mb-1">
+          <span className="text-[10px] uppercase tracking-[0.25em] text-[#7A223B] font-semibold block mb-1">
             Client Profile
           </span>
-          <h3 className="font-serif text-2xl sm:text-3xl font-normal text-[#1C1612]">
+          <h3 className="font-heading text-2xl sm:text-3xl font-normal text-[#2A1C19]">
             {user.displayName || 'Welcome Back'}
           </h3>
-          <p className="text-xs text-stone-500 font-light mt-1 font-sans">{user.email}</p>
+          <p className="text-xs text-[#7D6460] font-light mt-1 font-sans">{user.email}</p>
         </div>
 
         <div className="pt-2 flex flex-col gap-3">
           <a
             href="/orders"
-            className="w-full py-3 px-4 rounded-xl bg-[#FAF7F2] hover:bg-[#F5EFEB] border border-[#E8E1D5] hover:border-[#C5A059]/60 text-[#1C1612] font-medium text-xs uppercase tracking-[0.18em] transition-all flex items-center justify-center gap-2"
+            className="w-full py-2.5 px-4 rounded-xl bg-[#FAF6F0]/70 hover:bg-[#FDF2F5] border border-[#E8DCCF] hover:border-[#DFC598] text-[#2A1C19] font-medium text-xs uppercase tracking-[0.16em] transition-all flex items-center justify-center gap-2"
           >
-            <svg className="w-4 h-4 text-[#C5A059]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 text-[#C9A86A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
             Order Archives
@@ -286,9 +286,9 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
 
           <a
             href="/track-order"
-            className="w-full py-3 px-4 rounded-xl bg-[#FAF7F2] hover:bg-[#F5EFEB] border border-[#E8E1D5] hover:border-[#C5A059]/60 text-[#1C1612] font-medium text-xs uppercase tracking-[0.18em] transition-all flex items-center justify-center gap-2"
+            className="w-full py-2.5 px-4 rounded-xl bg-[#FAF6F0]/70 hover:bg-[#FDF2F5] border border-[#E8DCCF] hover:border-[#DFC598] text-[#2A1C19] font-medium text-xs uppercase tracking-[0.16em] transition-all flex items-center justify-center gap-2"
           >
-            <svg className="w-4 h-4 text-[#C5A059]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 text-[#C9A86A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
             Track Live Shipment
@@ -296,7 +296,7 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
 
           <a
             href="/products"
-            className="w-full py-3 px-4 rounded-xl bg-stone-900 text-amber-200 hover:bg-stone-800 font-medium text-xs uppercase tracking-[0.18em] transition-all"
+            className="btn-rose-primary w-full py-2.5 px-4 rounded-xl font-semibold text-xs uppercase tracking-[0.16em] transition-all text-center block shadow-xs"
           >
             Explore The Collection
           </a>
@@ -305,7 +305,7 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
             type="button"
             id="auth-signout-btn"
             onClick={handleLogout}
-            className="w-full py-2.5 px-4 rounded-xl text-stone-400 hover:text-red-600 text-xs tracking-wider transition-colors pt-2 cursor-pointer"
+            className="w-full py-2 px-4 rounded-xl text-[#A8928D] hover:text-rose-700 text-xs tracking-wider transition-colors pt-2 cursor-pointer font-medium"
           >
             Sign Out
           </button>
@@ -316,29 +316,30 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
 
   // ── Render: Sign In / Create Account Forms ──────────────────────────
   return (
-    <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl border border-[#E8E1D5] max-w-md w-full mx-auto relative overflow-hidden">
-      {/* Ambient gold accent */}
-      <div className="absolute top-0 right-0 w-36 h-36 bg-[#C5A059]/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="bg-white p-8 sm:p-10 rounded-2xl sm:rounded-3xl shadow-xs border border-[#E8DCCF] max-w-md w-full mx-auto relative overflow-hidden">
+      {/* Ambient pink and gold accent */}
+      <div className="absolute top-0 right-0 w-36 h-36 bg-[#FCE7EC]/35 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-36 h-36 bg-[#FAF5EB]/50 rounded-full blur-3xl pointer-events-none"></div>
 
       {/* Brand Icon Header */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-8 relative z-10">
         <img
           src="/logo.png"
           alt="Sunbloom Adorn"
-          className="w-16 h-16 mx-auto rounded-full object-cover shadow-sm ring-2 ring-[#C5A059]/30 mb-3"
+          className="w-16 h-16 mx-auto rounded-full object-cover shadow-xs ring-2 ring-[#DFC598]/40 mb-3"
         />
-        <h3 className="font-serif text-2xl sm:text-3xl text-stone-900 font-normal">Sunbloom Adorn</h3>
-        <p className="text-xs text-stone-500 font-light mt-0.5">Haute Jewellery Atelier</p>
+        <h3 className="font-heading text-2xl sm:text-3xl text-[#2A1C19] font-normal">Sunbloom Adorn</h3>
+        <p className="text-xs text-[#7A223B] font-medium mt-0.5 tracking-wider uppercase">Haute Jewellery Atelier</p>
       </div>
 
       {/* Tab Controls: Sign In vs Create Account */}
-      <div className="flex border-b border-[#F0EAE1] mb-7">
+      <div className="flex border-b border-[#FAF6F0] mb-7 relative z-10">
         <button
           type="button"
           id="tab-sign-in"
           onClick={() => handleTabSwitch(true)}
           className={`flex-1 py-3 text-xs font-semibold uppercase tracking-widest border-b-2 transition-all cursor-pointer ${
-            isLogin ? 'border-[#C5A059] text-[#1C1612]' : 'border-transparent text-[#A89F91] hover:text-[#5C5248]'
+            isLogin ? 'border-[#7A223B] text-[#7A223B]' : 'border-transparent text-[#A8928D] hover:text-[#5C4540]'
           }`}
         >
           Sign In
@@ -348,7 +349,7 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
           id="tab-create-account"
           onClick={() => handleTabSwitch(false)}
           className={`flex-1 py-3 text-xs font-semibold uppercase tracking-widest border-b-2 transition-all cursor-pointer ${
-            !isLogin ? 'border-[#C5A059] text-[#1C1612]' : 'border-transparent text-[#A89F91] hover:text-[#5C5248]'
+            !isLogin ? 'border-[#7A223B] text-[#7A223B]' : 'border-transparent text-[#A8928D] hover:text-[#5C4540]'
           }`}
         >
           Create Account
@@ -366,11 +367,11 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
       )}
 
       {/* Authentication Form (Email & Password Only) */}
-      <form onSubmit={handleSubmit} className="space-y-4 font-sans" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-4 font-sans relative z-10" noValidate>
         {/* Full Name (Sign Up only) */}
         {!isLogin && (
           <div>
-            <label className="block text-xs font-semibold text-[#5C5248] uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
               Full Name
             </label>
             <input
@@ -380,14 +381,14 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Radhika Sharma"
               disabled={loadingAction !== null}
-              className="w-full px-4 py-3 rounded-xl bg-[#FAF7F2]/60 border border-[#E8E1D5] text-sm text-[#1C1612] focus:outline-none focus:ring-2 focus:ring-[#C5A059]/30 focus:border-[#C5A059] transition-all disabled:opacity-50"
+              className="w-full px-4 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-sm text-[#2A1C19] focus:outline-none focus:ring-1 focus:ring-[#7A223B]/20 focus:border-[#7A223B] transition-all disabled:opacity-50"
             />
           </div>
         )}
 
         {/* Email Address */}
         <div>
-          <label className="block text-xs font-semibold text-[#5C5248] uppercase tracking-wider mb-1.5">
+          <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
             Email Address
           </label>
           <input
@@ -397,20 +398,20 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@example.com"
             disabled={loadingAction !== null}
-            className="w-full px-4 py-3 rounded-xl bg-[#FAF7F2]/60 border border-[#E8E1D5] text-sm text-[#1C1612] focus:outline-none focus:ring-2 focus:ring-[#C5A059]/30 focus:border-[#C5A059] transition-all disabled:opacity-50"
+            className="w-full px-4 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-sm text-[#2A1C19] focus:outline-none focus:ring-1 focus:ring-[#7A223B]/20 focus:border-[#7A223B] transition-all disabled:opacity-50"
           />
         </div>
 
         {/* Password */}
         <div>
           <div className="flex justify-between items-center mb-1.5">
-            <label className="block text-xs font-semibold text-[#5C5248] uppercase tracking-wider">
+            <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider">
               Password
             </label>
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="text-[11px] text-[#A89F91] hover:text-[#C5A059] transition-colors cursor-pointer"
+              className="text-[11px] text-[#A8928D] hover:text-[#7A223B] transition-colors cursor-pointer"
             >
               {showPassword ? 'Hide' : 'Show'}
             </button>
@@ -422,7 +423,7 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
             disabled={loadingAction !== null}
-            className="w-full px-4 py-3 rounded-xl bg-[#FAF7F2]/60 border border-[#E8E1D5] text-sm text-[#1C1612] focus:outline-none focus:ring-2 focus:ring-[#C5A059]/30 focus:border-[#C5A059] transition-all disabled:opacity-50"
+            className="w-full px-4 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-sm text-[#2A1C19] focus:outline-none focus:ring-1 focus:ring-[#7A223B]/20 focus:border-[#7A223B] transition-all disabled:opacity-50"
           />
         </div>
 
@@ -430,13 +431,13 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
         {!isLogin && (
           <div>
             <div className="flex justify-between items-center mb-1.5">
-              <label className="block text-xs font-semibold text-[#5C5248] uppercase tracking-wider">
+              <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider">
                 Confirm Password
               </label>
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="text-[11px] text-[#A89F91] hover:text-[#C5A059] transition-colors cursor-pointer"
+                className="text-[11px] text-[#A8928D] hover:text-[#7A223B] transition-colors cursor-pointer"
               >
                 {showConfirmPassword ? 'Hide' : 'Show'}
               </button>
@@ -448,7 +449,7 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
               disabled={loadingAction !== null}
-              className="w-full px-4 py-3 rounded-xl bg-[#FAF7F2]/60 border border-[#E8E1D5] text-sm text-[#1C1612] focus:outline-none focus:ring-2 focus:ring-[#C5A059]/30 focus:border-[#C5A059] transition-all disabled:opacity-50"
+              className="w-full px-4 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-sm text-[#2A1C19] focus:outline-none focus:ring-1 focus:ring-[#7A223B]/20 focus:border-[#7A223B] transition-all disabled:opacity-50"
             />
           </div>
         )}
@@ -458,16 +459,16 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
           type="submit"
           id="auth-submit-btn"
           disabled={loadingAction !== null}
-          className="w-full py-3.5 px-4 bg-gradient-to-r from-[#D4AF37] to-[#C5A059] hover:from-[#DFBD47] hover:to-[#D4AF37] text-[#1C1612] font-semibold text-xs uppercase tracking-widest rounded-xl shadow-gold hover:shadow-gold-lg transition-all duration-300 disabled:opacity-50 mt-3 cursor-pointer flex items-center justify-center gap-2"
+          className="w-full btn-rose-primary py-3 px-4 font-semibold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-all duration-300 disabled:opacity-50 mt-3 cursor-pointer flex items-center justify-center gap-2"
         >
           {loadingAction === 'login' && (
-            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-[#1C1612]" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
           )}
           {loadingAction === 'signup' && (
-            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-[#1C1612]" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -485,11 +486,11 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
       </form>
 
       {/* Google Sign In — Available on both Sign In and Sign Up tabs */}
-      <div className="relative my-6 text-center">
+      <div className="relative my-6 text-center z-10">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-[#F0EAE1]" />
+          <div className="w-full border-t border-[#FAF6F0]" />
         </div>
-        <span className="relative bg-white px-3 text-[11px] text-[#A89F91] uppercase tracking-widest font-medium">
+        <span className="relative bg-white px-3 text-[10px] text-[#A8928D] uppercase tracking-widest font-semibold">
           Or continue with
         </span>
       </div>
@@ -499,11 +500,11 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
         id="google-auth-btn"
         onClick={handleGoogleAuth}
         disabled={loadingAction !== null}
-        className="w-full py-3.5 px-4 bg-white hover:bg-[#FAF7F2] border border-[#E8E1D5] hover:border-[#C5A059]/50 text-[#1C1612] font-medium text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-3 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
+        className="w-full py-2.5 px-4 bg-white hover:bg-[#FAF6F0] border border-[#E8DCCF] hover:border-[#DFC598] text-[#2A1C19] font-medium text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-3 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer relative z-10"
       >
         {loadingAction === 'google' ? (
           <>
-            <svg className="animate-spin h-4 w-4 text-[#C5A059]" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin h-4 w-4 text-[#7A223B]" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -536,12 +537,12 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
 
       {/* Popup-Blocked Fallback Option */}
       {popupBlocked && (
-        <div className="mt-3 text-center">
+        <div className="mt-3 text-center relative z-10">
           <button
             type="button"
             id="google-redirect-btn"
             onClick={handleGoogleRedirectAuth}
-            className="text-xs text-[#C5A059] hover:underline font-sans cursor-pointer"
+            className="text-xs text-[#7A223B] hover:underline font-sans cursor-pointer font-medium"
           >
             Browser blocked popup? Click here to continue with redirect
           </button>

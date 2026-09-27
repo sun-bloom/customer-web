@@ -1,90 +1,79 @@
 @import "tailwindcss";
 
 :root {
-  /* Sunbloom Adorn — Warm Ivory, Champagne Gold, Deep Espresso, Soft Amber */
-  --background: oklch(0.985 0.008 85); /* #FDFBF7 warm ivory */
-  --foreground: oklch(0.18 0.015 55); /* #1C1917 deep espresso */
-  --card: oklch(1.000 0 0); /* #FFFFFF crisp pearl */
-  --card-foreground: oklch(0.18 0.015 55);
-  --popover: oklch(1.000 0 0);
-  --popover-foreground: oklch(0.18 0.015 55);
+  /* Sunbloom Adorn — Refined Pink + Gold Haute Jewellery Theme */
   
-  /* Primary brand gold: #C5A059 */
-  --primary: oklch(0.72 0.12 78);
-  --primary-foreground: oklch(0.99 0.005 85);
+  /* Neutral Canvas: 60% Warm Ivory & Soft Cream */
+  --background: #FCF9F5;
+  --foreground: #2A1C19;
+  --card: #FFFFFF;
+  --card-foreground: #2A1C19;
+  --popover: #FFFFFF;
+  --popover-foreground: #2A1C19;
   
-  /* Secondary warm linen: #F5EFEB */
-  --secondary: oklch(0.95 0.025 80);
-  --secondary-foreground: oklch(0.25 0.03 55);
+  /* Primary: Deep Rose for high-contrast text & slim buttons */
+  --primary: #7A223B;
+  --primary-foreground: #FFF9FA;
   
-  /* Muted warm stone: #F0EAE1 */
-  --muted: oklch(0.94 0.015 80);
-  --muted-foreground: oklch(0.48 0.025 60);
+  /* Secondary: Soft Rose & Blush */
+  --secondary: #FCE7EC;
+  --secondary-foreground: #5E152A;
   
-  /* Accent radiant solar gold: #D4AF37 */
-  --accent: oklch(0.78 0.14 82);
-  --accent-foreground: oklch(0.18 0.015 55);
+  /* Muted: Creamy Warm Linen */
+  --muted: #F7EFE8;
+  --muted-foreground: #755B55;
   
-  --destructive: oklch(0.60 0.18 25);
-  --destructive-foreground: oklch(1.00 0 0);
+  /* Accent: Soft Champagne Gold */
+  --accent: #DFC598;
+  --accent-foreground: #2A1C19;
   
-  /* Delicate warm border: #E8E2D8 */
-  --border: oklch(0.91 0.015 80);
-  --input: oklch(0.91 0.015 80);
-  --ring: oklch(0.72 0.12 78);
+  --destructive: #B3261E;
+  --destructive-foreground: #FFFFFF;
   
-  --chart-1: oklch(0.72 0.12 78);
-  --chart-2: oklch(0.78 0.14 82);
-  --chart-3: oklch(0.85 0.08 85);
-  --chart-4: oklch(0.60 0.10 50);
-  --chart-5: oklch(0.45 0.05 45);
+  /* Fine Champagne & Blush Borders */
+  --border: #E8DCCF;
+  --input: #E8DCCF;
+  --ring: #DFC598;
   
-  --sidebar: oklch(0.985 0.008 85);
-  --sidebar-foreground: oklch(0.25 0.02 55);
-  --sidebar-primary: oklch(0.72 0.12 78);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.95 0.025 80);
-  --sidebar-accent-foreground: oklch(0.18 0.015 55);
-  --sidebar-border: oklch(0.91 0.015 80);
-  --sidebar-ring: oklch(0.72 0.12 78);
-  
+  /* Refined Design Tokens */
+  --blush-50: #FFF9FA;
+  --blush-100: #FDF2F5;
+  --blush-200: #FCE7EC;
+  --blush-300: #F9D5DF;
+  --rose-400: #E29BB0;
+  --rose-500: #C96884;
+  --rose-600: #A03856;
+  --rose-700: #7A223B;
+  --rose-800: #5E152A;
+  --rose-900: #3D0B19;
+
+  --champagne-50: #FDFCF8;
+  --champagne-100: #FAF5EB;
+  --champagne-200: #F2E5CC;
+  --champagne-300: #DFC598;
+  --champagne-400: #CFA868;
+  --champagne-500: #B88E44;
+  --champagne-600: #966F29;
+  --champagne-700: #735118;
+
+  --ivory-base: #FCF9F5;
+  --cream-soft: #FAF4EB;
+
   --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-heading: 'Cormorant Garamond', 'Outfit', Georgia, serif;
+  --font-heading: 'Cormorant Garamond', Georgia, serif;
   --font-serif: 'Cormorant Garamond', Georgia, serif;
   --font-mono: 'Roboto Mono', monospace;
   
   --radius: 0.75rem;
   
-  --shadow-2xs: 0 1px 2px 0 rgba(197, 160, 89, 0.04);
-  --shadow-xs: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 8px 16px -3px rgba(197, 160, 89, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 14px 28px -5px rgba(197, 160, 89, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-  --shadow-xl: 0 24px 38px -8px rgba(197, 160, 89, 0.15), 0 12px 14px -8px rgba(0, 0, 0, 0.04);
-  --shadow-2xl: 0 32px 54px -12px rgba(197, 160, 89, 0.20);
-}
-
-.dark {
-  --background: oklch(0.13 0.01 50);
-  --foreground: oklch(0.95 0.01 85);
-  --card: oklch(0.18 0.015 50);
-  --card-foreground: oklch(0.95 0.01 85);
-  --popover: oklch(0.18 0.015 50);
-  --popover-foreground: oklch(0.95 0.01 85);
-  --primary: oklch(0.78 0.14 82);
-  --primary-foreground: oklch(0.13 0.01 50);
-  --secondary: oklch(0.24 0.02 55);
-  --secondary-foreground: oklch(0.95 0.01 85);
-  --muted: oklch(0.24 0.015 50);
-  --muted-foreground: oklch(0.70 0.015 65);
-  --accent: oklch(0.78 0.14 82);
-  --accent-foreground: oklch(0.13 0.01 50);
-  --destructive: oklch(0.60 0.18 25);
-  --destructive-foreground: oklch(1.00 0 0);
-  --border: oklch(0.28 0.015 55);
-  --input: oklch(0.28 0.015 55);
-  --ring: oklch(0.78 0.14 82);
+  --shadow-2xs: 0 1px 2px 0 rgba(122, 34, 59, 0.03);
+  --shadow-xs: 0 1px 3px 0 rgba(42, 28, 25, 0.04);
+  --shadow-sm: 0 2px 4px 0 rgba(42, 28, 25, 0.03), 0 1px 2px -1px rgba(122, 34, 59, 0.03);
+  --shadow: 0 4px 10px -1px rgba(122, 34, 59, 0.05), 0 2px 4px -2px rgba(42, 28, 25, 0.03);
+  --shadow-md: 0 8px 18px -3px rgba(122, 34, 59, 0.06), 0 4px 6px -4px rgba(223, 197, 152, 0.08);
+  --shadow-lg: 0 14px 28px -5px rgba(122, 34, 59, 0.08), 0 8px 10px -6px rgba(223, 197, 152, 0.10);
+  --shadow-gold: 0 4px 16px -2px rgba(223, 197, 152, 0.28);
+  --shadow-rose: 0 4px 16px -2px rgba(122, 34, 59, 0.20);
 }
 
 @theme inline {
@@ -124,58 +113,101 @@
   --shadow: var(--shadow);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
-  --shadow-xl: var(--shadow-xl);
-  --shadow-2xl: var(--shadow-2xl);
 }
 
-/* Luxury typography and utility classes */
+/* Luxury Pink + Champagne Gold Mixed-Paint Visual Utilities */
 @layer utilities {
   .font-display {
     font-family: var(--font-heading);
   }
 
-  .text-gold-gradient {
-    background: linear-gradient(135deg, #A88136 0%, #D4AF37 50%, #B88E3E 100%);
+  /* Soft blended text gradients: Pink -> Rose -> Champagne Gold */
+  .text-rose-gold-gradient {
+    background: linear-gradient(135deg, #7A223B 0%, #B86B80 45%, #C9A86A 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 
-  .gold-border {
-    border-color: rgba(197, 160, 89, 0.35);
+  .text-champagne-gradient {
+    background: linear-gradient(135deg, #A88136 0%, #DFC598 60%, #C9A86A 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
-  .gold-border-glow {
-    box-shadow: 0 0 0 1px rgba(197, 160, 89, 0.25), 0 4px 16px -2px rgba(197, 160, 89, 0.15);
+  .text-blush-gold-gradient {
+    background: linear-gradient(135deg, #C96884 0%, #DFC598 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
-  .shadow-gold {
-    box-shadow: 0 4px 20px -2px rgba(197, 160, 89, 0.25);
+  /* Delicate Two-Tone Borders */
+  .border-champagne {
+    border-color: rgba(223, 197, 152, 0.50);
   }
 
-  .shadow-gold-lg {
-    box-shadow: 0 10px 30px -4px rgba(197, 160, 89, 0.35);
+  .border-rose-subtle {
+    border-color: rgba(226, 155, 176, 0.40);
   }
 
-  .sun-aura {
-    background: radial-gradient(circle at 50% 50%, rgba(254, 243, 199, 0.6) 0%, rgba(253, 246, 238, 0.2) 60%, transparent 100%);
+  /* ── SIGNATURE PINK + GOLD MIXED PAINT BLENDS ── */
+  
+  /* 1. Organic soft ambient swirl of blush pink & champagne gold */
+  .bg-paint-blend {
+    background: radial-gradient(110% 110% at 85% 15%, rgba(249, 213, 223, 0.30) 0%, rgba(253, 242, 245, 0.15) 50%, transparent 75%),
+                radial-gradient(100% 100% at 15% 85%, rgba(242, 229, 204, 0.35) 0%, rgba(250, 245, 235, 0.15) 55%, transparent 80%),
+                linear-gradient(135deg, #FCF9F5 0%, #FDF4F6 50%, #FAF4EB 100%);
   }
 
-  .glass-panel {
-    background: rgba(255, 255, 255, 0.82);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+  /* 2. Two-Tone Luxury Tile: Blush Pink dominant with champagne gold kiss */
+  .bg-paint-tile-blush {
+    background: linear-gradient(145deg, #FFF9FA 0%, #FCE7EC 60%, #FAF1E3 100%);
   }
 
-  .btn-gold {
-    background: linear-gradient(135deg, #D4AF37 0%, #C5A059 50%, #B88E3E 100%);
-    color: #1C1612;
-    font-weight: 600;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* 3. Two-Tone Luxury Tile: Champagne Gold dominant with soft blush glow */
+  .bg-paint-tile-gold {
+    background: linear-gradient(145deg, #FAF6ED 0%, #F2E5CC 60%, #FCE7EC 100%);
   }
 
-  .btn-gold:hover {
-    background: linear-gradient(135deg, #E2BF48 0%, #D4AF37 50%, #C5A059 100%);
-    box-shadow: 0 6px 24px -2px rgba(197, 160, 89, 0.35);
+  /* 4. Two-Tone Luxury Tile: Ivory + Rose Pearl */
+  .bg-paint-tile-ivory {
+    background: linear-gradient(145deg, #FFFDFB 0%, #FAF4EB 60%, #FDF2F5 100%);
+  }
+
+  /* 5. Deep Luxury Footer Palette */
+  .bg-paint-deep-rose {
+    background: radial-gradient(circle at 80% 20%, rgba(223, 197, 152, 0.12) 0%, transparent 60%),
+                linear-gradient(145deg, #2D0D19 0%, #200812 60%, #15040B 100%);
+  }
+
+  /* Refined, Slimmer Luxury Buttons */
+  .btn-rose-primary {
+    background: linear-gradient(135deg, #7A223B 0%, #5E152A 100%);
+    color: #FFF9FA;
+    border: 1px solid rgba(223, 197, 152, 0.45);
+    box-shadow: 0 2px 8px -1px rgba(122, 34, 59, 0.22);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-rose-primary:hover {
+    background: linear-gradient(135deg, #8B2E4B 0%, #6E1A33 100%);
+    border-color: rgba(223, 197, 152, 0.75);
+    box-shadow: 0 4px 14px -1px rgba(122, 34, 59, 0.32);
+    transform: translateY(-1px);
+  }
+
+  .btn-ivory-secondary {
+    background: #FCF9F5;
+    color: #7A223B;
+    border: 1px solid #DFC598;
+    box-shadow: 0 1px 3px 0 rgba(42, 28, 25, 0.03);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-ivory-secondary:hover {
+    background: #FDF2F5;
+    border-color: #7A223B;
+    color: #5E152A;
+    box-shadow: 0 3px 10px -2px rgba(223, 197, 152, 0.30);
     transform: translateY(-1px);
   }
 }
@@ -183,11 +215,15 @@
 @layer base {
   html {
     overflow-x: hidden;
+    background-color: #FCF9F5;
+    color: #2A1C19;
   }
 
   body {
     min-width: 0;
     overflow-x: hidden;
+    background-color: #FCF9F5;
+    color: #2A1C19;
   }
 
   img,
@@ -204,10 +240,10 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #FAF7F2;
+  background: #FCF9F5;
 }
 ::-webkit-scrollbar-thumb {
-  background: #D4AF37;
+  background: #E69CB0;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -222,3 +258,4 @@
     scroll-behavior: auto !important;
   }
 }
+

@@ -147,65 +147,63 @@ export async function trackOrderApi(orderNumber: string, phone: string): Promise
   );
 }
 
-// ── Razorpay Payments ─────────────────────────────────────────────────────
-export async function createRazorpayOrderApi(data: {
-  currency?: string;
-  customer: {
-    name: string;
-    phone: string;
-    whatsappNumber: string;
-    email: string;
-    address: string;
-    city: string;
-    state: string;
-    pincode: string;
-    trackingRequested: boolean;
-    addressConfirmed: boolean;
-  };
-  cartItems: any[];
-}) {
+// ── Payments & Orders ─────────────────────────────────────────────────────
+export async function createOrderApi(
+  data: {
+    currency?: string;
+    customer: {
+      name: string;
+      phone: string;
+      whatsappNumber: string;
+      email: string;
+      address: string;
+      city: string;
+      state: string;
+      pincode: string;
+      trackingRequested: boolean;
+      addressConfirmed: boolean;
+    };
+    cartItems: any[];
+  },
+  token?: string | null
+) {
   return apiFetch<{
-    razorpayOrderId: string;
+    orderId: string;
     orderNumber: string;
     amount: number;
     currency: string;
-    keyId: string;
-    environment: string;
-    prefill: { name: string; email: string; contact: string };
-  }>('/api/payments/razorpay/create-order', {
+    payuPayload?: Record<string, string>;
+    payuUrl?: string;
+  }>('/api/payments/create-order', {
     method: 'POST',
+    token: token || undefined,
     body: JSON.stringify(data),
   });
 }
 
-export async function verifyRazorpayPaymentApi(data: {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
+export async function verifyPaymentApi(data: {
+  orderId: string;
+  paymentId?: string;
+  signature?: string;
 }) {
   return apiFetch<{
     success: boolean;
     orderNumber: string;
     orderId: string;
     status: string;
-  }>('/api/payments/razorpay/verify-payment', {
+  }>('/api/payments/verify-payment', {
     method: 'POST',
     body: JSON.stringify(data),
   });
 }
 
-export async function checkRazorpayStatusApi(rzpOrderId: string) {
+export async function checkPaymentStatusApi(orderId: string) {
   return apiFetch<{
     status: 'PAID' | 'FAILED' | 'ACTIVE' | 'PENDING' | string;
     orderNumber?: string;
     reason?: string;
-  }>(`/api/payments/razorpay/status/${encodeURIComponent(rzpOrderId)}`);
+  }>(`/api/payments/status/${encodeURIComponent(orderId)}`);
 }
-
-export async function getOrderByRzpIdApi(rzpOrderId: string) {
-  return apiFetch<{ orderNumber: string }>(`/api/payments/razorpay/order-by-rzp-id/${encodeURIComponent(rzpOrderId)}`);
-}
-
 
 // ── Support ──────────────────────────────────────────────────────────────
 export async function submitSupportQueryApi(data: {
@@ -254,10 +252,37 @@ export async function calculateShippingApi(data: {
     isFreeShipping: boolean;
     freeShippingThreshold: number;
     message?: string;
+    requiresEnquiry?: boolean;
     matchedRegion?: any;
   }>('/api/delivery/calculate', {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+}
+
+export async function getPostalStatesApi(): Promise<{ states: string[] }> {
+  return apiFetch<{ states: string[] }>('/api/postal/states', {
+    method: 'GET',
+  });
+}
+
+export async function getPostalDistrictsApi(state: string): Promise<{ districts: string[] }> {
+  return apiFetch<{ districts: string[] }>(`/api/postal/districts?state=${encodeURIComponent(state)}`, {
+    method: 'GET',
+  });
+}
+
+export async function verifyPostalPincodeApi(pincode: string): Promise<{
+  isValid: boolean;
+  pincode: string;
+  state: string | null;
+  district: string | null;
+  postOffices: Array<{ name: string; branchType: string; deliveryStatus: string }>;
+  isDeliverable: boolean;
+  message?: string;
+}> {
+  return apiFetch<any>(`/api/postal/verify/${encodeURIComponent(pincode)}`, {
+    method: 'GET',
   });
 }
 

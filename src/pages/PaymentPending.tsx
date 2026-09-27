@@ -1,7 +1,7 @@
 // src/pages/PaymentPending.tsx
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { checkRazorpayStatusApi, getOrderByRzpIdApi } from '../lib/api';
+import { checkPaymentStatusApi } from '../lib/api';
 import { clearCart } from '../stores/cartStore';
 import { CheckCircle2, XCircle, Clock, AlertTriangle } from 'lucide-react';
 
@@ -9,8 +9,7 @@ export const PaymentPending: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // Support both rzp_order_id (new) and cf_order_id (legacy redirect fallback)
-  const rzpOrderId = searchParams.get('rzp_order_id') || searchParams.get('order_id') || '';
+  const orderId = searchParams.get('order_id') || searchParams.get('rzp_order_id') || '';
 
   const [statusState, setStatusState] = useState<'checking' | 'success' | 'failed' | 'pending' | 'not-found'>('checking');
   const [orderNumber, setOrderNumber] = useState<string>('');
@@ -21,7 +20,7 @@ export const PaymentPending: React.FC = () => {
   const RETRY_INTERVAL = 3500;
 
   const verifyStatus = async () => {
-    if (!rzpOrderId) {
+    if (!orderId) {
       setStatusState('not-found');
       return;
     }
@@ -29,17 +28,13 @@ export const PaymentPending: React.FC = () => {
     setStatusState('checking');
 
     try {
-      const res = await checkRazorpayStatusApi(rzpOrderId);
+      const res = await checkPaymentStatusApi(orderId);
       const status = res?.status;
 
       if (status === 'PAID') {
         clearCart();
         let num = res.orderNumber;
-        if (!num) {
-          const byRzp = await getOrderByRzpIdApi(rzpOrderId).catch(() => null);
-          num = byRzp?.orderNumber;
-        }
-        setOrderNumber(num || rzpOrderId);
+        setOrderNumber(num || orderId);
         setStatusState('success');
 
         if (num) {
@@ -80,24 +75,27 @@ export const PaymentPending: React.FC = () => {
       }, retryCount === 0 ? 500 : RETRY_INTERVAL);
     }
     return () => clearTimeout(timer);
-  }, [retryCount, rzpOrderId]);
+  }, [retryCount, orderId]);
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-[#FAF7F2] px-4 py-16">
-      <div className="w-full max-w-md bg-white rounded-3xl border border-[#E8E1D5] p-8 sm:p-10 shadow-sm text-center">
+    <div className="min-h-[80vh] flex items-center justify-center bg-[#FCF9F5] px-4 py-16 relative overflow-hidden">
+      <div className="absolute top-0 right-10 w-96 h-96 rounded-full bg-[#FCE7EC]/35 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-10 w-80 h-80 rounded-full bg-[#FAF5EB]/50 blur-3xl pointer-events-none" />
+
+      <div className="w-full max-w-md bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] p-8 sm:p-10 shadow-xs text-center relative z-10">
         
         {/* Checking State */}
         {statusState === 'checking' && (
           <div className="space-y-4">
-            <div className="w-14 h-14 rounded-full border-3 border-[#C5A059]/30 border-t-[#C5A059] animate-spin mx-auto"></div>
-            <h1 className="font-heading text-2xl font-normal text-[#1C1612]">
+            <div className="w-14 h-14 rounded-full border-3 border-[#DFC598]/40 border-t-[#7A223B] animate-spin mx-auto"></div>
+            <h1 className="font-heading text-2xl font-normal text-[#2A1C19]">
               Verifying Payment
             </h1>
-            <p className="text-xs text-[#7D7063] font-light">
-              Confirming your transaction with Razorpay…
+            <p className="text-xs text-[#7D6460] font-light">
+              Confirming your transaction…
             </p>
             {retryCount > 0 && (
-              <p className="text-[11px] text-[#8A7E72]">
+              <p className="text-[11px] text-[#A8928D]">
                 Verification cycle {retryCount} of {MAX_RETRIES}…
               </p>
             )}
@@ -107,22 +105,22 @@ export const PaymentPending: React.FC = () => {
         {/* Success State */}
         {statusState === 'success' && (
           <div className="space-y-4 animate-fade-in">
-            <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-10 h-10" />
+            <div className="w-16 h-16 rounded-full bg-[#FDF2F5] border border-[#FCE7EC] text-[#7A223B] flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-10 h-10 text-[#7A223B]" />
             </div>
-            <h1 className="font-heading text-2xl font-normal text-emerald-950">
+            <h1 className="font-heading text-2xl font-normal text-[#2A1C19]">
               Payment Confirmed!
             </h1>
-            <p className="text-xs text-emerald-800">
+            <p className="text-xs text-[#7D6460]">
               Your bespoke jewellery consignment is being registered.
             </p>
             {orderNumber && (
-              <div className="p-3 rounded-2xl bg-[#FAF7F2] border border-[#E8E1D5] text-xs">
-                <span className="text-[#8A7E72] block">Consignment Number:</span>
-                <span className="font-mono font-bold text-[#1C1612] text-sm">{orderNumber}</span>
+              <div className="p-3 rounded-xl bg-[#FAF6F0] border border-[#E8DCCF] text-xs">
+                <span className="text-[#A8928D] block">Consignment Number:</span>
+                <span className="font-mono font-bold text-[#7A223B] text-sm">{orderNumber}</span>
               </div>
             )}
-            <p className="text-[11px] text-[#8A7E72] pt-2">
+            <p className="text-[11px] text-[#A8928D] pt-2">
               Redirecting to your order consignment details…
             </p>
           </div>
@@ -143,13 +141,13 @@ export const PaymentPending: React.FC = () => {
             <div className="pt-4 space-y-2">
               <Link
                 to="/payment"
-                className="block w-full py-3 rounded-2xl bg-[#1C1612] text-[#FEF3C7] text-xs font-semibold uppercase tracking-widest shadow-gold"
+                className="btn-rose-primary block w-full py-2.5 rounded-xl text-xs font-semibold uppercase tracking-widest shadow-xs text-center"
               >
                 Try Payment Again
               </Link>
               <Link
                 to="/cart"
-                className="block text-xs text-[#7D7063] hover:text-[#1C1612] pt-1"
+                className="block text-xs text-[#7A223B] hover:text-[#5E182C] pt-1 font-medium"
               >
                 ← Return to Bag
               </Link>
@@ -172,13 +170,13 @@ export const PaymentPending: React.FC = () => {
             <div className="pt-4 space-y-2">
               <button
                 onClick={() => { setRetryCount(0); verifyStatus(); }}
-                className="w-full py-3 rounded-2xl bg-[#C5A059] text-[#1C1612] text-xs font-semibold uppercase tracking-widest shadow-gold cursor-pointer"
+                className="btn-rose-primary w-full py-2.5 rounded-xl text-xs font-semibold uppercase tracking-widest shadow-xs cursor-pointer"
               >
                 Check Status Again
               </button>
               <Link
                 to="/orders"
-                className="block text-xs text-[#7D7063] hover:text-[#1C1612] pt-1"
+                className="block text-xs text-[#7A223B] hover:text-[#5E182C] pt-1 font-medium"
               >
                 View Order History
               </Link>
@@ -189,25 +187,25 @@ export const PaymentPending: React.FC = () => {
         {/* Not Found State */}
         {statusState === 'not-found' && (
           <div className="space-y-4 animate-fade-in">
-            <div className="w-16 h-16 rounded-full bg-stone-100 text-stone-500 flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-8 h-8" />
+            <div className="w-16 h-16 rounded-full bg-[#FDF2F5] border border-[#FCE7EC] text-[#7A223B] flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-8 h-8 text-[#7A223B]" />
             </div>
-            <h1 className="font-heading text-2xl font-normal text-[#1C1612]">
+            <h1 className="font-heading text-2xl font-normal text-[#2A1C19]">
               Order Reference Missing
             </h1>
-            <p className="text-xs text-[#7D7063]">
+            <p className="text-xs text-[#7D6460]">
               We could not find an active transaction session linked to this page.
             </p>
             <div className="pt-4 space-y-2">
               <Link
                 to="/orders"
-                className="block w-full py-3 rounded-2xl bg-[#1C1612] text-[#FEF3C7] text-xs font-semibold uppercase tracking-widest shadow-gold"
+                className="btn-rose-primary block w-full py-2.5 rounded-xl text-xs font-semibold uppercase tracking-widest shadow-xs text-center"
               >
                 View My Orders
               </Link>
               <Link
                 to="/"
-                className="block text-xs text-[#7D7063] hover:text-[#1C1612] pt-1"
+                className="block text-xs text-[#7A223B] hover:text-[#5E182C] pt-1 font-medium"
               >
                 Return to Home
               </Link>
@@ -219,3 +217,5 @@ export const PaymentPending: React.FC = () => {
     </div>
   );
 };
+
+export default PaymentPending;

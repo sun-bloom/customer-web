@@ -1,105 +1,336 @@
 // src/pages/Home.tsx
-// Cinematic Haute Jewellery Master Page with Continuous 3D Necklace Scroll Journey
+// Sunbloom Adorn — Master Page Redesign (Static, Premium, Luxury Jewellery Boutique UI)
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { CinematicNecklaceExperience } from '../components/home/CinematicNecklaceExperience';
 import { ProductCard } from '../components/products/ProductCard';
 import { CategoryCard } from '../components/products/CategoryCard';
 import { getProductsApi, getCategoriesApi } from '../lib/api';
 import type { Product, Category } from '../types';
 import {
-  ShieldCheck,
   Sparkles,
-  Truck,
+  ShieldCheck,
   Award,
+  Truck,
+  ArrowRight,
+  Phone,
+  Mail,
   MapPin,
   MessageCircle,
-  ArrowRight,
+  Gem,
+  Clock,
 } from 'lucide-react';
+
+// Authentic Fallback Data for Sunbloom Adorn Catalogue (Matches seed data if backend is sleeping)
+const FALLBACK_CATEGORIES: Category[] = [
+  {
+    id: 'cat-ring',
+    slug: 'ring',
+    name: 'Rings',
+    description: 'Elegant Korean minimalist rings crafted for everyday luxury and timeless styling.',
+    image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&q=80&w=800',
+  },
+  {
+    id: 'cat-necklace',
+    slug: 'necklace',
+    name: 'Necklaces',
+    description: 'Refined necklaces designed with delicate silhouettes and radiant golden detailing.',
+    image: 'https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&q=80&w=800',
+  },
+  {
+    id: 'cat-bracelet',
+    slug: 'bracelet',
+    name: 'Bracelets',
+    description: 'Minimalist bracelets designed for effortless everyday elegance.',
+    image: 'https://images.unsplash.com/photo-1573408301185-9519f94ef0ff?auto=format&fit=crop&q=80&w=800',
+  },
+  {
+    id: 'cat-earrings',
+    slug: 'earrings',
+    name: 'Earrings',
+    description: 'Elegant earrings combining clean Korean-inspired forms with timeless jewellery styling.',
+    image: 'https://images.unsplash.com/photo-1629224316810-9d8805b95e76?auto=format&fit=crop&q=80&w=800',
+  },
+  {
+    id: 'cat-pendant',
+    slug: 'pendant',
+    name: 'Pendants',
+    description: 'Statement and minimalist pendants designed around refined geometric forms.',
+    image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=800',
+  },
+];
+
+const FALLBACK_PRODUCTS: Product[] = [
+  {
+    id: 'prod-102-01',
+    name: 'Solara Fine Necklace',
+    slug: 'solara-fine-necklace',
+    category: 'necklace',
+    description: 'A delicate golden necklace inspired by the warmth and brilliance of sunlight.',
+    basePrice: 1599,
+    images: ['https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&q=80&w=800'],
+    variants: [{ id: 'v-102-01', color: 'Gold', pattern: 'Solid', stock: 20, additionalPrice: 0, sku: '102-01-GOLD', images: [], isAvailable: true }],
+    isActive: true,
+    createdAt: '2026-02-01T00:00:00Z',
+    updatedAt: '2026-02-01T00:00:00Z',
+  },
+  {
+    id: 'prod-101-01',
+    name: 'Aurora Minimal Ring',
+    slug: 'aurora-minimal-ring',
+    category: 'ring',
+    description: 'A refined minimalist ring with a polished golden finish, designed for effortless everyday elegance.',
+    basePrice: 899,
+    images: ['https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&q=80&w=800'],
+    variants: [{ id: 'v-101-01', color: 'Gold', pattern: 'Solid', stock: 25, additionalPrice: 0, sku: '101-01-GOLD', images: [], isAvailable: true }],
+    isActive: true,
+    createdAt: '2026-02-02T00:00:00Z',
+    updatedAt: '2026-02-02T00:00:00Z',
+  },
+  {
+    id: 'prod-103-01',
+    name: 'Serene Gold Bracelet',
+    slug: 'serene-gold-bracelet',
+    category: 'bracelet',
+    description: 'A lightweight minimalist bracelet with a polished golden finish.',
+    basePrice: 999,
+    images: ['https://images.unsplash.com/photo-1573408301185-9519f94ef0ff?auto=format&fit=crop&q=80&w=800'],
+    variants: [{ id: 'v-103-01', color: 'Gold', pattern: 'Solid', stock: 15, additionalPrice: 0, sku: '103-01-GOLD', images: [], isAvailable: true }],
+    isActive: true,
+    createdAt: '2026-02-03T00:00:00Z',
+    updatedAt: '2026-02-03T00:00:00Z',
+  },
+  {
+    id: 'prod-104-01',
+    name: 'Dewdrop Stud Earrings',
+    slug: 'dewdrop-stud-earrings',
+    category: 'earrings',
+    description: 'Minimalist stud earrings inspired by the soft form of morning dew.',
+    basePrice: 799,
+    images: ['https://images.unsplash.com/photo-1629224316810-9d8805b95e76?auto=format&fit=crop&q=80&w=800'],
+    variants: [{ id: 'v-104-01', color: 'Gold', pattern: 'Stud', stock: 30, additionalPrice: 0, sku: '104-01-GOLD', images: [], isAvailable: true }],
+    isActive: true,
+    createdAt: '2026-02-04T00:00:00Z',
+    updatedAt: '2026-02-04T00:00:00Z',
+  },
+  {
+    id: 'prod-102-02',
+    name: 'Celeste Layer Necklace',
+    slug: 'celeste-layer-necklace',
+    category: 'necklace',
+    description: 'A refined layered necklace designed for modern minimalist styling.',
+    basePrice: 2199,
+    images: ['https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80&w=800'],
+    variants: [{ id: 'v-102-02', color: 'Gold', pattern: 'Layered', stock: 12, additionalPrice: 0, sku: '102-02-GOLD', images: [], isAvailable: true }],
+    isActive: true,
+    createdAt: '2026-02-05T00:00:00Z',
+    updatedAt: '2026-02-05T00:00:00Z',
+  },
+  {
+    id: 'prod-105-01',
+    name: 'Sunbloom Medallion Pendant',
+    slug: 'sunbloom-medallion-pendant',
+    category: 'pendant',
+    description: 'A signature Sunbloom pendant inspired by radiant sunlight and refined geometric forms.',
+    basePrice: 2499,
+    images: ['https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=800'],
+    variants: [{ id: 'v-105-01', color: 'Gold', pattern: 'Medallion', stock: 18, additionalPrice: 0, sku: '105-01-GOLD', images: [], isAvailable: true }],
+    isActive: true,
+    createdAt: '2026-02-06T00:00:00Z',
+    updatedAt: '2026-02-06T00:00:00Z',
+  },
+  {
+    id: 'prod-101-02',
+    name: 'Luna Crystal Ring',
+    slug: 'luna-crystal-ring',
+    category: 'ring',
+    description: 'A delicate crystal-accented ring inspired by soft moonlight and Korean minimalist jewellery design.',
+    basePrice: 1299,
+    images: ['https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&q=80&w=800'],
+    variants: [{ id: 'v-101-02', color: 'Silver', pattern: 'Crystal', stock: 15, additionalPrice: 0, sku: '101-02-SLV', images: [], isAvailable: true }],
+    isActive: true,
+    createdAt: '2026-02-07T00:00:00Z',
+    updatedAt: '2026-02-07T00:00:00Z',
+  },
+  {
+    id: 'prod-103-02',
+    name: 'Halo Chain Bracelet',
+    slug: 'halo-chain-bracelet',
+    category: 'bracelet',
+    description: 'A delicate chain bracelet designed for subtle everyday luxury.',
+    basePrice: 1499,
+    images: ['https://images.unsplash.com/photo-1610694955371-d4a3e0ce4b52?auto=format&fit=crop&q=80&w=800'],
+    variants: [{ id: 'v-103-02', color: 'Gold', pattern: 'Chain', stock: 10, additionalPrice: 0, sku: '103-02-GOLD', images: [], isAvailable: true }],
+    isActive: true,
+    createdAt: '2026-02-08T00:00:00Z',
+    updatedAt: '2026-02-08T00:00:00Z',
+  },
+  {
+    id: 'prod-104-02',
+    name: 'Solstice Hoop Earrings',
+    slug: 'solstice-hoop-earrings',
+    category: 'earrings',
+    description: 'Clean circular hoops designed for versatile everyday styling.',
+    basePrice: 1299,
+    images: ['https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&q=80&w=800'],
+    variants: [{ id: 'v-104-02', color: 'Gold', pattern: 'Hoop', stock: 22, additionalPrice: 0, sku: '104-02-GOLD', images: [], isAvailable: true }],
+    isActive: true,
+    createdAt: '2026-02-09T00:00:00Z',
+    updatedAt: '2026-02-09T00:00:00Z',
+  },
+  {
+    id: 'prod-101-03',
+    name: 'Eclipse Signature Ring',
+    slug: 'eclipse-signature-ring',
+    category: 'ring',
+    description: 'A sophisticated statement ring with a clean silhouette and radiant golden finish.',
+    basePrice: 1799,
+    images: ['https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&q=80&w=800'],
+    variants: [{ id: 'v-101-03', color: 'Gold', pattern: 'Polished', stock: 14, additionalPrice: 0, sku: '101-03-GOLD', images: [], isAvailable: true }],
+    isActive: true,
+    createdAt: '2026-02-10T00:00:00Z',
+    updatedAt: '2026-02-10T00:00:00Z',
+  },
+  {
+    id: 'prod-102-03',
+    name: 'Noir Pearl Necklace',
+    slug: 'noir-pearl-necklace',
+    category: 'necklace',
+    description: 'An elegant necklace combining a dark accent with a refined golden chain.',
+    basePrice: 2699,
+    images: ['https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=800'],
+    variants: [{ id: 'v-102-03', color: 'Black Pearl', pattern: 'Classic', stock: 8, additionalPrice: 0, sku: '102-03-BLK', images: [], isAvailable: true }],
+    isActive: true,
+    createdAt: '2026-02-11T00:00:00Z',
+    updatedAt: '2026-02-11T00:00:00Z',
+  },
+  {
+    id: 'prod-105-02',
+    name: 'Azure Crystal Pendant',
+    slug: 'azure-crystal-pendant',
+    category: 'pendant',
+    description: 'A distinctive crystal pendant combining deep blue tones with a warm golden setting.',
+    basePrice: 2999,
+    images: ['https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&q=80&w=800'],
+    variants: [{ id: 'v-105-02', color: 'Blue Gold', pattern: 'Crystal', stock: 10, additionalPrice: 0, sku: '105-02-BLUE', images: [], isAvailable: true }],
+    isActive: true,
+    createdAt: '2026-02-12T00:00:00Z',
+    updatedAt: '2026-02-12T00:00:00Z',
+  },
+];
 
 export const Home: React.FC = () => {
   const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [scrollProgress, setScrollProgress] = useState(0);
 
-  // Measure Normalized Scroll Progress (0.0 at top -> 1.0 at bottom)
+  // Fetch Existing Products & Categories from Real Backend APIs with Graceful Catalog Fallback
   useEffect(() => {
-    const handleScroll = () => {
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (docHeight > 0) {
-        const progress = Math.min(1.0, Math.max(0.0, window.scrollY / docHeight));
-        setScrollProgress(progress);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Fetch Existing Products & Categories from Real Backend APIs
-  useEffect(() => {
+    let isMounted = true;
     async function loadData() {
       try {
         const [prodRes, catRes] = await Promise.all([
           getProductsApi().catch(() => ({ products: [] })),
           getCategoriesApi().catch(() => ({ categories: [] })),
         ]);
-        setProducts(prodRes.products || []);
-        setCategories(catRes.categories || []);
+
+        if (isMounted) {
+          const apiProducts = prodRes.products && prodRes.products.length > 0 ? prodRes.products : FALLBACK_PRODUCTS;
+          const apiCategories = catRes.categories && catRes.categories.length > 0 ? catRes.categories : FALLBACK_CATEGORIES;
+          setProducts(apiProducts);
+          setCategories(apiCategories);
+        }
       } catch (e) {
         console.error('Home data load error:', e);
+        if (isMounted) {
+          setProducts(FALLBACK_PRODUCTS);
+          setCategories(FALLBACK_CATEGORIES);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
     loadData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Slices for Recently Added and Highly Popular
-  const recentlyAdded = products.slice(0, 4);
-  const highlyPopular = products.length > 4 ? products.slice(4, 8) : products.slice(0, 4);
+  // Distinct Product Journey Slices
+  // 1. Recently Added (Ordered by latest creation)
+  const recentlyAdded = React.useMemo(() => {
+    return [...products]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 4);
+  }, [products]);
+
+  // 2. Most Popular (Curated highlight slice)
+  const mostPopular = React.useMemo(() => {
+    if (products.length > 4) {
+      return products.slice(4, 8);
+    }
+    return products.slice(0, 4);
+  }, [products]);
+
+
+
+  // Real Jewellery Image for the Hero: Solara Fine Necklace or first real necklace asset
+  const heroJewellery = React.useMemo(() => {
+    const foundNecklace = products.find(
+      (p) =>
+        p.slug.includes('necklace') ||
+        p.category?.toLowerCase() === 'necklace' ||
+        p.category?.toLowerCase() === 'necklaces'
+    );
+    return {
+      name: foundNecklace?.name || 'Solara Fine Necklace',
+      slug: foundNecklace?.slug || 'solara-fine-necklace',
+      price: foundNecklace?.basePrice || 1599,
+      image:
+        foundNecklace?.images?.[0] ||
+        'https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&q=80&w=1000',
+    };
+  }, [products]);
 
   return (
-    <div className="relative w-full overflow-hidden bg-[#FAF7F2]">
-      {/* ========================================================================= */}
-      {/* 3D HAUTE JEWELLERY NECKLACE — CINEMATIC SCROLL-DRIVEN VISUAL LAYER       */}
-      {/* Stays fixed/sticky in midground, travelling across all 7 homepage stages */}
-      {/* ========================================================================= */}
-      <CinematicNecklaceExperience scrollProgress={scrollProgress} />
+    <div className="w-full bg-[#FCF9F5] text-[#2A1C19]">
 
       {/* ========================================================================= */}
-      {/* SECTION 1: HERO / ATELIER INTRODUCTION                                    */}
+      {/* 1. HERO SECTION: STATIC, PREMIUM PINK + GOLD LUXURY JEWELLERY EDITORIAL    */}
+      {/* Left: Brand Eyebrow + Official Logo + Narrative + Dual Buttons            */}
+      {/* Right: High-Resolution Signature Jewellery Showcase in Pink+Gold frame     */}
       {/* ========================================================================= */}
-      <section className="relative min-h-[92vh] flex items-center z-20 pointer-events-auto">
-        {/* Soft Champagne Ambient Aura */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 right-[5%] -translate-y-1/2 w-[460px] lg:w-[680px] h-[460px] lg:h-[680px] rounded-full bg-radial from-[#FCEFC7]/35 via-[#F8E7BE]/12 to-transparent blur-3xl opacity-75"></div>
-          <div className="absolute top-1/4 left-[4%] w-[320px] h-[320px] rounded-full bg-radial from-[#FFF9EE]/70 to-transparent blur-2xl opacity-60"></div>
-        </div>
+      {/* ========================================================================= */}
+      {/* 1. HERO SECTION: STATIC, PREMIUM PINK + GOLD LUXURY JEWELLERY EDITORIAL    */}
+      {/* Left: Brand Eyebrow + Official Logo + Narrative + Dual Buttons            */}
+      {/* Right: High-Resolution Signature Jewellery Showcase in Pink+Gold frame     */}
+      {/* ========================================================================= */}
+      <section className="relative overflow-hidden pt-8 pb-14 sm:py-14 lg:py-20 border-b border-[#E8DCCF] bg-paint-blend">
+        {/* Soft Ambient Blush Pink + Champagne Gold Glow Accents */}
+        <div className="absolute top-0 right-0 w-[420px] lg:w-[600px] h-[420px] lg:h-[600px] rounded-full bg-radial from-[#F9D5DF]/30 via-[#FDF2F5]/20 to-transparent blur-3xl pointer-events-none -z-0"></div>
+        <div className="absolute bottom-0 left-0 w-[360px] h-[360px] rounded-full bg-radial from-[#F2E5CC]/35 via-[#FAF5EB]/20 to-transparent blur-3xl pointer-events-none -z-0"></div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-12 lg:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             
-            {/* Left Column: Official Logo + Editorial Narrative + CTAs */}
-            <div className="lg:col-span-6 xl:col-span-6 text-center lg:text-left space-y-6">
+            {/* LEFT COLUMN: Brand Narrative & Dual CTAs */}
+            <div className="lg:col-span-6 xl:col-span-6 text-center lg:text-left space-y-5 sm:space-y-6">
               
-              {/* Haute Jewellery Atelier Pill Badge */}
+              {/* Small Haute Atelier Eyebrow */}
               <div>
-                <span className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-[#9E7B31] font-medium font-sans inline-block bg-[#FAF7F2]/90 px-4 py-1.5 rounded-full border border-[#C5A059]/35 shadow-2xs backdrop-blur-xs">
-                  Haute Jewellery Atelier
+                <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[10px] sm:text-xs uppercase tracking-[0.26em] text-[#7A223B] font-medium bg-[#FFF9FA] border border-[#DFC598]/60 shadow-2xs backdrop-blur-xs">
+                  <Sparkles className="w-3.5 h-3.5 text-[#DFC598]" />
+                  <span>Haute Jewellery Atelier</span>
                 </span>
               </div>
 
-              {/* Official Sunbloom Adorn Logo (Source of Truth, transparent, zero white box) */}
+              {/* Official Sunbloom Adorn Logo */}
               <div className="flex justify-center lg:justify-start">
                 <img
                   src="/logo.png"
                   alt="Sunbloom Adorn — Haute Jewellery Atelier Official Logo"
-                  className="w-auto h-auto max-w-[260px] sm:max-w-[340px] xl:max-w-[380px] object-contain transition-transform duration-500 hover:scale-[1.02]"
+                  className="w-auto h-auto max-w-[240px] sm:max-w-[290px] xl:max-w-[320px] object-contain transition-transform duration-300 hover:scale-[1.01]"
                   style={{ mixBlendMode: 'multiply' }}
                   loading="eager"
                   decoding="async"
@@ -107,127 +338,183 @@ export const Home: React.FC = () => {
               </div>
 
               {/* Brand Description */}
-              <p className="text-sm sm:text-base xl:text-lg text-[#5C5248] font-sans font-light leading-relaxed max-w-lg mx-auto lg:mx-0">
-                Where sunlight meets adornment. Discover handcrafted anti-tarnish fine jewellery rooted in Korean minimalist aesthetics.
+              <p className="text-xs sm:text-sm xl:text-base text-[#5E4742] font-light leading-relaxed max-w-lg mx-auto lg:mx-0">
+                Where radiant sunlight meets bespoke adornment. Discover handcrafted anti-tarnish fine jewellery rooted in Korean minimalist elegance and lifelong lustre.
               </p>
 
-              {/* CTA Navigation Buttons */}
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-                {user ? (
-                  <>
-                    <Link
-                      to="/dashboard"
-                      className="group inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-[#1C1612] text-[#FEF3C7] hover:bg-[#2A231D] text-xs uppercase tracking-[0.22em] font-medium shadow-gold hover:shadow-gold-lg transition-all duration-500 hover:scale-105 active:scale-95"
-                    >
-                      <span>Enter Dashboard</span>
-                      <span className="text-[#C5A059] transform group-hover:translate-x-1 transition-transform">→</span>
-                    </Link>
-                    <Link
-                      to="/products"
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[#D1C7BA] hover:border-[#C5A059] text-[#1C1612] text-xs uppercase tracking-[0.18em] font-medium transition-all hover:bg-white/60"
-                    >
-                      View Catalog
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      to="/login?mode=login"
-                      className="group inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-[#1C1612] text-[#FEF3C7] hover:bg-[#2A231D] text-xs uppercase tracking-[0.22em] font-medium shadow-gold hover:shadow-gold-lg transition-all duration-500 hover:scale-105 active:scale-95"
-                    >
-                      <span>Enter Atelier</span>
-                      <span className="text-[#C5A059] transform group-hover:translate-x-1 transition-transform">→</span>
-                    </Link>
-                    <Link
-                      to="/products"
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[#D1C7BA] hover:border-[#C5A059] text-[#1C1612] text-xs uppercase tracking-[0.18em] font-medium transition-all hover:bg-white/60"
-                    >
-                      View Catalog
-                    </Link>
-                  </>
-                )}
+              {/* Dual Action CTAs: Shop Collection & View Categories (Slim & Refined) */}
+              <div className="pt-1 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
+                <Link
+                  to="/products"
+                  className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl sm:rounded-2xl btn-rose-primary text-xs uppercase tracking-[0.16em] font-medium shadow-xs transition-all duration-300 active:scale-98"
+                >
+                  <span>Shop Collection</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#DFC598] group-hover:translate-x-1 transition-transform" />
+                </Link>
+
+                <Link
+                  to="/categories"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl sm:rounded-2xl btn-ivory-secondary text-xs uppercase tracking-[0.14em] font-medium transition-all shadow-2xs"
+                >
+                  <span>View Categories</span>
+                </Link>
               </div>
 
-              {/* Scroll to Bloom Indicator */}
-              <div className="pt-2 flex items-center justify-center lg:justify-start gap-3 text-[#8A7E72] opacity-80">
-                <div className="w-3.5 h-6 rounded-full border border-[#8A7E72] p-0.5 flex justify-center">
-                  <div className="w-1 h-1.5 rounded-full bg-[#C5A059] animate-bounce"></div>
+              {/* Reassurance Badges */}
+              <div className="pt-3 border-t border-[#E8DCCF]/80 flex flex-wrap items-center justify-center lg:justify-start gap-3.5 sm:gap-5 text-[11px] text-[#755B55]">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#DFC598]" />
+                  <span>18K PVD Waterproof Gold</span>
                 </div>
-                <span className="text-[10px] uppercase tracking-[0.25em] font-sans font-medium">
-                  Scroll to bloom
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#DFC598]" />
+                  <span>Pure 316L Stainless Steel</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-[#DFC598]" />
+                  <span>Anti-Tarnish Lustre</span>
+                </div>
               </div>
+
             </div>
 
-            {/* Right Column: Generous Spatial Area where the 3D Necklace floats prominently */}
-            <div className="lg:col-span-6 xl:col-span-6 min-h-[320px] lg:min-h-[480px] pointer-events-none"></div>
+            {/* RIGHT COLUMN: Static, Clean, High-End Jewellery Presentation */}
+            <div className="lg:col-span-6 xl:col-span-6 flex justify-center">
+              <div className="relative w-full max-w-[420px] lg:max-w-[460px]">
+                
+                {/* Decorative Champagne Outline Frame */}
+                <div className="absolute -inset-2.5 sm:-inset-3 rounded-[32px] border border-[#DFC598]/40 pointer-events-none -z-0"></div>
+
+                {/* Primary Image Card */}
+                <div className="relative rounded-[24px] sm:rounded-[28px] overflow-hidden bg-white border border-[#E8DCCF] shadow-md group">
+                  
+                  {/* Subtle Top Atelier Tag */}
+                  <div className="absolute top-3.5 left-3.5 z-10">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase tracking-widest font-semibold bg-[#FFF9FA]/95 text-[#7A223B] border border-[#DFC598]/50 shadow-2xs backdrop-blur-xs">
+                      <Gem className="w-3 h-3 text-[#DFC598]" />
+                      <span>Signature Creation</span>
+                    </span>
+                  </div>
+
+                  {/* High Quality Real Necklace Image */}
+                  <div className="aspect-4/5 overflow-hidden bg-[#FAF4EF]">
+                    <img
+                      src={heroJewellery.image}
+                      alt={heroJewellery.name}
+                      className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-700 ease-out"
+                      loading="eager"
+                      decoding="async"
+                    />
+                  </div>
+
+                  {/* Clean Bottom Overlay Card */}
+                  <div className="p-4 sm:p-4.5 bg-white/95 backdrop-blur-xs border-t border-[#F4ECE5] flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-widest text-[#7A223B] font-medium block">
+                        Haute Fine Jewellery
+                      </span>
+                      <h3 className="font-heading text-base sm:text-lg font-normal text-[#2A1C19]">
+                        {heroJewellery.name}
+                      </h3>
+                      <p className="text-xs text-[#755B55] mt-0.5 font-light">
+                        18K Gold Plated • Waterproof • Anti-Tarnish
+                      </p>
+                    </div>
+
+                    <Link
+                      to={`/products/${heroJewellery.slug}`}
+                      className="inline-flex items-center justify-center w-9 h-9 rounded-xl btn-rose-primary transition-colors shadow-2xs"
+                      title="View piece"
+                      aria-label={`View ${heroJewellery.name}`}
+                    >
+                      <ArrowRight className="w-4 h-4 text-[#DFC598]" />
+                    </Link>
+                  </div>
+
+                </div>
+
+                {/* Floating Aesthetic Corner Pill */}
+                <div className="hidden sm:flex absolute -bottom-2.5 -left-2.5 bg-[#FFF9FA] border border-[#DFC598]/60 px-3 py-1 rounded-full shadow-sm items-center gap-2 text-[10px] uppercase tracking-widest text-[#7A223B] font-medium z-10">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#DFC598]"></span>
+                  <span>Korean Minimalist Atelier</span>
+                </div>
+
+              </div>
+            </div>
 
           </div>
         </div>
       </section>
 
       {/* ========================================================================= */}
-      {/* SECTION 2: BRAND STORY & CRAFTSMANSHIP (ATELIER STANDARDS)                */}
-      {/* The 3D Necklace glides toward the left background while cards take front  */}
+      {/* 2. SIGNATURE PINK + GOLD TWO-TONE LUXURY TILES BLOCK                       */}
+      {/* Editorial Luxury Language: Blush Pink, Champagne Gold, Ivory, Soft Rose    */}
       {/* ========================================================================= */}
-      <section className="relative z-20 py-20 lg:py-28 border-y border-[#E8E1D5] bg-white/80 backdrop-blur-sm pointer-events-auto">
+      <section className="py-12 sm:py-16 bg-[#FCF9F5] border-b border-[#E8DCCF]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-2">
-            <span className="text-[11px] uppercase tracking-[0.3em] text-[#C5A059] font-medium block">
-              The Atelier Standard
-            </span>
-            <h2 className="font-heading text-3xl sm:text-4xl text-[#1C1612] font-normal">
-              Craftsmanship <span className="font-serif italic text-[#C5A059]">Never Meant to Fade</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-[#7D7063] font-light max-w-xl mx-auto">
-              Every curve, chain, and bezel is engineered with surgical-grade metallurgy, dipped in waterproof 18K gold.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
             
-            {/* Value Card 1 */}
-            <div className="bg-[#FAF7F2]/90 border border-[#E8E1D5] p-6 rounded-2xl text-center space-y-3 shadow-2xs hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-full bg-white border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059] mx-auto">
-                <Sparkles className="w-6 h-6" />
+            {/* Tile 1: Blush Pink Dominant */}
+            <div className="bg-paint-tile-blush p-5 sm:p-6 rounded-2xl border border-[#DFC598]/40 shadow-2xs space-y-2.5 relative overflow-hidden group hover:border-[#7A223B]/40 transition-all">
+              <div className="w-9 h-9 rounded-xl bg-white border border-[#E8DCCF] flex items-center justify-center text-[#7A223B]">
+                <Sparkles className="w-4.5 h-4.5 text-[#DFC598]" />
               </div>
-              <h4 className="font-heading text-base font-semibold text-[#1C1612]">Anti-Tarnish Lustre</h4>
-              <p className="text-xs text-[#7D7063] leading-relaxed">
-                Waterproof 18K physical vapor deposition (PVD) coating resisting perfumes, moisture, and sweat.
+              <span className="text-[10px] uppercase tracking-[0.24em] text-[#7A223B] font-semibold block">
+                PVD 18K Gold
+              </span>
+              <h3 className="font-heading text-lg font-normal text-[#2A1C19]">
+                Waterproof Lustre
+              </h3>
+              <p className="text-xs text-[#755B55] font-light leading-relaxed">
+                Engineered for daily resilience against water, heat, and moisture without tarnishing.
               </p>
             </div>
 
-            {/* Value Card 2 */}
-            <div className="bg-[#FAF7F2]/90 border border-[#E8E1D5] p-6 rounded-2xl text-center space-y-3 shadow-2xs hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-full bg-white border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059] mx-auto">
-                <Award className="w-6 h-6" />
+            {/* Tile 2: Champagne Gold Dominant */}
+            <div className="bg-paint-tile-gold p-5 sm:p-6 rounded-2xl border border-[#DFC598]/50 shadow-2xs space-y-2.5 relative overflow-hidden group hover:border-[#DFC598] transition-all">
+              <div className="w-9 h-9 rounded-xl bg-white border border-[#DFC598]/50 flex items-center justify-center text-[#DFC598]">
+                <Gem className="w-4.5 h-4.5 text-[#7A223B]" />
               </div>
-              <h4 className="font-heading text-base font-semibold text-[#1C1612]">Bespoke Craft</h4>
-              <p className="text-xs text-[#7D7063] leading-relaxed">
-                Refined Korean minimalist design philosophy balancing delicate grace with daily durability.
+              <span className="text-[10px] uppercase tracking-[0.24em] text-[#A88136] font-semibold block">
+                Atelier Craft
+              </span>
+              <h3 className="font-heading text-lg font-normal text-[#2A1C19]">
+                Korean Minimalism
+              </h3>
+              <p className="text-xs text-[#755B55] font-light leading-relaxed">
+                Featherlight silhouettes and clean geometric curves designed for modern styling.
               </p>
             </div>
 
-            {/* Value Card 3 */}
-            <div className="bg-[#FAF7F2]/90 border border-[#E8E1D5] p-6 rounded-2xl text-center space-y-3 shadow-2xs hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-full bg-white border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059] mx-auto">
-                <Truck className="w-6 h-6" />
+            {/* Tile 3: Ivory Pearl Dominant */}
+            <div className="bg-paint-tile-ivory p-5 sm:p-6 rounded-2xl border border-[#E8DCCF] shadow-2xs space-y-2.5 relative overflow-hidden group hover:border-[#DFC598]/60 transition-all">
+              <div className="w-9 h-9 rounded-xl bg-white border border-[#E8DCCF] flex items-center justify-center text-[#7A223B]">
+                <ShieldCheck className="w-4.5 h-4.5 text-[#DFC598]" />
               </div>
-              <h4 className="font-heading text-base font-semibold text-[#1C1612]">Insured Dispatch</h4>
-              <p className="text-xs text-[#7D7063] leading-relaxed">
-                Pan-India insured courier consignments with dedicated tracking from our Tamil Nadu atelier.
+              <span className="text-[10px] uppercase tracking-[0.24em] text-[#7A223B] font-semibold block">
+                Hypoallergenic
+              </span>
+              <h3 className="font-heading text-lg font-normal text-[#2A1C19]">
+                316L Stainless Steel
+              </h3>
+              <p className="text-xs text-[#755B55] font-light leading-relaxed">
+                Medical-grade foundation, 100% nickel-free and safe for the most delicate skin.
               </p>
             </div>
 
-            {/* Value Card 4 */}
-            <div className="bg-[#FAF7F2]/90 border border-[#E8E1D5] p-6 rounded-2xl text-center space-y-3 shadow-2xs hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 rounded-full bg-white border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059] mx-auto">
-                <ShieldCheck className="w-6 h-6" />
+            {/* Tile 4: Soft Rose Pearl Dominant */}
+            <div className="bg-paint-tile-blush p-5 sm:p-6 rounded-2xl border border-[#DFC598]/40 shadow-2xs space-y-2.5 relative overflow-hidden group hover:border-[#7A223B]/40 transition-all">
+              <div className="w-9 h-9 rounded-xl bg-white border border-[#E8DCCF] flex items-center justify-center text-[#7A223B]">
+                <Award className="w-4.5 h-4.5 text-[#DFC598]" />
               </div>
-              <h4 className="font-heading text-base font-semibold text-[#1C1612]">Pure Hypoallergenic</h4>
-              <p className="text-xs text-[#7D7063] leading-relaxed">
-                Pure 316L medical-grade stainless steel foundation, nickel-free and gentle on delicate skin.
+              <span className="text-[10px] uppercase tracking-[0.24em] text-[#7A223B] font-semibold block">
+                Bespoke Quality
+              </span>
+              <h3 className="font-heading text-lg font-normal text-[#2A1C19]">
+                Timeless Brilliance
+              </h3>
+              <p className="text-xs text-[#755B55] font-light leading-relaxed">
+                Hand-inspected in our Tamil Nadu ateliers before insured dispatch across India.
               </p>
             </div>
 
@@ -236,201 +523,332 @@ export const Home: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* SECTION 3: CURATED CATEGORIES / JEWELLERY UNIVERSES                       */}
-      {/* The 3D Necklace glides toward the right background, framing collection cards */}
+      {/* 3. CATEGORIES SECTION: SHOP BY CATEGORY                                   */}
       {/* ========================================================================= */}
       {categories.length > 0 && (
-        <section className="relative z-20 py-20 lg:py-28 bg-[#FAF7F2]/85 pointer-events-auto">
+        <section className="py-14 sm:py-18 lg:py-22 bg-[#FCF9F5]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
+            
+            {/* Section Header */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 sm:mb-10 gap-4">
               <div>
-                <span className="text-[11px] uppercase tracking-[0.28em] text-[#C5A059] font-medium block mb-2">
+                <span className="text-[10px] sm:text-xs uppercase tracking-[0.28em] text-[#7A223B] font-medium block mb-1.5">
                   Curated Universes
                 </span>
-                <h2 className="font-heading text-3xl sm:text-4xl text-[#1C1612] font-normal">
-                  Signature <span className="font-serif italic text-[#C5A059]">Collections</span>
+                <h2 className="font-heading text-2xl sm:text-4xl text-[#2A1C19] font-normal">
+                  Shop by <span className="font-serif italic text-rose-gold-gradient">Category</span>
                 </h2>
+                <p className="text-xs sm:text-sm text-[#755B55] font-light mt-1 max-w-md">
+                  Explore our signature realms, each handcrafted to bring effortless brilliance to your daily light.
+                </p>
               </div>
+
               <Link
                 to="/categories"
-                className="text-xs uppercase tracking-widest font-medium text-[#1C1612] hover:text-[#C5A059] transition-colors inline-flex items-center gap-1.5"
+                className="text-xs uppercase tracking-widest font-medium text-[#7A223B] hover:text-[#5E152A] transition-colors inline-flex items-center gap-1.5 shrink-0"
               >
-                <span>Explore All Universes</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <span>View All Categories</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#DFC598]" />
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {/* Category Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5">
               {categories.map((cat) => (
                 <CategoryCard key={cat.id} category={cat} />
               ))}
             </div>
+
           </div>
         </section>
       )}
 
       {/* ========================================================================= */}
-      {/* SECTION 4: RECENTLY ADDED / LATEST CREATIONS                              */}
-      {/* The 3D Necklace recedes deeper in perspective; real product cards focus   */}
+      {/* 4. RECENTLY ADDED: FRESH FROM THE ATELIER                                 */}
+      {/* Uses Existing Products API (Desktop 4, Tablet 2-3, Mobile 2)               */}
       {/* ========================================================================= */}
       {recentlyAdded.length > 0 && (
-        <section className="relative z-20 py-20 lg:py-28 bg-white/90 border-t border-[#E8E1D5] pointer-events-auto">
+        <section className="py-14 sm:py-18 lg:py-22 bg-white border-t border-[#E8DCCF]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
+            
+            {/* Section Header */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 sm:mb-10 gap-4">
               <div>
-                <span className="text-[11px] uppercase tracking-[0.28em] text-[#C5A059] font-medium block mb-2">
-                  Fresh from the Atelier Bench
+                <span className="text-[10px] sm:text-xs uppercase tracking-[0.28em] text-[#7A223B] font-medium block mb-1.5">
+                  Fresh from the Atelier
                 </span>
-                <h2 className="font-heading text-3xl sm:text-4xl text-[#1C1612] font-normal">
-                  Recently <span className="font-serif italic text-[#C5A059]">Added</span>
+                <h2 className="font-heading text-2xl sm:text-4xl text-[#2A1C19] font-normal">
+                  Recently <span className="font-serif italic text-rose-gold-gradient">Added</span>
                 </h2>
+                <p className="text-xs sm:text-sm text-[#755B55] font-light mt-1 max-w-md">
+                  The latest handcrafted creations fresh off our Coimbatore &amp; Coonoor atelier benches.
+                </p>
               </div>
+
               <Link
                 to="/products"
-                className="text-xs uppercase tracking-widest font-medium text-[#1C1612] hover:text-[#C5A059] transition-colors inline-flex items-center gap-1.5"
+                className="text-xs uppercase tracking-widest font-medium text-[#7A223B] hover:text-[#DFC598] transition-colors inline-flex items-center gap-1.5 shrink-0"
               >
                 <span>View Full Catalog</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3.5 h-3.5 text-[#DFC598]" />
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            {/* Responsive Products Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-7">
               {recentlyAdded.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={`recent-${product.id}`} product={product} />
               ))}
             </div>
+
           </div>
         </section>
       )}
 
       {/* ========================================================================= */}
-      {/* SECTION 5: HIGHLY POPULAR / ATELIER BESTSELLERS                           */}
-      {/* The 3D Necklace pirouettes in center; curated highlights showcased       */}
+      {/* 5. MOST POPULAR: CHERISHED BY CONNOISSEURS                                */}
+      {/* Uses Existing Products Data safely                                        */}
       {/* ========================================================================= */}
-      {highlyPopular.length > 0 && (
-        <section className="relative z-20 py-20 lg:py-28 bg-[#FAF7F2]/85 border-t border-[#E8E1D5] pointer-events-auto">
+      {mostPopular.length > 0 && (
+        <section className="py-14 sm:py-18 lg:py-22 bg-[#FAF6F0] border-t border-[#E8DCCF]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
+            
+            {/* Section Header */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 sm:mb-10 gap-4">
               <div>
-                <span className="text-[11px] uppercase tracking-[0.28em] text-[#C5A059] font-medium block mb-2">
+                <span className="text-[10px] sm:text-xs uppercase tracking-[0.28em] text-[#7A223B] font-medium block mb-1.5">
                   Cherished by Connoisseurs
                 </span>
-                <h2 className="font-heading text-3xl sm:text-4xl text-[#1C1612] font-normal">
-                  Highly <span className="font-serif italic text-[#C5A059]">Popular</span>
+                <h2 className="font-heading text-2xl sm:text-4xl text-[#2A1C19] font-normal">
+                  Most <span className="font-serif italic text-rose-gold-gradient">Popular</span>
                 </h2>
+                <p className="text-xs sm:text-sm text-[#755B55] font-light mt-1 max-w-md">
+                  Timeless designs most cherished by our discerning patrons for everyday grace and gifting.
+                </p>
               </div>
-              <span className="text-xs uppercase tracking-widest text-[#8A7E72] font-sans font-medium">
-                ✦ Bespoke Curation
-              </span>
+
+              <Link
+                to="/products"
+                className="text-xs uppercase tracking-widest font-medium text-[#7A223B] hover:text-[#DFC598] transition-colors inline-flex items-center gap-1.5 shrink-0"
+              >
+                <span>Explore Popular</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#DFC598]" />
+              </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-              {highlyPopular.map((product) => (
+            {/* Responsive Products Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-7">
+              {mostPopular.map((product) => (
                 <ProductCard key={`popular-${product.id}`} product={product} />
               ))}
             </div>
+
           </div>
         </section>
       )}
 
+
+
       {/* ========================================================================= */}
-      {/* SECTION 6: ATELIER PHILOSOPHY & MANIFESTO                                 */}
-      {/* Dark editorial typography contrasting with muted gold accents            */}
+      {/* 7. BRAND STORY / SHOP INFORMATION: THE SUNBLOOM ADORN STORY               */}
+      {/* Authentic craftsmanship story & four atelier pillars                      */}
       {/* ========================================================================= */}
-      <section className="relative z-20 py-24 md:py-32 bg-[#1C1612] text-[#FAF7F2] overflow-hidden pointer-events-auto">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6 relative z-10">
-          <span className="text-xs uppercase tracking-[0.3em] text-[#D4AF37] font-medium">
-            Our Atelier Philosophy
-          </span>
-          <h2 className="font-heading text-3xl sm:text-5xl font-normal leading-tight">
-            "Designed for everyday light. Crafted never to fade."
-          </h2>
-          <p className="text-sm sm:text-base text-[#B8ADA0] font-light leading-relaxed max-w-2xl mx-auto">
-            Sunbloom Adorn was born from a desire for fine jewellery that defies time. Each creation is meticulously cast, polished, and finished with waterproof PVD golden brilliance, ensuring it accompanies you through every chapter of life.
-          </p>
-          <div className="pt-4">
-            <Link
-              to="/about"
-              className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full border border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#1C1612] text-xs uppercase tracking-[0.2em] font-medium transition-all duration-300"
-            >
-              <span>Discover Our Heritage</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+      <section className="py-16 lg:py-24 bg-[#FAF6F0] border-t border-[#E8DCCF] relative overflow-hidden">
+        <div className="absolute top-0 right-1/4 w-96 h-96 rounded-full bg-[#FCE7EC]/40 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 rounded-full bg-[#F2E5CC]/40 blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          
+          {/* Main Story Narrative */}
+          <div className="max-w-3xl mx-auto text-center space-y-3.5 mb-14">
+            <span className="text-[10px] sm:text-xs uppercase tracking-[0.28em] text-[#7A223B] font-medium block">
+              The Sunbloom Adorn Story
+            </span>
+            <h2 className="font-heading text-3xl sm:text-5xl text-[#2A1C19] font-normal leading-tight">
+              Craftsmanship <span className="font-serif italic text-rose-gold-gradient">Never Meant to Fade</span>
+            </h2>
+            <p className="text-xs sm:text-sm text-[#5E4742] font-light leading-relaxed">
+              Sunbloom Adorn was born from a desire for fine jewellery that defies time. Rooted in Korean minimalist aesthetics and refined in our Tamil Nadu ateliers, each creation balances delicate grace with lifelong durability.
+            </p>
+            <p className="text-xs sm:text-sm text-[#755B55] font-light leading-relaxed">
+              Every ring, necklace, bracelet, and pendant is forged in surgical-grade 316L stainless steel, dipped in waterproof 18K gold via advanced Physical Vapor Deposition (PVD). The result is pure, hypoallergenic brilliance that withstands perfumes, moisture, and daily wear without tarnishing.
+            </p>
+            <div className="pt-2">
+              <Link
+                to="/about"
+                className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] font-medium text-[#7A223B] hover:text-[#5E152A] transition-colors border-b border-[#DFC598] pb-1"
+              >
+                <span>Read Full Atelier Heritage</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#DFC598]" />
+              </Link>
+            </div>
           </div>
+
+          {/* 4 Craftsmanship & Atelier Standards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            
+            {/* Pillar 1 */}
+            <div className="bg-white border border-[#E8DCCF] p-6 rounded-2xl text-center space-y-3 shadow-2xs hover:border-[#DFC598] transition-all">
+              <div className="w-11 h-11 rounded-xl bg-[#FCE7EC] border border-[#DFC598]/50 flex items-center justify-center text-[#7A223B] mx-auto">
+                <Sparkles className="w-5 h-5 text-[#DFC598]" />
+              </div>
+              <h4 className="font-heading text-base font-semibold text-[#2A1C19]">Anti-Tarnish Lustre</h4>
+              <p className="text-xs text-[#755B55] leading-relaxed">
+                Waterproof 18K physical vapor deposition (PVD) coating resisting perfumes, moisture, and sweat.
+              </p>
+            </div>
+
+            {/* Pillar 2 */}
+            <div className="bg-white border border-[#E8DCCF] p-6 rounded-2xl text-center space-y-3 shadow-2xs hover:border-[#DFC598] transition-all">
+              <div className="w-11 h-11 rounded-xl bg-[#FAF5EB] border border-[#DFC598]/50 flex items-center justify-center text-[#DFC598] mx-auto">
+                <Award className="w-5 h-5 text-[#7A223B]" />
+              </div>
+              <h4 className="font-heading text-base font-semibold text-[#2A1C19]">Korean Minimalist Craft</h4>
+              <p className="text-xs text-[#755B55] leading-relaxed">
+                Refined geometric forms balancing delicate everyday elegance with lasting structural durability.
+              </p>
+            </div>
+
+            {/* Pillar 3 */}
+            <div className="bg-white border border-[#E8DCCF] p-6 rounded-2xl text-center space-y-3 shadow-2xs hover:border-[#DFC598] transition-all">
+              <div className="w-11 h-11 rounded-xl bg-[#FCE7EC] border border-[#DFC598]/50 flex items-center justify-center text-[#7A223B] mx-auto">
+                <ShieldCheck className="w-5 h-5 text-[#DFC598]" />
+              </div>
+              <h4 className="font-heading text-base font-semibold text-[#2A1C19]">Hypoallergenic 316L</h4>
+              <p className="text-xs text-[#755B55] leading-relaxed">
+                Surgical-grade stainless steel base ensuring 100% skin safety, nickel-free and lead-free comfort.
+              </p>
+            </div>
+
+            {/* Pillar 4 */}
+            <div className="bg-white border border-[#E8DCCF] p-6 rounded-2xl text-center space-y-3 shadow-2xs hover:border-[#DFC598] transition-all">
+              <div className="w-11 h-11 rounded-xl bg-[#FAF5EB] border border-[#DFC598]/50 flex items-center justify-center text-[#DFC598] mx-auto">
+                <Truck className="w-5 h-5 text-[#7A223B]" />
+              </div>
+              <h4 className="font-heading text-base font-semibold text-[#2A1C19]">Pan-India Insured Dispatch</h4>
+              <p className="text-xs text-[#755B55] leading-relaxed">
+                Tamper-evident luxury packaging and insured courier tracking directly to your doorstep.
+              </p>
+            </div>
+
+          </div>
+
         </div>
       </section>
 
       {/* ========================================================================= */}
-      {/* SECTION 7: ATELIER LOCATIONS & DIRECT CONCIERGE INFORMATION               */}
-      {/* The 3D Necklace softly descends and dissolves as boutique info takes over */}
+      {/* 8. CONTACT / WHATSAPP SECTION: "LET'S CONNECT" / "NEED HELP?"             */}
+      {/* Uses Official Sunbloom Adorn Contact & Atelier Information                */}
       {/* ========================================================================= */}
-      <section className="relative z-20 py-20 lg:py-28 bg-[#FAF7F2] border-t border-[#E8E1D5] pointer-events-auto">
+      <section className="py-14 sm:py-18 lg:py-22 bg-white border-t border-[#E8DCCF]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-2">
-            <span className="text-[11px] uppercase tracking-[0.3em] text-[#C5A059] font-medium block">
-              Visit &amp; Connect
+          {/* Header */}
+          <div className="max-w-2xl mx-auto text-center space-y-2.5 mb-10">
+            <span className="text-[10px] sm:text-xs uppercase tracking-[0.28em] text-[#7A223B] font-medium block">
+              Atelier Concierge
             </span>
-            <h2 className="font-heading text-3xl sm:text-4xl text-[#1C1612] font-normal">
-              Atelier Boutiques <span className="font-serif italic text-[#C5A059]">&amp; Concierge</span>
+            <h2 className="font-heading text-2xl sm:text-4xl text-[#2A1C19] font-normal">
+              Let's <span className="font-serif italic text-rose-gold-gradient">Connect</span>
             </h2>
-            <p className="text-xs sm:text-sm text-[#7D7063] font-light max-w-xl mx-auto">
-              Experience personalized fine jewellery curation in our Tamil Nadu boutiques or connect with a master stylist online.
+            <p className="text-xs sm:text-sm text-[#755B55] font-light">
+              Have a question about a piece, custom sizing, or order curation? Our jewellery specialists are here to help.
             </p>
+
+            {/* Prominent Quick Action Buttons */}
+            <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
+              <a
+                href="https://wa.me/919789325964?text=Hello%20Sunbloom%20Adorn%20Team%2C%20I%20would%20like%20to%20enquire%20about%20your%20jewellery%20collection."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#25D366] text-white text-xs uppercase tracking-wider font-semibold hover:bg-[#20ba5a] transition-all shadow-2xs hover:scale-101"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>WhatsApp Us</span>
+              </a>
+
+              <a
+                href="tel:+919789325964"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl btn-rose-primary text-xs uppercase tracking-wider font-semibold transition-all shadow-2xs hover:scale-101"
+              >
+                <Phone className="w-4 h-4 text-[#DFC598]" />
+                <span>Call Concierge</span>
+              </a>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Contact Details & Ateliers Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
             
-            {/* Location 1: Coonoor */}
-            <div className="bg-white border border-[#E8E1D5] p-8 rounded-2xl space-y-4 shadow-2xs hover:shadow-md transition-shadow">
-              <div className="w-10 h-10 rounded-full bg-[#FAF7F2] border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059]">
-                <MapPin className="w-5 h-5" />
+            {/* Card 1: Direct Concierge Contacts */}
+            <div className="bg-[#FAF6F0] border border-[#E8DCCF] p-6 rounded-2xl space-y-3.5 shadow-2xs hover:border-[#DFC598] transition-all">
+              <div className="w-9 h-9 rounded-xl bg-white border border-[#E8DCCF] flex items-center justify-center text-[#7A223B]">
+                <MessageCircle className="w-4.5 h-4.5" />
               </div>
-              <h3 className="font-heading text-lg font-semibold text-[#1C1612]">Coonoor Atelier</h3>
-              <p className="text-xs text-[#7D7063] leading-relaxed">
-                Bedford Circle, Nilgiris District, Tamil Nadu 643101
-              </p>
-              <div className="pt-2 text-[11px] text-[#C5A059] font-medium uppercase tracking-wider">
-                Private Appointments &amp; Boutique Display
-              </div>
-            </div>
-
-            {/* Location 2: Coimbatore */}
-            <div className="bg-white border border-[#E8E1D5] p-8 rounded-2xl space-y-4 shadow-2xs hover:shadow-md transition-shadow">
-              <div className="w-10 h-10 rounded-full bg-[#FAF7F2] border border-[#C5A059]/30 flex items-center justify-center text-[#C5A059]">
-                <MapPin className="w-5 h-5" />
-              </div>
-              <h3 className="font-heading text-lg font-semibold text-[#1C1612]">Coimbatore Atelier</h3>
-              <p className="text-xs text-[#7D7063] leading-relaxed">
-                Race Course Road, Coimbatore, Tamil Nadu 641018
-              </p>
-              <div className="pt-2 text-[11px] text-[#C5A059] font-medium uppercase tracking-wider">
-                Design Studio &amp; Express Dispatch Center
-              </div>
-            </div>
-
-            {/* Direct Concierge & WhatsApp Consultation */}
-            <div className="bg-white border border-[#C5A059]/40 p-8 rounded-2xl space-y-4 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between">
-              <div className="space-y-3">
-                <div className="w-10 h-10 rounded-full bg-[#25D366]/10 border border-[#25D366]/30 flex items-center justify-center text-[#25D366]">
-                  <MessageCircle className="w-5 h-5" />
-                </div>
-                <h3 className="font-heading text-lg font-semibold text-[#1C1612]">Direct Concierge</h3>
-                <p className="text-xs text-[#7D7063] leading-relaxed">
-                  Prefer real-time styling advice, gift curation, or custom ring sizing? Chat directly with our jewellery specialists.
+              <h3 className="font-heading text-base font-semibold text-[#2A1C19]">Direct Concierge</h3>
+              <div className="space-y-2 text-xs text-[#5E4742]">
+                <p className="flex items-center gap-2">
+                  <span className="font-medium text-[#2A1C19]">Phone:</span>
+                  <a href="tel:+919789325964" className="text-[#7A223B] hover:underline font-mono">
+                    +91 97893 25964
+                  </a>
+                </p>
+                <p className="flex items-center gap-2">
+                  <span className="font-medium text-[#2A1C19]">WhatsApp:</span>
+                  <a
+                    href="https://wa.me/919789325964?text=Hello%20Sunbloom%20Adorn%20Team%2C%20I%20would%20like%20to%20enquire%20about%20your%20jewellery%20collection."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#25D366] hover:underline font-mono"
+                  >
+                    +91 97893 25964
+                  </a>
+                </p>
+                <p className="flex items-center gap-2">
+                  <span className="font-medium text-[#2A1C19]">Email:</span>
+                  <a href="mailto:support@sunbloomadorn.com" className="text-[#7A223B] hover:underline">
+                    support@sunbloomadorn.com
+                  </a>
                 </p>
               </div>
-              <div className="pt-4">
-                <a
-                  href="https://wa.me/919789325964?text=Hello%20Sunbloom%20Adorn%20Team%2C%20I%20would%20like%20to%20enquire%20about%20your%20jewellery%20collection."
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#25D366] text-white text-xs font-medium hover:bg-[#20ba5a] transition-colors shadow-xs"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>WhatsApp: +91 97893 25964</span>
-                </a>
+              <div className="pt-2 text-[11px] text-[#755B55] flex items-center gap-1.5 border-t border-[#E8DCCF]">
+                <Clock className="w-3.5 h-3.5 text-[#DFC598]" />
+                <span>Mon – Sat: 10:00 AM – 7:30 PM IST</span>
               </div>
+            </div>
+
+            {/* Card 2: Coonoor Atelier */}
+            <div className="bg-[#FAF6F0] border border-[#E8DCCF] p-6 rounded-2xl space-y-3.5 shadow-2xs hover:border-[#DFC598] transition-all">
+              <div className="w-9 h-9 rounded-xl bg-white border border-[#DFC598]/50 flex items-center justify-center text-[#DFC598]">
+                <MapPin className="w-4.5 h-4.5 text-[#7A223B]" />
+              </div>
+              <h3 className="font-heading text-base font-semibold text-[#2A1C19]">Coonoor Atelier</h3>
+              <p className="text-xs text-[#5E4742] leading-relaxed">
+                Bedford Circle, Nilgiris District, Tamil Nadu 643101
+              </p>
+              <div className="pt-2 text-[11px] text-[#7A223B] font-medium uppercase tracking-wider">
+                Private Appointments &amp; Boutique Display
+              </div>
+              <p className="text-[11px] text-[#755B55]">
+                Experience custom styling in the serene Nilgiris hills.
+              </p>
+            </div>
+
+            {/* Card 3: Coimbatore Atelier */}
+            <div className="bg-[#FAF6F0] border border-[#E8DCCF] p-6 rounded-2xl space-y-3.5 shadow-2xs hover:border-[#DFC598] transition-all">
+              <div className="w-9 h-9 rounded-xl bg-white border border-[#E8DCCF] flex items-center justify-center text-[#7A223B]">
+                <MapPin className="w-4.5 h-4.5 text-[#DFC598]" />
+              </div>
+              <h3 className="font-heading text-base font-semibold text-[#2A1C19]">Coimbatore Atelier</h3>
+              <p className="text-xs text-[#5E4742] leading-relaxed">
+                Race Course Road, Coimbatore, Tamil Nadu 641018
+              </p>
+              <div className="pt-2 text-[11px] text-[#7A223B] font-medium uppercase tracking-wider">
+                Design Studio &amp; Express Dispatch Center
+              </div>
+              <p className="text-[11px] text-[#755B55]">
+                Direct fulfillment &amp; bespoke sizing center.
+              </p>
             </div>
 
           </div>

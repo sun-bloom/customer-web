@@ -41,11 +41,26 @@ export const Settings: React.FC = () => {
     setSuccessMsg(null);
     setErrorMsg(null);
 
+    const cleanPhone = phone.trim();
+    const cleanWhatsapp = whatsappNumber.trim();
+
+    if (cleanPhone && !/^[6-9]\d{9}$/.test(cleanPhone)) {
+      setErrorMsg('Please enter a valid 10-digit Indian mobile number starting with 6-9 (e.g. 9876543210).');
+      setSaving(false);
+      return;
+    }
+
+    if (cleanWhatsapp && !/^[6-9]\d{9}$/.test(cleanWhatsapp)) {
+      setErrorMsg('Please enter a valid 10-digit Indian WhatsApp number starting with 6-9 (e.g. 9876543210).');
+      setSaving(false);
+      return;
+    }
+
     try {
       await updateCustomerProfileApi(token, {
         name: name.trim(),
-        phone: phone.trim(),
-        whatsappNumber: whatsappNumber.trim(),
+        phone: cleanPhone,
+        whatsappNumber: cleanWhatsapp,
         address: address.trim(),
         city: city.trim(),
         state: state.trim(),
@@ -61,167 +76,194 @@ export const Settings: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] py-10 md:py-16">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#FCF9F5] py-10 md:py-16 relative overflow-hidden">
+      <div className="absolute top-0 right-10 w-96 h-96 rounded-full bg-[#FCE7EC]/35 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-10 w-80 h-80 rounded-full bg-[#FAF5EB]/50 blur-3xl pointer-events-none" />
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Header */}
-        <div className="mb-8 md:mb-10 pb-6 border-b border-[#E8E1D5] flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-4">
+        <div className="mb-8 md:mb-10 pb-6 border-b border-[#E8DCCF]/60 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-4">
           <div>
-            <span className="text-xs uppercase tracking-[0.25em] text-[#C5A059] font-medium block mb-1">
+            <span className="text-[10px] uppercase tracking-[0.25em] text-[#7A223B] font-semibold block mb-1">
               Client Account
             </span>
-            <h1 className="font-heading text-3xl sm:text-4xl font-normal text-[#1C1612]">
-              Account <span className="font-serif italic text-[#C5A059]">Settings</span>
+            <h1 className="font-heading text-3xl sm:text-4xl font-normal text-[#2A1C19]">
+              Account <span className="font-serif italic text-rose-gold-gradient">Settings</span>
             </h1>
           </div>
-          <div className="flex items-center gap-2 text-xs text-[#8A7E72]">
-            <ShieldCheck className="w-4 h-4 text-[#C5A059]" />
+          <div className="flex items-center gap-2 text-xs text-[#A8928D]">
+            <ShieldCheck className="w-4 h-4 text-[#C9A86A]" />
             <span>Verified Customer Profile</span>
           </div>
         </div>
 
         {/* Profile Card & Form */}
-        <div className="bg-white rounded-3xl border border-[#E8E1D5] p-6 sm:p-10 shadow-xs space-y-6">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] p-6 sm:p-10 shadow-xs space-y-6">
           
           {/* Top User Info Bar */}
-          <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E8E1D5] flex flex-wrap items-center justify-between gap-3">
+          <div className="p-4 rounded-xl sm:rounded-2xl bg-[#FAF6F0]/80 border border-[#E8DCCF] flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#1C1612] text-[#FEF3C7] flex items-center justify-center font-serif text-lg font-bold">
+              <div className="w-10 h-10 rounded-full bg-[#7A223B] text-[#FFF6FA] flex items-center justify-center font-serif text-lg font-bold">
                 {name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'S'}
               </div>
               <div>
-                <span className="text-sm font-semibold text-[#1C1612] block">
+                <span className="text-sm font-semibold text-[#2A1C19] block">
                   {name || user?.displayName || 'Client'}
                 </span>
-                <span className="text-xs text-[#8A7E72]">{user?.email}</span>
+                <span className="text-xs text-[#A8928D]">{user?.email}</span>
               </div>
             </div>
-            <span className="text-[10px] uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full font-semibold">
+            <span className="text-[10px] uppercase tracking-wider bg-[#FDF2F5] text-[#7A223B] border border-[#FCE7EC] px-2.5 py-1 rounded-full font-semibold">
               Authenticated
             </span>
           </div>
 
           {successMsg && (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600" />
               <span>{successMsg}</span>
             </div>
           )}
 
           {errorMsg && (
-            <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
               <span>{errorMsg}</span>
             </div>
           )}
 
           <form onSubmit={handleSave} className="space-y-6">
-            <h2 className="font-heading text-lg font-normal text-[#1C1612] pb-2 border-b border-[#F0EAE1]">
+            <h2 className="font-heading text-lg font-normal text-[#2A1C19] pb-2 border-b border-[#FAF6F0]">
               Personal &amp; Default Shipping Details
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#5C5248] mb-1.5">
+                <label htmlFor="settingsFullName" className="block text-xs font-semibold uppercase tracking-wider text-[#5C4540] mb-1.5">
                   Full Name
                 </label>
                 <input
+                  id="settingsFullName"
+                  name="name"
                   type="text"
+                  autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Radhika Sharma"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E1D5] text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#5C5248] mb-1.5">
+                <label htmlFor="settingsPhone" className="block text-xs font-semibold uppercase tracking-wider text-[#5C4540] mb-1.5">
                   Mobile Number
                 </label>
                 <input
+                  id="settingsPhone"
+                  name="phone"
                   type="tel"
+                  autoComplete="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="10 digit mobile"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E1D5] text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#5C5248] mb-1.5">
+                <label htmlFor="settingsWhatsapp" className="block text-xs font-semibold uppercase tracking-wider text-[#5C4540] mb-1.5">
                   WhatsApp Number
                 </label>
                 <input
+                  id="settingsWhatsapp"
+                  name="whatsappNumber"
                   type="tel"
+                  autoComplete="tel"
                   value={whatsappNumber}
                   onChange={(e) => setWhatsappNumber(e.target.value)}
                   placeholder="10 digit WhatsApp number"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E1D5] text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#5C5248] mb-1.5">
+                <label htmlFor="settingsEmail" className="block text-xs font-semibold uppercase tracking-wider text-[#5C4540] mb-1.5">
                   Email Address
                 </label>
                 <input
+                  id="settingsEmail"
+                  name="email"
                   type="email"
+                  autoComplete="email"
                   disabled
                   value={user?.email || ''}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#E8E1D5]/40 border border-[#E8E1D5] text-xs sm:text-sm text-[#8A7E72] cursor-not-allowed"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#E8DCCF]/30 border border-[#E8DCCF] text-xs sm:text-sm text-[#A8928D] cursor-not-allowed"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#5C5248] mb-1.5">
+                <label htmlFor="settingsAddress" className="block text-xs font-semibold uppercase tracking-wider text-[#5C4540] mb-1.5">
                   Default Delivery Address
                 </label>
                 <textarea
+                  id="settingsAddress"
+                  name="address"
+                  autoComplete="street-address"
                   rows={2}
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="Apartment, Street address, Landmark…"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E1D5] text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#5C5248] mb-1.5">
+                <label htmlFor="settingsCity" className="block text-xs font-semibold uppercase tracking-wider text-[#5C4540] mb-1.5">
                   City
                 </label>
                 <input
+                  id="settingsCity"
+                  name="city"
                   type="text"
+                  autoComplete="address-level2"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   placeholder="e.g. Coimbatore"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E1D5] text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#5C5248] mb-1.5">
+                <label htmlFor="settingsState" className="block text-xs font-semibold uppercase tracking-wider text-[#5C4540] mb-1.5">
                   State
                 </label>
                 <input
+                  id="settingsState"
+                  name="state"
                   type="text"
+                  autoComplete="address-level1"
                   value={state}
                   onChange={(e) => setState(e.target.value)}
                   placeholder="e.g. Tamil Nadu"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E1D5] text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#5C5248] mb-1.5">
+                <label htmlFor="settingsPincode" className="block text-xs font-semibold uppercase tracking-wider text-[#5C4540] mb-1.5">
                   Postal Pincode
                 </label>
                 <input
+                  id="settingsPincode"
+                  name="pincode"
                   type="text"
+                  autoComplete="postal-code"
                   maxLength={6}
                   value={pincode}
                   onChange={(e) => setPincode(e.target.value)}
                   placeholder="6 digit PIN (e.g. 641001)"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E1D5] text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                 />
               </div>
             </div>
@@ -230,13 +272,13 @@ export const Settings: React.FC = () => {
               <button
                 type="submit"
                 disabled={saving}
-                className="px-8 py-3.5 rounded-2xl bg-[#1C1612] text-[#FEF3C7] text-xs font-semibold uppercase tracking-[0.2em] shadow-gold hover:bg-[#2A231D] transition-all flex items-center gap-2 cursor-pointer"
+                className="btn-rose-primary px-8 py-3 rounded-xl text-xs font-semibold uppercase tracking-[0.16em] shadow-xs flex items-center gap-2 cursor-pointer"
               >
                 {saving ? (
                   <div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin"></div>
                 ) : (
                   <>
-                    <Save className="w-4 h-4 text-[#D4AF37]" />
+                    <Save className="w-4 h-4 text-[#DFC598]" />
                     <span>Save Profile</span>
                   </>
                 )}
@@ -245,7 +287,7 @@ export const Settings: React.FC = () => {
               <button
                 type="button"
                 onClick={logout}
-                className="text-xs text-red-600 hover:text-red-800 font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="text-xs text-rose-700 hover:text-rose-900 font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Log Out of Atelier</span>
@@ -259,3 +301,5 @@ export const Settings: React.FC = () => {
     </div>
   );
 };
+
+export default Settings;

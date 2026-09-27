@@ -5,18 +5,67 @@ import { useStore } from '@nanostores/react';
 import { $cartItems, $cartSubtotal } from '../stores/cartStore';
 import { useAuth } from '../hooks/useAuth';
 import {
-  createRazorpayOrderApi,
-  verifyRazorpayPaymentApi,
   calculateShippingApi,
+  getPostalStatesApi,
+  getPostalDistrictsApi,
+  verifyPostalPincodeApi,
   submitOrderConsultantRequestApi,
+  createOrderApi,
+  updateCustomerProfileApi,
 } from '../lib/api';
-import { ShieldCheck, Lock, AlertCircle, ArrowLeft, CreditCard, Building2, Video } from 'lucide-react';
+import {
+  ShieldCheck,
+  Lock,
+  AlertCircle,
+  Video,
+  ChevronDown,
+  Truck,
+  CheckCircle2,
+  HelpCircle,
+  Send,
+} from 'lucide-react';
 
-declare global {
-  interface Window {
-    Razorpay?: any;
-  }
-}
+// Complete official list of Indian States and Union Territories
+const INDIAN_STATES_AND_UTS = [
+  // 28 States
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chhattisgarh',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+  // 8 Union Territories
+  'Andaman and Nicobar Islands',
+  'Chandigarh',
+  'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi',
+  'Jammu and Kashmir',
+  'Ladakh',
+  'Lakshadweep',
+  'Puducherry',
+];
 
 export const Payment: React.FC = () => {
   const navigate = useNavigate();
@@ -24,112 +73,317 @@ export const Payment: React.FC = () => {
   const cartItems = useStore($cartItems);
   const subtotal = useStore($cartSubtotal);
 
-  // Form Fields
+  // Form Fields (Defaults: Tamil Nadu, Tiruppur, 641602)
   const [name, setName] = useState(profile?.name || user?.displayName || '');
   const [phone, setPhone] = useState(profile?.phone || '');
   const [whatsappNumber, setWhatsappNumber] = useState(profile?.whatsappNumber || profile?.phone || '');
-  const [email, setEmail] = useState(profile?.email || user?.email || '');
   const [address, setAddress] = useState(profile?.address || '');
-  const [city, setCity] = useState(profile?.city || '');
-  const [state, setState] = useState(profile?.state || '');
-  const [pincode, setPincode] = useState(profile?.pincode || '');
+
+  // Normalized Postal Address Hierarchy States
+  const [statesList, setStatesList] = useState<string[]>(INDIAN_STATES_AND_UTS);
+  const [state, setState] = useState(profile?.state || 'Tamil Nadu');
+  const [districtsList, setDistrictsList] = useState<string[]>(['Tiruppur', 'Coimbatore', 'Chennai', 'Salem', 'Erode', 'Madurai']);
+  const [city, setCity] = useState(profile?.city || 'Tiruppur');
+  const [pincode, setPincode] = useState(profile?.pincode || '641602');
+
+  // Verification & Delivery States
+  const [pincodeVerified, setPincodeVerified] = useState(false);
+  const [pincodeValid, setPincodeValid] = useState<boolean | null>(null);
+  const [pincodeChecking, setPincodeChecking] = useState(false);
+  const [pincodeStatus, setPincodeStatus] = useState<string | null>(null);
+
+  const [deliverySupported, setDeliverySupported] = useState<boolean | null>(null);
+  const [deliveryMessage, setDeliveryMessage] = useState<string | null>(null);
+  const [requiresEnquiry, setRequiresEnquiry] = useState(false);
+
+  const [shippingCharge, setShippingCharge] = useState(0);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(1500);
+
+  // Checkout Agreement States
   const [trackingPreference, setTrackingPreference] = useState<'yes' | 'no'>('yes');
   const [addressConfirmed, setAddressConfirmed] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
 
-  // Delivery & Processing States
-  const [shippingCharge, setShippingCharge] = useState(0);
-  const [freeShippingThreshold, setFreeShippingThreshold] = useState(1500);
-  const [pincodeStatus, setPincodeStatus] = useState<string | null>(null);
-  const [pincodeValid, setPincodeValid] = useState<boolean | null>(null);
-  const [pincodeChecking, setPincodeChecking] = useState(false);
+  // Processing & Enquiry States
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [stockErrors, setStockErrors] = useState<any[]>([]);
+  const [enquiryLoading, setEnquiryLoading] = useState(false);
   const [consultantSent, setConsultantSent] = useState(false);
 
-  // Update form fields if profile arrives
+  // Authenticated email from user/profile session
+  const authEmail = (user?.email || profile?.email || '').trim().toLowerCase();
+
+  // Load official states on mount
+  useEffect(() => {
+    getPostalStatesApi()
+      .then((res) => {
+        if (res.states && res.states.length > 0) setStatesList(res.states);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Load official districts when state changes
+  useEffect(() => {
+    if (!state) {
+      setDistrictsList([]);
+      return;
+    }
+    getPostalDistrictsApi(state)
+      .then((res) => {
+        if (res.districts && res.districts.length > 0) {
+          setDistrictsList(res.districts);
+        }
+      })
+      .catch(() => {});
+  }, [state]);
+
+  // Update form fields automatically if profile arrives
   useEffect(() => {
     if (profile) {
       if (profile.name && !name) setName(profile.name);
       if (profile.phone && !phone) setPhone(profile.phone);
       if (profile.whatsappNumber && !whatsappNumber) setWhatsappNumber(profile.whatsappNumber);
-      if (profile.email && !email) setEmail(profile.email);
+      else if (profile.phone && !whatsappNumber) setWhatsappNumber(profile.phone);
       if (profile.address && !address) setAddress(profile.address);
-      if (profile.city && !city) setCity(profile.city);
       if (profile.state && !state) setState(profile.state);
+      if (profile.city && !city) setCity(profile.city);
       if (profile.pincode && !pincode) setPincode(profile.pincode);
     }
   }, [profile]);
 
-  const validatePincode = async (code: string) => {
+  // Authoritative Postal Pincode & Delivery Verification
+  const verifyAndLookupPincode = async (code: string) => {
     const cleanPin = code.trim().replace(/\D/g, '');
 
     if (cleanPin.length === 0) {
       setPincodeStatus(null);
       setPincodeValid(null);
+      setPincodeVerified(false);
+      setDeliverySupported(null);
+      setDeliveryMessage(null);
+      setRequiresEnquiry(false);
+      setCity('');
+      setState('');
+      setDistrictsList([]);
       setShippingCharge(0);
       return;
     }
 
-    if (cleanPin.length < 6) {
-      // Don't validate partial pincodes
+    if (cleanPin.length !== 6) {
+      setPincodeStatus('Invalid pincode. Please enter a 6-digit numeric pincode.');
+      setPincodeValid(false);
+      setPincodeVerified(false);
+      setDeliverySupported(false);
+      setDeliveryMessage(null);
+      setRequiresEnquiry(false);
+      setCity('');
+      setState('');
+      setDistrictsList([]);
+      setShippingCharge(0);
       return;
     }
 
     setPincodeChecking(true);
-    setPincodeStatus(null);
+    setPincodeStatus('Verifying pincode...');
+    setDeliveryMessage(null);
+
     try {
-      const result = await calculateShippingApi({
+      // 1. Verify against Government of India / Department of Posts Directory
+      const postalData = await verifyPostalPincodeApi(cleanPin);
+
+      if (!postalData || !postalData.isValid || !postalData.state || !postalData.district) {
+        setPincodeValid(false);
+        setPincodeVerified(false);
+        setPincodeStatus('Invalid pincode. Please check and enter a valid pincode.');
+        setDeliverySupported(false);
+        setRequiresEnquiry(false);
+        setCity('');
+        setState('');
+        setDistrictsList([]);
+        setShippingCharge(0);
+        return;
+      }
+
+      const verifiedState = postalData.state;
+      const verifiedDistrict = postalData.district;
+
+      setState(verifiedState);
+      setCity(verifiedDistrict);
+
+      // Load districts for this verified state
+      const distRes = await getPostalDistrictsApi(verifiedState).catch(() => ({ districts: [] }));
+      const distList = distRes.districts && distRes.districts.length > 0
+        ? distRes.districts
+        : [verifiedDistrict];
+      if (!distList.includes(verifiedDistrict)) {
+        distList.push(verifiedDistrict);
+      }
+      setDistrictsList(distList);
+
+      setPincodeValid(true);
+      setPincodeVerified(true);
+      setPincodeStatus('Pincode verified');
+
+      // 2. Authoritative backend delivery provider availability check
+      const deliveryRes = await calculateShippingApi({
         subtotal,
         pincode: cleanPin,
+        city: verifiedDistrict,
       });
 
-      setFreeShippingThreshold(result.freeShippingThreshold ?? 1500);
+      setFreeShippingThreshold(deliveryRes.freeShippingThreshold ?? 1500);
 
-      if (result.isSupported) {
-        setShippingCharge(result.shippingCharge);
-        const regionCity = result.matchedRegion?.city;
-        const regionState = result.matchedRegion?.state;
-        const locationText = regionCity ? `${regionCity}${regionState ? ', ' + regionState : ''}` : cleanPin;
-        const freeText = result.isFreeShipping ? ' (Free Shipping!)' : '';
-        setPincodeStatus(`✓ Delivery available — ${locationText}${freeText}`);
-        setPincodeValid(true);
+      if (deliveryRes.isSupported) {
+        setDeliverySupported(true);
+        setRequiresEnquiry(false);
+        setDeliveryMessage('Delivery available');
+        setShippingCharge(deliveryRes.shippingCharge ?? (subtotal >= 1500 ? 0 : 50));
       } else {
+        setDeliverySupported(false);
+        setRequiresEnquiry(true);
+        setDeliveryMessage('Delivery availability needs confirmation');
         setShippingCharge(0);
-        setPincodeStatus(
-          result.message ||
-          `Delivery is currently unavailable for pincode ${cleanPin}.`
-        );
-        setPincodeValid(false);
       }
-    } catch (e: any) {
-      console.warn('[Payment] Pincode validation error:', e);
-      setPincodeStatus('Could not verify delivery availability. You may still proceed.');
-      setPincodeValid(null);
+
+    } catch (err: any) {
+      console.warn('[Payment] Postal & delivery verification error:', err);
+      setPincodeValid(false);
+      setPincodeVerified(false);
+      setPincodeStatus('Invalid pincode. Please check and enter a valid pincode.');
+      setDeliverySupported(false);
+      setRequiresEnquiry(false);
+      setCity('');
+      setState('');
+      setDistrictsList([]);
+      setShippingCharge(0);
     } finally {
       setPincodeChecking(false);
     }
   };
 
-  const loadRazorpaySdk = (): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      if (window.Razorpay) return resolve();
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload  = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load Razorpay payment gateway SDK.'));
-      document.head.appendChild(script);
-    });
+  // Initial verification on form load for default 641602
+  useEffect(() => {
+    const initialPin = pincode || '641602';
+    verifyAndLookupPincode(initialPin);
+  }, []);
+
+  // Recalculate shipping if cart subtotal changes while delivery is supported
+  useEffect(() => {
+    if (pincode && pincode.length === 6 && pincodeVerified && deliverySupported) {
+      calculateShippingApi({
+        subtotal,
+        pincode,
+        city,
+      })
+        .then((res) => {
+          if (res.isSupported) {
+            setShippingCharge(res.shippingCharge ?? (subtotal >= 1500 ? 0 : 50));
+            if (res.freeShippingThreshold !== undefined) setFreeShippingThreshold(res.freeShippingThreshold);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [subtotal]);
+
+  const handlePincodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 6);
+    setPincode(digitsOnly);
+
+    // Editing behaviour: Clear previous City/State and status on edit
+    if (digitsOnly !== pincode) {
+      setPincodeVerified(false);
+      setPincodeValid(null);
+      setDeliverySupported(null);
+      setDeliveryMessage(null);
+      setRequiresEnquiry(false);
+      setCity('');
+      setState('');
+      setDistrictsList([]);
+      setShippingCharge(0);
+
+      if (digitsOnly.length > 0 && digitsOnly.length < 6) {
+        setPincodeStatus('Invalid pincode. Please enter a 6-digit numeric pincode.');
+        setPincodeValid(false);
+      } else if (digitsOnly.length === 0) {
+        setPincodeStatus(null);
+      }
+    }
+
+    if (digitsOnly.length === 6) {
+      verifyAndLookupPincode(digitsOnly);
+    }
   };
 
-  const requestConsultant = async () => {
+  const handleStateChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newState = e.target.value;
+    setState(newState);
+    setCity('');
+    setPincodeVerified(false);
+    setPincodeValid(null);
+    setDeliverySupported(null);
+    setDeliveryMessage(null);
+    setShippingCharge(0);
+
+    const distRes = await getPostalDistrictsApi(newState).catch(() => ({ districts: [] }));
+    setDistrictsList(distRes.districts || []);
+  };
+
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setCity(e.target.value);
+  };
+
+  // Submit delivery enquiry when no provider is configured
+  const handleRaiseDeliveryEnquiry = async () => {
     setErrorMessage(null);
+    setEnquiryLoading(true);
+
+    if (!authEmail) {
+      setErrorMessage('Please sign in with your Google account to submit a delivery enquiry.');
+      setEnquiryLoading(false);
+      return;
+    }
+
+    const rawPhone = phone.trim();
+    const rawWhatsapp = (whatsappNumber || phone).trim();
+
+    if (!name.trim() || !rawPhone || !address.trim() || !pincode.trim() || !city.trim() || !state.trim()) {
+      setErrorMessage('Please fill in your name, contact phone, and full address before submitting a delivery enquiry.');
+      setEnquiryLoading(false);
+      return;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(rawPhone)) {
+      setErrorMessage('Please enter a valid 10-digit Indian mobile number (e.g. 9876543210).');
+      setEnquiryLoading(false);
+      return;
+    }
+
+    if (!/^[6-9]\d{9}$/.test(rawWhatsapp)) {
+      setErrorMessage('Please enter a valid 10-digit Indian WhatsApp number (e.g. 9876543210).');
+      setEnquiryLoading(false);
+      return;
+    }
+
     try {
-      await submitOrderConsultantRequestApi(token || '', { name, phone, whatsappNumber, email, address, city, state, pincode, cartItems, subtotal, requestedRegion: city });
+      await submitOrderConsultantRequestApi(token || '', {
+        name: name.trim(),
+        phone: rawPhone,
+        whatsappNumber: rawWhatsapp,
+        email: authEmail,
+        address: address.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        pincode: pincode.trim(),
+        cartItems,
+        subtotal,
+        requestedRegion: `${city.trim()}, ${state.trim()}`,
+      });
       setConsultantSent(true);
     } catch (error: any) {
-      setErrorMessage(error.message || 'Unable to submit consultant request.');
+      setErrorMessage(error.message || 'Unable to submit delivery enquiry. Please try again.');
+    } finally {
+      setEnquiryLoading(false);
     }
   };
 
@@ -137,6 +391,11 @@ export const Payment: React.FC = () => {
     e.preventDefault();
     setErrorMessage(null);
     setStockErrors([]);
+
+    if (!authEmail) {
+      setErrorMessage('Please sign in with your authenticated Google account to proceed with checkout.');
+      return;
+    }
 
     if (!acceptTerms) {
       setErrorMessage('Please accept the Terms & Conditions and Privacy Policy to proceed.');
@@ -148,21 +407,21 @@ export const Payment: React.FC = () => {
       return;
     }
 
-    if (!name.trim() || !phone.trim() || !whatsappNumber.trim() || !email.trim() || !address.trim() || !city.trim() || !state.trim() || !pincode.trim()) {
+    if (!name.trim() || !phone.trim() || !whatsappNumber.trim() || !address.trim() || !city.trim() || !state.trim() || !pincode.trim()) {
       setErrorMessage('Please fill in all required shipping and contact details.');
       return;
     }
 
-    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
-    const cleanWhatsapp = whatsappNumber.replace(/\D/g, '').slice(-10);
+    const rawPhone = phone.trim();
+    const rawWhatsapp = (whatsappNumber || phone).trim();
 
-    if (cleanPhone.length !== 10) {
-      setErrorMessage('Please provide a valid 10-digit mobile number.');
+    if (!/^[6-9]\d{9}$/.test(rawPhone)) {
+      setErrorMessage('Please provide a valid 10-digit Indian mobile number starting with 6-9 (e.g. 9876543210).');
       return;
     }
 
-    if (cleanWhatsapp.length !== 10) {
-      setErrorMessage('Please provide a valid 10-digit WhatsApp number.');
+    if (!/^[6-9]\d{9}$/.test(rawWhatsapp)) {
+      setErrorMessage('Please provide a valid 10-digit Indian WhatsApp number starting with 6-9 (e.g. 9876543210).');
       return;
     }
 
@@ -171,90 +430,91 @@ export const Payment: React.FC = () => {
       return;
     }
 
-    if (pincodeValid === false) {
-      setErrorMessage('Delivery is not available for your pincode. Please enter a valid 6-digit delivery pincode.');
+    // Pincode & City/State validation check before order submission
+    if (!pincode.trim() || !/^\d{6}$/.test(pincode.trim()) || !pincodeVerified || pincodeValid !== true) {
+      setErrorMessage('Please enter and verify a valid 6-digit postal pincode.');
       return;
     }
 
-    if (!pincode.trim() || !/^\d{6}$/.test(pincode.trim())) {
-      setErrorMessage('Please enter a valid 6-digit pincode.');
+    if (!city.trim() || !state.trim()) {
+      setErrorMessage('City/District and State must be verified from your postal pincode before checkout.');
+      return;
+    }
+
+    if (deliverySupported !== true) {
+      setErrorMessage('Delivery is currently not confirmed for this destination. Please raise a delivery enquiry.');
       return;
     }
 
     setLoading(true);
 
     try {
-      // 1. Create order on backend — backend recalculates all prices, ignores frontend totals
-      const result = await createRazorpayOrderApi({
-        currency: 'INR',
-        customer: {
+      // 1. Update customer profile in the background if logged in
+      if (token) {
+        updateCustomerProfileApi(token, {
           name: name.trim(),
-          phone: cleanPhone,
-          whatsappNumber: cleanWhatsapp,
-          email: email.trim(),
+          phone: rawPhone,
+          whatsappNumber: rawWhatsapp,
           address: address.trim(),
           city: city.trim(),
           state: state.trim(),
           pincode: pincode.trim(),
-          trackingRequested: trackingPreference === 'yes',
-          addressConfirmed,
-        },
-        cartItems,
-      });
-
-      if (!result?.razorpayOrderId || !result?.keyId) {
-        throw new Error('Payment session could not be established. Please try again.');
+        }).catch((profileErr) => console.warn('[Payment] Profile background sync warning:', profileErr.message));
       }
 
-      // 2. Load Razorpay SDK
-      await loadRazorpaySdk();
-
-      // 3. Open Razorpay checkout
-      const rzp = new window.Razorpay({
-        key: result.keyId,
-        order_id: result.razorpayOrderId,
-        amount: Math.round(result.amount * 100),
-        currency: result.currency || 'INR',
-        name: 'Sunbloom Adorn',
-        description: `Order ${result.orderNumber}`,
-        prefill: result.prefill,
-        theme: { color: '#C5A059' },
-        modal: { ondismiss: () => setLoading(false) },
-        handler: async (response: any) => {
-          // 4. Verify payment signature on backend
-          try {
-            const verification = await verifyRazorpayPaymentApi({
-              razorpay_order_id:   response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature:  response.razorpay_signature,
-            });
-            if (verification?.success) {
-              navigate(`/order/pending?rzp_order_id=${encodeURIComponent(result.razorpayOrderId)}`);
-            } else {
-              setErrorMessage('Payment verification failed. Please contact support with your order number.');
-              setLoading(false);
-            }
-          } catch (verifyErr: any) {
-            setErrorMessage(verifyErr.message || 'Payment verification failed.');
-            setLoading(false);
-          }
+      // 2. Initiate PayU order creation via backend API
+      const result = await createOrderApi(
+        {
+          currency: 'INR',
+          customer: {
+            name: name.trim(),
+            phone: rawPhone,
+            whatsappNumber: rawWhatsapp,
+            email: authEmail,
+            address: address.trim(),
+            city: city.trim(),
+            state: state.trim(),
+            pincode: pincode.trim(),
+            trackingRequested: trackingPreference === 'yes',
+            addressConfirmed,
+          },
+          cartItems,
         },
-      });
+        token
+      );
 
-      rzp.on('payment.failed', (response: any) => {
-        console.error('[Razorpay] Payment failed:', response.error);
-        setErrorMessage(response.error?.description || 'Payment failed. Please try again.');
+      if (result && result.payuPayload && result.payuUrl) {
+        // Redirect to PayU securely via POST form
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = result.payuUrl;
+
+        Object.entries(result.payuPayload).forEach(([key, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = value as string;
+          form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+      } else {
+        setErrorMessage('Payment provider not yet configured. Please try again later.');
         setLoading(false);
-      });
-
-      rzp.open();
+      }
 
     } catch (err: any) {
       console.error('Checkout error:', err);
       if (err.body?.stockErrors) {
         setStockErrors(err.body.stockErrors);
+      } else if (err.body?.error === 'DELIVERY_UNAVAILABLE' || err.body?.requiresEnquiry) {
+        setDeliverySupported(false);
+        setRequiresEnquiry(true);
+        setDeliveryMessage('Delivery availability needs confirmation');
+        setErrorMessage('Delivery is not configured for this destination. Please raise a delivery enquiry.');
       } else {
-        setErrorMessage(err.message || 'Could not initiate checkout.');
+        setErrorMessage(err.message || 'Payment initiation failed. Please try again.');
       }
       setLoading(false);
     }
@@ -262,13 +522,13 @@ export const Payment: React.FC = () => {
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-[75vh] flex items-center justify-center bg-[#FAF7F2] px-4 py-16">
-        <div className="bg-white rounded-3xl border border-[#E8E1D5] p-10 text-center max-w-md shadow-xs space-y-4">
-          <h2 className="font-heading text-2xl text-[#1C1612]">Your Bag is Empty</h2>
-          <p className="text-xs text-[#7D7063]">Please add creations to your shopping bag before checking out.</p>
+      <div className="min-h-[75vh] flex items-center justify-center bg-[#FCF9F5] px-4 py-16">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] p-8 sm:p-10 text-center max-w-md shadow-xs space-y-4">
+          <h2 className="font-heading text-2xl text-[#2A1C19]">Your Bag is Empty</h2>
+          <p className="text-xs text-[#7D6460]">Please add creations to your shopping bag before checking out.</p>
           <Link
             to="/products"
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#1C1612] text-[#FEF3C7] text-xs uppercase tracking-widest font-semibold"
+            className="btn-rose-primary inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs uppercase tracking-widest font-semibold"
           >
             Explore Catalog
           </Link>
@@ -280,21 +540,24 @@ export const Payment: React.FC = () => {
   const finalTotal = subtotal + shippingCharge;
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] py-10 md:py-14">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#FCF9F5] py-10 md:py-14 relative overflow-hidden">
+      <div className="absolute top-0 right-10 w-96 h-96 rounded-full bg-[#FCE7EC]/35 blur-3xl pointer-events-none" />
+      <div className="absolute top-1/3 left-0 w-80 h-80 rounded-full bg-[#FAF5EB]/50 blur-3xl pointer-events-none" />
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Header */}
-        <div className="mb-8 md:mb-10 pb-6 border-b border-[#E8E1D5] flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-4">
+        <div className="mb-8 md:mb-10 pb-6 border-b border-[#E8DCCF]/60 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-4">
           <div>
-            <span className="text-xs uppercase tracking-[0.25em] text-[#C5A059] font-medium block mb-1">
+            <span className="text-[11px] uppercase tracking-[0.25em] text-[#7A223B] font-semibold block mb-1">
               Direct Checkout
             </span>
-            <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-normal text-[#1C1612]">
-              Complete <span className="font-serif italic text-[#C5A059]">Payment</span>
+            <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-normal text-[#2A1C19]">
+              Complete <span className="font-serif italic text-rose-gold-gradient">Payment</span>
             </h1>
           </div>
-          <div className="flex items-center gap-2 text-xs text-[#7D7063]">
-            <Lock className="w-4 h-4 text-[#C5A059]" />
+          <div className="flex items-center gap-2 text-xs text-[#7D6460]">
+            <Lock className="w-4 h-4 text-[#C9A86A]" />
             <span>256-bit Encrypted SSL Gateway</span>
           </div>
         </div>
@@ -304,15 +567,30 @@ export const Payment: React.FC = () => {
           
           {/* Left Column: Shipping Info (7 Cols) */}
           <div className="lg:col-span-7 space-y-6">
-            <div className="bg-white rounded-3xl border border-[#E8E1D5] shadow-xs p-6 md:p-8 space-y-5">
-              <h2 className="font-heading text-xl font-normal text-[#1C1612] flex items-center justify-between pb-3 border-b border-[#F0EAE1]">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] shadow-xs p-6 md:p-8 space-y-5">
+              <h2 className="font-heading text-xl font-normal text-[#2A1C19] flex items-center justify-between pb-3 border-b border-[#E8DCCF]/60">
                 <span>1. Shipping &amp; Consignment Details</span>
-                <span className="text-xs uppercase tracking-wider text-[#C5A059] font-sans font-medium">Bespoke Delivery</span>
+                <span className="text-xs uppercase tracking-wider text-[#7A223B] font-sans font-medium">Bespoke Delivery</span>
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-[#5C5248] uppercase tracking-wider mb-1.5">
+                {/* Authenticated Account Information (Non-editable) */}
+                <div className="md:col-span-2 p-3.5 bg-[#FAF6F0]/80 border border-[#E8DCCF] rounded-xl flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="block text-[10px] font-bold text-[#A8928D] uppercase tracking-wider">
+                      Signed In As
+                    </span>
+                    <span className="text-xs sm:text-sm font-medium text-[#2A1C19] truncate block">
+                      {authEmail || 'Authenticated Google Account'}
+                    </span>
+                  </div>
+                  <span className="text-[10px] uppercase tracking-wider bg-[#FDF2F5] text-[#7A223B] border border-[#FCE7EC] px-2.5 py-1 rounded-full font-semibold flex-shrink-0">
+                    Google Account
+                  </span>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
                     Full Name *
                   </label>
                   <input
@@ -321,54 +599,42 @@ export const Payment: React.FC = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Radhika Sharma"
-                    className="w-full px-3.5 py-2.5 bg-[#FAF7F2]/60 border border-[#E8E1D5] rounded-xl text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-3.5 py-2.5 bg-[#FAF6F0]/60 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-[#5C5248] uppercase tracking-wider mb-1.5">
-                    Mobile Number *
+                <div className="flex flex-col justify-end">
+                  <label className="text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5 flex items-start justify-between gap-2 min-h-[1.5rem]">
+                    <span className="leading-snug">Mobile Number *</span>
+                    <span className="text-[10px] text-[#A8928D] font-normal tracking-normal uppercase whitespace-nowrap flex-shrink-0 mt-0.5">10 digits</span>
                   </label>
                   <input
                     type="tel"
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="10 digit mobile"
-                    className="w-full px-3.5 py-2.5 bg-[#FAF7F2]/60 border border-[#E8E1D5] rounded-xl text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
+                    placeholder="e.g. 9790657579"
+                    className="w-full px-3.5 py-2.5 bg-[#FAF6F0]/60 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-[#5C5248] uppercase tracking-wider mb-1.5">
-                    WhatsApp Mobile Number *
+                <div className="flex flex-col justify-end">
+                  <label className="text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5 flex items-start justify-between gap-2 min-h-[1.5rem]">
+                    <span className="leading-snug">WhatsApp Number *</span>
+                    <span className="text-[10px] text-[#A8928D] font-normal tracking-normal uppercase whitespace-nowrap flex-shrink-0 mt-0.5">10 digits</span>
                   </label>
                   <input
                     type="tel"
                     required
                     value={whatsappNumber}
                     onChange={(e) => setWhatsappNumber(e.target.value)}
-                    placeholder="10 digit WhatsApp mobile"
-                    className="w-full px-3.5 py-2.5 bg-[#FAF7F2]/60 border border-[#E8E1D5] rounded-xl text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#5C5248] uppercase tracking-wider mb-1.5">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    className="w-full px-3.5 py-2.5 bg-[#FAF7F2]/60 border border-[#E8E1D5] rounded-xl text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
+                    placeholder="e.g. 9790657579"
+                    className="w-full px-3.5 py-2.5 bg-[#FAF6F0]/60 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-[#5C5248] uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
                     Delivery Address *
                   </label>
                   <textarea
@@ -377,119 +643,192 @@ export const Payment: React.FC = () => {
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     placeholder="Apartment, Street address, Landmark…"
-                    className="w-full px-3.5 py-2.5 bg-[#FAF7F2]/60 border border-[#E8E1D5] rounded-xl text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-3.5 py-2.5 bg-[#FAF6F0]/60 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                   />
                 </div>
 
+                {/* State Dropdown */}
                 <div>
-                  <label className="block text-xs font-semibold text-[#5C5248] uppercase tracking-wider mb-1.5">
-                    City *
+                  <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
+                    State / Union Territory *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={city}
-                    onChange={(e) => {
-                      setCity(e.target.value);
-                      // Reset delivery check when city changes
-                      setPincodeValid(null);
-                      setPincodeStatus(null);
-                    }}
-                    onBlur={(e) => {
-                      // City is for address only — not used for shipping calculation
-                    }}
-                    placeholder="e.g. Coimbatore"
-                    className="w-full px-3.5 py-2.5 bg-[#FAF7F2]/60 border border-[#E8E1D5] rounded-xl text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
-                  />
+                  <div className="relative">
+                    <select
+                      required
+                      value={state}
+                      onChange={handleStateChange}
+                      className="w-full appearance-none px-3.5 py-2.5 bg-[#FAF6F0]/60 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B] pr-8 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <option value="" disabled>
+                        Select state
+                      </option>
+                      {statesList.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-[#A8928D] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
 
+                {/* City / District Dropdown */}
                 <div>
-                  <label className="block text-xs font-semibold text-[#5C5248] uppercase tracking-wider mb-1.5">
-                    State *
+                  <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
+                    City / District *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={state}
-                    onChange={(e) => setState(e.target.value)}
-                    placeholder="e.g. Tamil Nadu"
-                    className="w-full px-3.5 py-2.5 bg-[#FAF7F2]/60 border border-[#E8E1D5] rounded-xl text-xs sm:text-sm text-[#1C1612] focus:outline-none focus:border-[#C5A059]"
-                  />
+                  <div className="relative">
+                    <select
+                      required
+                      value={city}
+                      onChange={handleCityChange}
+                      disabled={districtsList.length === 0}
+                      className="w-full appearance-none px-3.5 py-2.5 bg-[#FAF6F0]/60 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B] pr-8 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <option value="" disabled>
+                        {pincodeChecking ? 'Detecting district...' : 'Select City / District'}
+                      </option>
+                      {districtsList.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-[#A8928D] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
 
+                {/* Pincode Input */}
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-[#5C5248] uppercase tracking-wider mb-1.5">
-                    Postal Pincode *
+                  <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Postal Pincode *</span>
+                    <span className="text-[10px] text-[#A8928D] font-normal">6 numeric digits</span>
                   </label>
                   <input
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
                     required
                     maxLength={6}
                     value={pincode}
-                    onChange={(e) => {
-                      setPincode(e.target.value);
-                      const val = e.target.value.trim().replace(/\D/g, '');
-                      if (val.length === 6) {
-                        validatePincode(val);
-                      } else {
-                        setPincodeValid(null);
-                        setPincodeStatus(null);
-                        setShippingCharge(0);
+                    onChange={handlePincodeChange}
+                    onBlur={() => {
+                      if (pincode.length === 6 && !pincodeVerified && !pincodeChecking) {
+                        verifyAndLookupPincode(pincode);
                       }
                     }}
-                    onBlur={() => {
-                      if (pincode.trim()) validatePincode(pincode);
-                    }}
-                    placeholder="6 digit PIN (e.g. 641001)"
-                    className={`w-full px-3.5 py-2.5 bg-[#FAF7F2]/60 border rounded-xl text-xs sm:text-sm text-[#1C1612] focus:outline-none transition-colors ${
+                    placeholder="6 digit PIN (e.g. 641602)"
+                    className={`w-full px-3.5 py-2.5 bg-[#FAF6F0]/60 border rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none transition-colors ${
                       pincodeValid === true
                         ? 'border-emerald-400 focus:border-emerald-500'
                         : pincodeValid === false
                         ? 'border-red-400 focus:border-red-500'
-                        : 'border-[#E8E1D5] focus:border-[#C5A059]'
+                        : 'border-[#E8DCCF] focus:border-[#7A223B]'
                     }`}
                   />
-                  {pincodeChecking && (
-                    <p className="mt-1.5 text-xs text-[#7D7063] flex items-center gap-1.5">
-                      <span className="inline-block w-3 h-3 rounded-full border-2 border-[#C5A059]/40 border-t-[#C5A059] animate-spin"></span>
-                      Checking delivery availability…
-                    </p>
-                  )}
-                  {!pincodeChecking && pincodeStatus && (
-                    <p className={`mt-1.5 text-xs ${pincodeValid === true ? 'text-emerald-700' : pincodeValid === false ? 'text-red-600' : 'text-[#7D7063]'}`}>
-                      {pincodeStatus}
-                    </p>
-                  )}
+
+                  {/* Verification Status */}
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    {pincodeChecking && (
+                      <p className="text-xs text-[#7D6460] flex items-center gap-1.5">
+                        <span className="inline-block w-3 h-3 rounded-full border-2 border-[#7A223B]/40 border-t-[#7A223B] animate-spin"></span>
+                        <span>Verifying pincode...</span>
+                      </p>
+                    )}
+
+                    {!pincodeChecking && pincodeStatus && (
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium ${
+                        pincodeValid === true ? 'text-emerald-700' : pincodeValid === false ? 'text-red-600' : 'text-[#7D6460]'
+                      }`}>
+                        {pincodeValid === true && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+                        {pincodeValid === false && <AlertCircle className="w-3.5 h-3.5 text-red-500" />}
+                        {pincodeStatus}
+                      </span>
+                    )}
+
+                    {/* Delivery Provider Availability Status */}
+                    {!pincodeChecking && pincodeValid === true && deliveryMessage && (
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full ${
+                        deliverySupported === true
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          : 'bg-amber-50 text-amber-800 border border-amber-200'
+                      }`}>
+                        <Truck className="w-3 h-3" />
+                        {deliveryMessage}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
+              {/* Delivery Enquiry Box when provider not configured */}
+              {requiresEnquiry && !pincodeChecking && pincodeValid === true && (
+                <div className="p-4 rounded-2xl bg-[#FDF2F5] border border-[#FCE7EC] space-y-3">
+                  <div className="flex items-start gap-2.5 text-[#7A223B]">
+                    <HelpCircle className="w-4 h-4 text-[#7A223B] flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-semibold">Delivery Availability Needs Confirmation</p>
+                      <p className="text-xs text-[#7D6460] mt-0.5 leading-relaxed">
+                        A standard delivery provider is not automatically active for pincode <strong>{pincode}</strong> ({city}, {state}). You can raise a bespoke delivery enquiry, and our logistics team will arrange specialized delivery.
+                      </p>
+                    </div>
+                  </div>
+
+                  {consultantSent ? (
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-medium flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                      <span>Your delivery enquiry has been recorded. Our team will contact you on WhatsApp/Phone shortly.</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleRaiseDeliveryEnquiry}
+                      disabled={enquiryLoading}
+                      className="btn-rose-primary inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-semibold uppercase tracking-wider shadow-xs"
+                    >
+                      {enquiryLoading ? (
+                        <>
+                          <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
+                          <span>Submitting enquiry…</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-3.5 h-3.5" />
+                          <span>Raise Delivery Enquiry</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Tracking Preference */}
-              <div className="mt-4 p-4 rounded-2xl bg-[#FAF7F2] border border-[#E8E1D5]">
-                <span className="block text-xs font-semibold text-[#5C5248] uppercase tracking-wider mb-2">
+              <div className="mt-4 p-4 rounded-2xl bg-[#FAF6F0]/80 border border-[#E8DCCF]">
+                <span className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-2">
                   Would you like automated tracking updates for this order? *
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <label className="flex items-center gap-3 p-3 rounded-xl border border-[#E8E1D5] bg-white cursor-pointer hover:border-[#C5A059] transition-colors">
+                  <label className="flex items-center gap-3 p-3 rounded-xl border border-[#E8DCCF] bg-white cursor-pointer hover:border-[#7A223B] transition-colors">
                     <input
                       type="radio"
                       name="trackingPref"
                       value="yes"
                       checked={trackingPreference === 'yes'}
                       onChange={() => setTrackingPreference('yes')}
-                      className="accent-[#C5A059] w-4 h-4"
+                      className="accent-[#7A223B] w-4 h-4"
                     />
-                    <span className="text-xs font-medium text-[#1C1612]">YES — Send live tracking updates</span>
+                    <span className="text-xs font-medium text-[#2A1C19]">YES — Send live tracking updates</span>
                   </label>
-                  <label className="flex items-center gap-3 p-3 rounded-xl border border-[#E8E1D5] bg-white cursor-pointer hover:border-[#C5A059] transition-colors">
+                  <label className="flex items-center gap-3 p-3 rounded-xl border border-[#E8DCCF] bg-white cursor-pointer hover:border-[#7A223B] transition-colors">
                     <input
                       type="radio"
                       name="trackingPref"
                       value="no"
                       checked={trackingPreference === 'no'}
                       onChange={() => setTrackingPreference('no')}
-                      className="accent-[#C5A059] w-4 h-4"
+                      className="accent-[#7A223B] w-4 h-4"
                     />
-                    <span className="text-xs font-medium text-[#7D7063]">NO — Standard dispatch</span>
+                    <span className="text-xs font-medium text-[#7D6460]">NO — Standard dispatch</span>
                   </label>
                 </div>
               </div>
@@ -497,27 +836,27 @@ export const Payment: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Order Summary & Razorpay Button (5 Cols) */}
-          <div className="lg:col-span-5 bg-white rounded-3xl border border-[#E8E1D5] shadow-sm p-5 sm:p-7 lg:sticky lg:top-24 space-y-5">
-            <h2 className="font-heading text-xl font-normal text-[#1C1612] flex items-center justify-between pb-3 border-b border-[#F0EAE1]">
+          {/* Right Column: Order Summary & Pay Button (5 Cols) */}
+          <div className="lg:col-span-5 bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] shadow-xs p-5 sm:p-7 lg:sticky lg:top-24 space-y-5">
+            <h2 className="font-heading text-xl font-normal text-[#2A1C19] flex items-center justify-between pb-3 border-b border-[#E8DCCF]/60">
               <span>Order Summary</span>
-              <span className="w-2 h-2 rounded-full bg-[#C5A059]"></span>
+              <span className="w-2 h-2 rounded-full bg-[#7A223B]"></span>
             </h2>
 
             {/* Items List */}
             <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
               {cartItems.map((item) => (
-                <div key={item.variantId} className="flex items-center gap-3 py-2 border-b border-[#F0EAE1] last:border-0">
+                <div key={item.variantId} className="flex items-center gap-3 py-2 border-b border-[#FAF6F0] last:border-0">
                   <img
                     src={item.productImage}
                     alt={item.productName}
-                    className="w-12 h-14 object-cover rounded-xl bg-[#FAF7F2] border border-[#E8E1D5] flex-shrink-0"
+                    className="w-12 h-14 object-cover rounded-xl bg-[#FAF6F0] border border-[#E8DCCF] flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="font-heading text-sm font-normal text-[#1C1612] truncate">{item.productName}</p>
-                    <p className="text-[11px] text-[#8A7E72]">{item.color} • {item.quantity} unit{item.quantity > 1 ? 's' : ''}</p>
+                    <p className="font-heading text-sm font-normal text-[#2A1C19] truncate">{item.productName}</p>
+                    <p className="text-[11px] text-[#A8928D]">{item.color} • {item.quantity} unit{item.quantity > 1 ? 's' : ''}</p>
                   </div>
-                  <span className="font-heading text-sm font-medium text-[#1C1612]">
+                  <span className="font-heading text-sm font-medium text-[#7A223B]">
                     ₹{(item.unitPrice * item.quantity).toLocaleString('en-IN')}
                   </span>
                 </div>
@@ -525,38 +864,38 @@ export const Payment: React.FC = () => {
             </div>
 
             {/* Costs Breakdown */}
-            <div className="space-y-2.5 py-4 border-y border-[#F0EAE1] text-xs sm:text-sm">
-              <div className="flex justify-between text-[#7D7063]">
+            <div className="space-y-2.5 py-4 border-y border-[#E8DCCF]/60 text-xs sm:text-sm">
+              <div className="flex justify-between text-[#7D6460]">
                 <span>Subtotal</span>
-                <span className="font-medium text-[#1C1612]">₹{subtotal.toLocaleString('en-IN')}</span>
+                <span className="font-medium text-[#2A1C19]">₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
-              <div className="flex justify-between text-[#7D7063]">
+              <div className="flex justify-between text-[#7D6460]">
                 <span>Shipping</span>
-                <span className="font-medium text-[#1C1612]">
+                <span className="font-medium text-[#2A1C19]">
                   {pincodeValid === null && !pincodeChecking ? (
-                    <span className="text-[#8A7E72] italic text-[11px]">Enter pincode/city</span>
+                    <span className="text-[#A8928D] italic text-[11px]">Enter pincode</span>
                   ) : pincodeChecking ? (
-                    <span className="text-[#8A7E72] italic text-[11px]">Calculating…</span>
-                  ) : shippingCharge === 0 && pincodeValid === true ? (
-                    <span className="text-emerald-700">COMPLIMENTARY</span>
-                  ) : pincodeValid === true ? (
+                    <span className="text-[#A8928D] italic text-[11px]">Calculating…</span>
+                  ) : deliverySupported === true && shippingCharge === 0 ? (
+                    <span className="text-[#7A223B] font-semibold">COMPLIMENTARY</span>
+                  ) : deliverySupported === true ? (
                     `₹${shippingCharge}`
                   ) : (
-                    <span className="text-[#8A7E72] italic text-[11px]">Not available</span>
+                    <span className="text-amber-700 italic text-[11px]">Needs confirmation</span>
                   )}
                 </span>
               </div>
-              {pincodeValid === true && shippingCharge > 0 && freeShippingThreshold > subtotal && (
-                <p className="text-[11px] text-emerald-700">
+              {deliverySupported === true && shippingCharge > 0 && freeShippingThreshold > subtotal && (
+                <p className="text-[11px] text-[#7A223B]">
                   Add ₹{(freeShippingThreshold - subtotal).toLocaleString('en-IN')} more for free shipping!
                 </p>
               )}
               <div className="pt-2 flex justify-between items-baseline">
                 <div>
-                  <span className="font-heading text-lg font-medium text-[#1C1612] block">Total Amount</span>
-                  <span className="text-[11px] text-[#8A7E72]">Inclusive of all taxes</span>
+                  <span className="font-heading text-lg font-medium text-[#2A1C19] block">Total Amount</span>
+                  <span className="text-[11px] text-[#A8928D]">Inclusive of all taxes</span>
                 </div>
-                <span className="font-heading text-2xl font-bold text-[#1C1612]">
+                <span className="font-heading text-2xl font-bold text-[#7A223B]">
                   ₹{finalTotal.toLocaleString('en-IN')}
                 </span>
               </div>
@@ -574,7 +913,7 @@ export const Payment: React.FC = () => {
                     <li key={i}>{err.productName || 'Item'}: {err.reason}</li>
                   ))}
                 </ul>
-                <Link to="/cart" className="text-xs text-[#C5A059] font-medium hover:underline block pt-1">
+                <Link to="/cart" className="text-xs text-[#7A223B] font-medium hover:underline block pt-1">
                   ← Return to update bag
                 </Link>
               </div>
@@ -587,29 +926,18 @@ export const Payment: React.FC = () => {
               </div>
             )}
 
-            {pincodeValid === false && pincode.length === 6 && (
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-3">
-                <p className="text-xs text-amber-800">Delivery is not currently configured for this location. Our order consultants can help arrange delivery.</p>
-                {consultantSent ? (
-                  <p className="text-xs font-semibold text-emerald-700">Your consultant request was sent successfully.</p>
-                ) : (
-                  <button type="button" onClick={requestConsultant} className="w-full py-3 rounded-xl bg-[#C5A059] text-[#1C1612] text-xs font-semibold uppercase tracking-wider">Request Order Consultant</button>
-                )}
-              </div>
-            )}
-
-            {/* Unboxing Video Guideline — shown for every order before payment */}
+            {/* Unboxing Video Guideline */}
             <div
               role="note"
               aria-label="Unboxing video guideline for all orders"
-              className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex gap-3 items-start"
+              className="p-4 rounded-2xl bg-[#FDF2F5] border border-[#FCE7EC] flex gap-3 items-start"
             >
-              <Video className="w-5 h-5 flex-shrink-0 text-amber-600 mt-0.5" aria-hidden="true" />
+              <Video className="w-5 h-5 flex-shrink-0 text-[#7A223B] mt-0.5" aria-hidden="true" />
               <div className="space-y-1.5">
-                <p className="text-xs font-semibold text-amber-800 uppercase tracking-wider">
+                <p className="text-xs font-semibold text-[#7A223B] uppercase tracking-wider">
                   Important: Record Your Unboxing Video
                 </p>
-                <p className="text-xs text-amber-700 leading-relaxed">
+                <p className="text-xs text-[#7D6460] leading-relaxed">
                   When your parcel is delivered, please record a clear, continuous unboxing video while opening the package and keep the video safely. If you receive a damaged, incorrect, missing, or otherwise problematic product, this unboxing video may be required to support a Return or Replacement request.
                 </p>
               </div>
@@ -623,9 +951,9 @@ export const Payment: React.FC = () => {
                   required
                   checked={addressConfirmed}
                   onChange={(e) => setAddressConfirmed(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-[#D1C7BA] text-[#C5A059] focus:ring-[#C5A059]/30"
+                  className="mt-1 h-4 w-4 rounded border-[#E8DCCF] text-[#7A223B] focus:ring-[#7A223B]/30"
                 />
-                <span className="text-xs text-[#5C5248] leading-relaxed">
+                <span className="text-xs text-[#5C4540] leading-relaxed">
                   I confirm that the delivery address, city, state, and pincode entered above are correct.
                   <span className="text-red-500"> *</span>
                 </span>
@@ -636,35 +964,35 @@ export const Payment: React.FC = () => {
                   required
                   checked={acceptTerms}
                   onChange={(e) => setAcceptTerms(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-[#D1C7BA] text-[#C5A059] focus:ring-[#C5A059]/30"
+                  className="mt-1 h-4 w-4 rounded border-[#E8DCCF] text-[#7A223B] focus:ring-[#7A223B]/30"
                 />
-                <span className="text-xs text-[#7D7063] leading-relaxed">
+                <span className="text-xs text-[#7D6460] leading-relaxed">
                   I accept the{' '}
-                  <Link to="/terms" target="_blank" className="text-[#C5A059] hover:underline">Terms &amp; Conditions</Link>
+                  <Link to="/terms" target="_blank" className="text-[#7A223B] hover:underline">Terms &amp; Conditions</Link>
                   {' '}and{' '}
-                  <Link to="/privacy" target="_blank" className="text-[#C5A059] hover:underline">Privacy Policy</Link>.
+                  <Link to="/privacy" target="_blank" className="text-[#7A223B] hover:underline">Privacy Policy</Link>.
                   View our{' '}
-                  <Link to="/refund-policy" target="_blank" className="text-[#C5A059] hover:underline">Refund Policy</Link>.
+                  <Link to="/refund-policy" target="_blank" className="text-[#7A223B] hover:underline">Refund Policy</Link>.
                   <span className="text-red-500"> *</span>
                 </span>
               </label>
             </div>
 
             {/* Supported Payment Channels Information Box */}
-            <div className="p-4 rounded-2xl bg-[#FAF7F2] border border-[#E8E1D5] space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-[#E8E1D5]/70">
-                <span className="text-[11px] font-semibold text-[#5C5248] uppercase tracking-wider">
+            <div className="p-4 rounded-2xl bg-[#FAF6F0]/80 border border-[#E8DCCF] space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-[#E8DCCF]/70">
+                <span className="text-[11px] font-semibold text-[#5C4540] uppercase tracking-wider">
                   Supported Payment Methods
                 </span>
-                <span className="text-[10px] text-[#C5A059] font-medium uppercase tracking-wider">
-                  Razorpay
+                <span className="text-[10px] text-[#7A223B] font-medium uppercase tracking-wider">
+                  Secure Checkout
                 </span>
               </div>
 
               {/* UPI Highlight */}
-              <div className="bg-white rounded-xl p-3 border border-[#E8E1D5] space-y-2">
+              <div className="bg-white rounded-xl p-3 border border-[#E8DCCF] space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-[#1C1612] flex items-center gap-1.5">
+                  <span className="text-xs font-semibold text-[#2A1C19] flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                     Instant UPI &amp; Dynamic QR
                   </span>
@@ -675,70 +1003,79 @@ export const Payment: React.FC = () => {
                 
                 {/* Visual badges for supported UPI apps */}
                 <div className="flex flex-wrap gap-1.5 pt-0.5">
-                  <span className="px-2.5 py-1 bg-[#FAF7F2] border border-[#E8E1D5] rounded-lg text-[11px] font-medium text-[#1C1612]">
+                  <span className="px-2.5 py-1 bg-[#FAF6F0] border border-[#E8DCCF] rounded-lg text-[11px] font-medium text-[#2A1C19]">
                     Google Pay
                   </span>
-                  <span className="px-2.5 py-1 bg-[#FAF7F2] border border-[#E8E1D5] rounded-lg text-[11px] font-medium text-[#1C1612]">
+                  <span className="px-2.5 py-1 bg-[#FAF6F0] border border-[#E8DCCF] rounded-lg text-[11px] font-medium text-[#2A1C19]">
                     PhonePe
                   </span>
-                  <span className="px-2.5 py-1 bg-[#FAF7F2] border border-[#E8E1D5] rounded-lg text-[11px] font-medium text-[#1C1612]">
+                  <span className="px-2.5 py-1 bg-[#FAF6F0] border border-[#E8DCCF] rounded-lg text-[11px] font-medium text-[#2A1C19]">
                     Paytm
                   </span>
-                  <span className="px-2.5 py-1 bg-[#FAF7F2] border border-[#E8E1D5] rounded-lg text-[11px] font-medium text-[#1C1612]">
+                  <span className="px-2.5 py-1 bg-[#FAF6F0] border border-[#E8DCCF] rounded-lg text-[11px] font-medium text-[#2A1C19]">
                     BHIM / Any UPI
                   </span>
                 </div>
 
-                <div className="pt-1 space-y-1 text-[11px] text-[#7D7063] leading-relaxed border-t border-stone-100">
+                <div className="pt-1 space-y-1 text-[11px] text-[#7D6460] leading-relaxed border-t border-stone-100">
                   <p>
-                    <span className="font-medium text-[#1C1612]">Mobile:</span> Direct UPI Intent launches your installed UPI app.
+                    <span className="font-medium text-[#2A1C19]">Mobile:</span> Direct UPI Intent launches your installed UPI app.
                   </p>
                   <p>
-                    <span className="font-medium text-[#1C1612]">Desktop:</span> Instant dynamic QR code appears for camera/UPI scan.
+                    <span className="font-medium text-[#2A1C19]">Desktop:</span> Instant dynamic QR code appears for camera/UPI scan.
                   </p>
                 </div>
               </div>
 
               {/* Cards & Net Banking Badges */}
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-white p-2.5 rounded-xl border border-[#E8E1D5]">
-                  <p className="font-medium text-[#1C1612] text-[11px]">Cards</p>
-                  <p className="text-[10px] text-[#8A7E72] mt-0.5">Visa, Mastercard, RuPay</p>
+                <div className="bg-white p-2.5 rounded-xl border border-[#E8DCCF]">
+                  <p className="font-medium text-[#2A1C19] text-[11px]">Cards</p>
+                  <p className="text-[10px] text-[#A8928D] mt-0.5">Visa, Mastercard, RuPay</p>
                 </div>
-                <div className="bg-white p-2.5 rounded-xl border border-[#E8E1D5]">
-                  <p className="font-medium text-[#1C1612] text-[11px]">Net Banking</p>
-                  <p className="text-[10px] text-[#8A7E72] mt-0.5">50+ Indian Banks</p>
+                <div className="bg-white p-2.5 rounded-xl border border-[#E8DCCF]">
+                  <p className="font-medium text-[#2A1C19] text-[11px]">Net Banking</p>
+                  <p className="text-[10px] text-[#A8928D] mt-0.5">50+ Indian Banks</p>
                 </div>
               </div>
             </div>
 
-            {/* Submit / Razorpay Checkout Button */}
+            {/* Submit / PayU Checkout Button */}
             <div className="space-y-2">
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full bg-[#1C1612] text-[#FEF3C7] hover:bg-[#2A231D] disabled:opacity-50 py-4 px-6 rounded-2xl font-semibold text-xs uppercase tracking-[0.2em] shadow-gold transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                disabled={loading || deliverySupported !== true}
+                className={`w-full py-3.5 px-6 rounded-xl font-semibold text-xs uppercase tracking-[0.16em] transition-all duration-300 flex items-center justify-center gap-2 ${
+                  deliverySupported === true
+                    ? 'btn-rose-primary cursor-pointer active:scale-98 shadow-sm'
+                    : 'bg-[#E8DCCF] text-[#A8928D] cursor-not-allowed opacity-60'
+                }`}
               >
                 {loading ? (
                   <>
-                    <div className="w-4 h-4 rounded-full border-2 border-[#FEF3C7]/40 border-t-[#FEF3C7] animate-spin"></div>
-                    <span>Opening Razorpay…</span>
+                    <div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin"></div>
+                    <span>Processing…</span>
+                  </>
+                ) : deliverySupported === true ? (
+                  <>
+                    <ShieldCheck className="w-4 h-4 text-[#DFC598]" />
+                    <span>Proceed to Pay ₹{finalTotal.toLocaleString('en-IN')}</span>
                   </>
                 ) : (
                   <>
-                    <ShieldCheck className="w-4 h-4 text-[#D4AF37]" />
-                    <span>Proceed to Pay ₹{finalTotal.toLocaleString('en-IN')}</span>
+                    <Lock className="w-4 h-4 text-[#7D6460]" />
+                    <span>Delivery Confirmation Required</span>
                   </>
                 )}
               </button>
-              <p className="text-center text-[10px] text-[#8A7E72]">
-                Secured by 256-bit SSL encryption via Razorpay
+              <p className="text-center text-[10px] text-[#A8928D]">
+                Secured by 256-bit SSL encryption
               </p>
             </div>
 
             <Link
               to="/cart"
-              className="block text-center text-xs text-[#7D7063] hover:text-[#1C1612] pt-1"
+              className="block text-center text-xs text-[#7A223B] hover:text-[#5E182C] font-medium pt-1"
             >
               ← Return to Shopping Bag
             </Link>
@@ -751,3 +1088,5 @@ export const Payment: React.FC = () => {
     </div>
   );
 };
+
+export default Payment;

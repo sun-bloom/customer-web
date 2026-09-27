@@ -35,13 +35,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   };
 
   return (
-    <div className="group relative bg-white rounded-2xl sm:rounded-3xl border border-[#E8E1D5] overflow-hidden shadow-2xs hover:shadow-gold transition-all duration-300 flex flex-col">
-      {/* Product Image Container */}
-      <Link to={`/products/${product.slug}`} className="relative aspect-4/5 overflow-hidden bg-[#F6F1EA] block">
+    <div className="group relative bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] overflow-hidden shadow-2xs hover:shadow-md hover:border-[#DFC598] transition-all duration-300 flex flex-col">
+      {/* Product Image Container (Crisp, Balanced & Untinted) */}
+      <Link to={`/products/${product.slug}`} className="relative aspect-square sm:aspect-[4/4.5] max-h-[250px] sm:max-h-[280px] overflow-hidden bg-[#FAF5EB] block">
         <img
           src={primaryImage}
           alt={product.name}
-          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+          className="w-full h-full object-cover object-center group-hover:scale-104 transition-transform duration-500 ease-out"
           loading="lazy"
         />
         {secondaryImage !== primaryImage && (
@@ -57,38 +57,38 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         {defaultVariant && defaultVariant.isAvailable !== false && (
           <button
             onClick={handleQuickAdd}
-            className="absolute bottom-3 right-3 p-3 rounded-full bg-[#1C1612] text-[#FEF3C7] shadow-gold opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 hover:bg-[#C5A059] hover:text-[#1C1612] cursor-pointer"
+            className="absolute bottom-2.5 right-2.5 p-2 sm:p-2.5 rounded-xl btn-rose-primary shadow-xs opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 hover:scale-105 cursor-pointer"
             aria-label="Add to cart"
             title="Quick add to bag"
           >
-            <ShoppingBag className="w-4 h-4" />
+            <ShoppingBag className="w-3.5 h-3.5 text-[#DFC598]" />
           </button>
         )}
       </Link>
 
       {/* Product Info */}
-      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between bg-gradient-to-b from-white to-[#FCF9F7]">
         <div>
-          <span className="text-[10px] uppercase tracking-widest text-[#C5A059] font-medium block mb-1">
+          <span className="text-[10px] uppercase tracking-widest text-[#7A223B] font-medium block mb-1">
             {product.category || 'Fine Jewellery'}
           </span>
           <Link to={`/products/${product.slug}`}>
-            <h3 className="font-heading text-base sm:text-lg font-normal text-[#1C1612] group-hover:text-[#A88136] transition-colors line-clamp-1">
+            <h3 className="font-heading text-sm sm:text-base font-normal text-[#2A1C19] group-hover:text-[#7A223B] transition-colors line-clamp-1">
               {product.name}
             </h3>
           </Link>
           {product.description && (
-            <p className="text-xs text-[#7D7063] line-clamp-2 mt-1 font-light">
+            <p className="text-xs text-[#755B55] line-clamp-2 mt-0.5 font-light">
               {product.description}
             </p>
           )}
         </div>
 
-        <div className="mt-4 pt-3 border-t border-[#F0EAE1] flex items-center justify-between">
-          <span className="font-heading text-base sm:text-lg font-medium text-[#1C1612]">
+        <div className="mt-3 pt-2.5 border-t border-[#F4ECE5] flex items-center justify-between">
+          <span className="font-heading text-sm sm:text-base font-medium text-[#7A223B]">
             ₹{price.toLocaleString('en-IN')}
           </span>
-          <span className="text-[10px] uppercase tracking-wider text-[#8A7E72]">
+          <span className="text-[10px] uppercase tracking-wider text-[#A88136] font-medium">
             {product.variants?.length > 1 ? `${product.variants.length} finishes` : 'In Stock'}
           </span>
         </div>
@@ -96,3 +96,4 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     </div>
   );
 };
+
