@@ -7,8 +7,6 @@ import { addToCart, openCart } from '../stores/cartStore';
 import { ProductCard } from '../components/products/ProductCard';
 import { ShieldCheck, Sparkles, Truck, RefreshCw, ShoppingBag, ArrowLeft, Check } from 'lucide-react';
 
-import { FALLBACK_PRODUCTS } from '../data/fallbackData';
-
 export const ProductDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -32,11 +30,7 @@ export const ProductDetail: React.FC = () => {
         try {
           prod = await getProductBySlugApi(slug);
         } catch {
-          prod = FALLBACK_PRODUCTS.find((p) => p.slug === slug || p.id === slug) || null;
-        }
-
-        if (!prod || !prod.id) {
-          prod = FALLBACK_PRODUCTS.find((p) => p.slug === slug || p.id === slug) || null;
+          prod = null;
         }
 
         if (!prod || !prod.id) {
@@ -52,21 +46,14 @@ export const ProductDetail: React.FC = () => {
         setSelectedImage(initialImg);
 
         // Fetch related products from same category
-        let allProds = await getProductsApi().catch(() => ({ products: [] }));
-        let prodsList = allProds.products?.length > 0 ? allProds.products : FALLBACK_PRODUCTS;
+        const allProds = await getProductsApi().catch(() => ({ products: [] }));
+        const prodsList = allProds.products?.filter((p) => p.isActive) || [];
         const related = prodsList
           .filter((p) => p.id !== prod?.id && p.category === prod?.category)
           .slice(0, 4);
         setRelatedProducts(related);
       } catch (err: any) {
-        const fallback = FALLBACK_PRODUCTS.find((p) => p.slug === slug || p.id === slug);
-        if (fallback) {
-          setProduct(fallback);
-          setSelectedVariant(fallback.variants?.[0] || null);
-          setSelectedImage(fallback.images?.[0] || '');
-        } else {
-          setError(err.message || 'Unable to load product');
-        }
+        setError(err.message || 'Unable to load product');
       } finally {
         setLoading(false);
       }

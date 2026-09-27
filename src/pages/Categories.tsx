@@ -4,8 +4,6 @@ import { Link } from 'react-router-dom';
 import { getCategoriesApi, getProductsApi } from '../lib/api';
 import type { Category, Product } from '../types';
 import { Sparkles, ArrowRight, Layers } from 'lucide-react';
-import { FALLBACK_CATEGORIES, FALLBACK_PRODUCTS } from '../data/fallbackData';
-
 export const Categories: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -24,12 +22,13 @@ export const Categories: React.FC = () => {
         const catList = catRes.categories || [];
         const prodList = prodRes.products?.filter((p) => p.isActive) || [];
 
-        setCategories(catList.length > 0 ? catList : FALLBACK_CATEGORIES);
-        setProducts(prodList.length > 0 ? prodList : FALLBACK_PRODUCTS);
+        setCategories(catList);
+        setProducts(prodList);
       } catch (err: any) {
-        console.warn('Using categories fallback:', err);
-        setCategories(FALLBACK_CATEGORIES);
-        setProducts(FALLBACK_PRODUCTS);
+        console.error('Failed to load categories:', err);
+        setError(err.message || 'Unable to load categories');
+        setCategories([]);
+        setProducts([]);
       } finally {
         setLoading(false);
       }
@@ -94,7 +93,7 @@ export const Categories: React.FC = () => {
         )}
 
         {/* Categories Grid */}
-        {!loading && !error && (
+        {!loading && !error && categories.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {categories.map((cat) => {
               const count = getProductCountForCategory(cat.slug);
@@ -138,6 +137,27 @@ export const Categories: React.FC = () => {
                 </Link>
               );
             })}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && categories.length === 0 && (
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] p-12 text-center max-w-md mx-auto shadow-xs">
+            <div className="w-14 h-14 rounded-full bg-[#FDF2F5] border border-[#FCE7EC] flex items-center justify-center mx-auto mb-4 text-[#7A223B]">
+              <Sparkles className="w-6 h-6 text-[#DFC598]" />
+            </div>
+            <h3 className="font-heading text-xl font-normal text-[#2A1C19] mb-1">
+              No categories found
+            </h3>
+            <p className="text-xs text-[#7D6460] font-light mb-6">
+              No product categories are currently available in the atelier collection.
+            </p>
+            <Link
+              to="/products"
+              className="btn-rose-primary px-6 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider shadow-xs inline-block"
+            >
+              Browse Catalog
+            </Link>
           </div>
         )}
 

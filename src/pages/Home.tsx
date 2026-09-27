@@ -21,211 +21,13 @@ import {
   Clock,
 } from 'lucide-react';
 
-// Authentic Fallback Data for Sunbloom Adorn Catalogue (Matches seed data if backend is sleeping)
-const FALLBACK_CATEGORIES: Category[] = [
-  {
-    id: 'cat-ring',
-    slug: 'ring',
-    name: 'Rings',
-    description: 'Elegant Korean minimalist rings crafted for everyday luxury and timeless styling.',
-    image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&q=80&w=800',
-  },
-  {
-    id: 'cat-necklace',
-    slug: 'necklace',
-    name: 'Necklaces',
-    description: 'Refined necklaces designed with delicate silhouettes and radiant golden detailing.',
-    image: 'https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&q=80&w=800',
-  },
-  {
-    id: 'cat-bracelet',
-    slug: 'bracelet',
-    name: 'Bracelets',
-    description: 'Minimalist bracelets designed for effortless everyday elegance.',
-    image: 'https://images.unsplash.com/photo-1573408301185-9519f94ef0ff?auto=format&fit=crop&q=80&w=800',
-  },
-  {
-    id: 'cat-earrings',
-    slug: 'earrings',
-    name: 'Earrings',
-    description: 'Elegant earrings combining clean Korean-inspired forms with timeless jewellery styling.',
-    image: 'https://images.unsplash.com/photo-1629224316810-9d8805b95e76?auto=format&fit=crop&q=80&w=800',
-  },
-  {
-    id: 'cat-pendant',
-    slug: 'pendant',
-    name: 'Pendants',
-    description: 'Statement and minimalist pendants designed around refined geometric forms.',
-    image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=800',
-  },
-];
-
-const FALLBACK_PRODUCTS: Product[] = [
-  {
-    id: 'prod-102-01',
-    name: 'Solara Fine Necklace',
-    slug: 'solara-fine-necklace',
-    category: 'necklace',
-    description: 'A delicate golden necklace inspired by the warmth and brilliance of sunlight.',
-    basePrice: 1599,
-    images: ['https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&q=80&w=800'],
-    variants: [{ id: 'v-102-01', color: 'Gold', pattern: 'Solid', stock: 20, additionalPrice: 0, sku: '102-01-GOLD', images: [], isAvailable: true }],
-    isActive: true,
-    createdAt: '2026-02-01T00:00:00Z',
-    updatedAt: '2026-02-01T00:00:00Z',
-  },
-  {
-    id: 'prod-101-01',
-    name: 'Aurora Minimal Ring',
-    slug: 'aurora-minimal-ring',
-    category: 'ring',
-    description: 'A refined minimalist ring with a polished golden finish, designed for effortless everyday elegance.',
-    basePrice: 899,
-    images: ['https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&q=80&w=800'],
-    variants: [{ id: 'v-101-01', color: 'Gold', pattern: 'Solid', stock: 25, additionalPrice: 0, sku: '101-01-GOLD', images: [], isAvailable: true }],
-    isActive: true,
-    createdAt: '2026-02-02T00:00:00Z',
-    updatedAt: '2026-02-02T00:00:00Z',
-  },
-  {
-    id: 'prod-103-01',
-    name: 'Serene Gold Bracelet',
-    slug: 'serene-gold-bracelet',
-    category: 'bracelet',
-    description: 'A lightweight minimalist bracelet with a polished golden finish.',
-    basePrice: 999,
-    images: ['https://images.unsplash.com/photo-1573408301185-9519f94ef0ff?auto=format&fit=crop&q=80&w=800'],
-    variants: [{ id: 'v-103-01', color: 'Gold', pattern: 'Solid', stock: 15, additionalPrice: 0, sku: '103-01-GOLD', images: [], isAvailable: true }],
-    isActive: true,
-    createdAt: '2026-02-03T00:00:00Z',
-    updatedAt: '2026-02-03T00:00:00Z',
-  },
-  {
-    id: 'prod-104-01',
-    name: 'Dewdrop Stud Earrings',
-    slug: 'dewdrop-stud-earrings',
-    category: 'earrings',
-    description: 'Minimalist stud earrings inspired by the soft form of morning dew.',
-    basePrice: 799,
-    images: ['https://images.unsplash.com/photo-1629224316810-9d8805b95e76?auto=format&fit=crop&q=80&w=800'],
-    variants: [{ id: 'v-104-01', color: 'Gold', pattern: 'Stud', stock: 30, additionalPrice: 0, sku: '104-01-GOLD', images: [], isAvailable: true }],
-    isActive: true,
-    createdAt: '2026-02-04T00:00:00Z',
-    updatedAt: '2026-02-04T00:00:00Z',
-  },
-  {
-    id: 'prod-102-02',
-    name: 'Celeste Layer Necklace',
-    slug: 'celeste-layer-necklace',
-    category: 'necklace',
-    description: 'A refined layered necklace designed for modern minimalist styling.',
-    basePrice: 2199,
-    images: ['https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80&w=800'],
-    variants: [{ id: 'v-102-02', color: 'Gold', pattern: 'Layered', stock: 12, additionalPrice: 0, sku: '102-02-GOLD', images: [], isAvailable: true }],
-    isActive: true,
-    createdAt: '2026-02-05T00:00:00Z',
-    updatedAt: '2026-02-05T00:00:00Z',
-  },
-  {
-    id: 'prod-105-01',
-    name: 'Sunbloom Medallion Pendant',
-    slug: 'sunbloom-medallion-pendant',
-    category: 'pendant',
-    description: 'A signature Sunbloom pendant inspired by radiant sunlight and refined geometric forms.',
-    basePrice: 2499,
-    images: ['https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=800'],
-    variants: [{ id: 'v-105-01', color: 'Gold', pattern: 'Medallion', stock: 18, additionalPrice: 0, sku: '105-01-GOLD', images: [], isAvailable: true }],
-    isActive: true,
-    createdAt: '2026-02-06T00:00:00Z',
-    updatedAt: '2026-02-06T00:00:00Z',
-  },
-  {
-    id: 'prod-101-02',
-    name: 'Luna Crystal Ring',
-    slug: 'luna-crystal-ring',
-    category: 'ring',
-    description: 'A delicate crystal-accented ring inspired by soft moonlight and Korean minimalist jewellery design.',
-    basePrice: 1299,
-    images: ['https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&q=80&w=800'],
-    variants: [{ id: 'v-101-02', color: 'Silver', pattern: 'Crystal', stock: 15, additionalPrice: 0, sku: '101-02-SLV', images: [], isAvailable: true }],
-    isActive: true,
-    createdAt: '2026-02-07T00:00:00Z',
-    updatedAt: '2026-02-07T00:00:00Z',
-  },
-  {
-    id: 'prod-103-02',
-    name: 'Halo Chain Bracelet',
-    slug: 'halo-chain-bracelet',
-    category: 'bracelet',
-    description: 'A delicate chain bracelet designed for subtle everyday luxury.',
-    basePrice: 1499,
-    images: ['https://images.unsplash.com/photo-1610694955371-d4a3e0ce4b52?auto=format&fit=crop&q=80&w=800'],
-    variants: [{ id: 'v-103-02', color: 'Gold', pattern: 'Chain', stock: 10, additionalPrice: 0, sku: '103-02-GOLD', images: [], isAvailable: true }],
-    isActive: true,
-    createdAt: '2026-02-08T00:00:00Z',
-    updatedAt: '2026-02-08T00:00:00Z',
-  },
-  {
-    id: 'prod-104-02',
-    name: 'Solstice Hoop Earrings',
-    slug: 'solstice-hoop-earrings',
-    category: 'earrings',
-    description: 'Clean circular hoops designed for versatile everyday styling.',
-    basePrice: 1299,
-    images: ['https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&q=80&w=800'],
-    variants: [{ id: 'v-104-02', color: 'Gold', pattern: 'Hoop', stock: 22, additionalPrice: 0, sku: '104-02-GOLD', images: [], isAvailable: true }],
-    isActive: true,
-    createdAt: '2026-02-09T00:00:00Z',
-    updatedAt: '2026-02-09T00:00:00Z',
-  },
-  {
-    id: 'prod-101-03',
-    name: 'Eclipse Signature Ring',
-    slug: 'eclipse-signature-ring',
-    category: 'ring',
-    description: 'A sophisticated statement ring with a clean silhouette and radiant golden finish.',
-    basePrice: 1799,
-    images: ['https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&q=80&w=800'],
-    variants: [{ id: 'v-101-03', color: 'Gold', pattern: 'Polished', stock: 14, additionalPrice: 0, sku: '101-03-GOLD', images: [], isAvailable: true }],
-    isActive: true,
-    createdAt: '2026-02-10T00:00:00Z',
-    updatedAt: '2026-02-10T00:00:00Z',
-  },
-  {
-    id: 'prod-102-03',
-    name: 'Noir Pearl Necklace',
-    slug: 'noir-pearl-necklace',
-    category: 'necklace',
-    description: 'An elegant necklace combining a dark accent with a refined golden chain.',
-    basePrice: 2699,
-    images: ['https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=800'],
-    variants: [{ id: 'v-102-03', color: 'Black Pearl', pattern: 'Classic', stock: 8, additionalPrice: 0, sku: '102-03-BLK', images: [], isAvailable: true }],
-    isActive: true,
-    createdAt: '2026-02-11T00:00:00Z',
-    updatedAt: '2026-02-11T00:00:00Z',
-  },
-  {
-    id: 'prod-105-02',
-    name: 'Azure Crystal Pendant',
-    slug: 'azure-crystal-pendant',
-    category: 'pendant',
-    description: 'A distinctive crystal pendant combining deep blue tones with a warm golden setting.',
-    basePrice: 2999,
-    images: ['https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&q=80&w=800'],
-    variants: [{ id: 'v-105-02', color: 'Blue Gold', pattern: 'Crystal', stock: 10, additionalPrice: 0, sku: '105-02-BLUE', images: [], isAvailable: true }],
-    isActive: true,
-    createdAt: '2026-02-12T00:00:00Z',
-    updatedAt: '2026-02-12T00:00:00Z',
-  },
-];
-
 export const Home: React.FC = () => {
   const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch Existing Products & Categories from Real Backend APIs with Graceful Catalog Fallback
+  // Fetch Existing Products & Categories from Real Backend APIs
   useEffect(() => {
     let isMounted = true;
     async function loadData() {
@@ -236,16 +38,16 @@ export const Home: React.FC = () => {
         ]);
 
         if (isMounted) {
-          const apiProducts = prodRes.products && prodRes.products.length > 0 ? prodRes.products : FALLBACK_PRODUCTS;
-          const apiCategories = catRes.categories && catRes.categories.length > 0 ? catRes.categories : FALLBACK_CATEGORIES;
+          const apiProducts = prodRes.products?.filter((p) => p.isActive) || [];
+          const apiCategories = catRes.categories || [];
           setProducts(apiProducts);
           setCategories(apiCategories);
         }
       } catch (e) {
         console.error('Home data load error:', e);
         if (isMounted) {
-          setProducts(FALLBACK_PRODUCTS);
-          setCategories(FALLBACK_CATEGORIES);
+          setProducts([]);
+          setCategories([]);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -275,21 +77,33 @@ export const Home: React.FC = () => {
 
 
 
-  // Real Jewellery Image for the Hero: Solara Fine Necklace or first real necklace asset
+  // Real Jewellery Image for the Hero: first real necklace asset or active product
   const heroJewellery = React.useMemo(() => {
     const foundNecklace = products.find(
       (p) =>
         p.slug.includes('necklace') ||
         p.category?.toLowerCase() === 'necklace' ||
         p.category?.toLowerCase() === 'necklaces'
-    );
+    ) || products[0];
+
+    if (foundNecklace) {
+      return {
+        name: foundNecklace.name,
+        link: `/products/${foundNecklace.slug}`,
+        subtitle: '18K Gold Plated • Waterproof • Anti-Tarnish',
+        tag: 'Signature Creation',
+        image:
+          foundNecklace.images?.[0] ||
+          'https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&q=80&w=1000',
+      };
+    }
+
     return {
-      name: foundNecklace?.name || 'Solara Fine Necklace',
-      slug: foundNecklace?.slug || 'solara-fine-necklace',
-      price: foundNecklace?.basePrice || 1599,
-      image:
-        foundNecklace?.images?.[0] ||
-        'https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&q=80&w=1000',
+      name: 'Sunbloom Adorn Atelier',
+      link: '/products',
+      subtitle: 'Waterproof 18K Gold • Anti-Tarnish • 316L Steel',
+      tag: 'Haute Atelier',
+      image: '/logo.png',
     };
   }, [products]);
 
@@ -392,12 +206,12 @@ export const Home: React.FC = () => {
                   <div className="absolute top-3.5 left-3.5 z-10">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase tracking-widest font-semibold bg-[#FFF9FA]/95 text-[#7A223B] border border-[#DFC598]/50 shadow-2xs backdrop-blur-xs">
                       <Gem className="w-3 h-3 text-[#DFC598]" />
-                      <span>Signature Creation</span>
+                      <span>{heroJewellery.tag}</span>
                     </span>
                   </div>
 
                   {/* High Quality Real Necklace Image */}
-                  <div className="aspect-4/5 overflow-hidden bg-[#FAF4EF]">
+                  <div className="aspect-4/5 overflow-hidden bg-[#FAF4EF] flex items-center justify-center">
                     <img
                       src={heroJewellery.image}
                       alt={heroJewellery.name}
@@ -417,14 +231,14 @@ export const Home: React.FC = () => {
                         {heroJewellery.name}
                       </h3>
                       <p className="text-xs text-[#755B55] mt-0.5 font-light">
-                        18K Gold Plated • Waterproof • Anti-Tarnish
+                        {heroJewellery.subtitle}
                       </p>
                     </div>
 
                     <Link
-                      to={`/products/${heroJewellery.slug}`}
+                      to={heroJewellery.link}
                       className="inline-flex items-center justify-center w-9 h-9 rounded-xl btn-rose-primary transition-colors shadow-2xs"
-                      title="View piece"
+                      title="View collection"
                       aria-label={`View ${heroJewellery.name}`}
                     >
                       <ArrowRight className="w-4 h-4 text-[#DFC598]" />

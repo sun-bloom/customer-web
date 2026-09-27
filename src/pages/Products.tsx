@@ -6,8 +6,6 @@ import type { Product, Category } from '../types';
 import { ProductCard } from '../components/products/ProductCard';
 import { Search, SlidersHorizontal, Sparkles } from 'lucide-react';
 
-import { FALLBACK_PRODUCTS, FALLBACK_CATEGORIES } from '../data/fallbackData';
-
 export const Products: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
@@ -30,21 +28,13 @@ export const Products: React.FC = () => {
         ]);
         
         const activeProducts = prodRes.products?.filter((p) => p.isActive) || [];
-        if (activeProducts.length > 0) {
-          setProducts(activeProducts);
-        } else {
-          setProducts(FALLBACK_PRODUCTS);
-        }
-
-        if (catRes.categories && catRes.categories.length > 0) {
-          setCategories(catRes.categories);
-        } else {
-          setCategories(FALLBACK_CATEGORIES);
-        }
+        setProducts(activeProducts);
+        setCategories(catRes.categories || []);
       } catch (err: any) {
-        console.warn('Using catalogue fallbacks:', err);
-        setProducts(FALLBACK_PRODUCTS);
-        setCategories(FALLBACK_CATEGORIES);
+        console.error('Failed to load products/categories:', err);
+        setError(err.message || 'Unable to load collection');
+        setProducts([]);
+        setCategories([]);
       } finally {
         setLoading(false);
       }
