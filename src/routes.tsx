@@ -27,11 +27,16 @@ import { RefundPolicy } from './pages/RefundPolicy';
 import { NotFound } from './pages/NotFound';
 
 export const router = createBrowserRouter([
-  // 1. Public Master Page & Information Pages (Include Master Footer & WhatsApp Float)
+  // 1. Public Storefront, Catalogue & Information Pages (Include Master Footer & WhatsApp Float)
   {
     element: <PublicLayout />,
     children: [
-      { path: '/', element: <Home /> },
+      { path: '/', element: <Dashboard /> },
+      { path: '/dashboard', element: <Dashboard /> },
+      { path: '/products', element: <Products /> },
+      { path: '/products/:slug', element: <ProductDetail /> },
+      { path: '/categories', element: <Categories /> },
+      { path: '/cart', element: <Cart /> },
       {
         path: '/login',
         element: (
@@ -49,50 +54,10 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // 2. Authenticated Customer Portal (NO Master Footer, NO WhatsApp Float)
+  // 2. Protected Customer Portal & Checkout Flow (Protected by Authentication Guard)
   {
     element: <PortalLayout />,
     children: [
-      {
-        path: '/dashboard',
-        element: (
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/products',
-        element: (
-          <ProtectedRoute>
-            <Products />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/products/:slug',
-        element: (
-          <ProtectedRoute>
-            <ProductDetail />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/categories',
-        element: (
-          <ProtectedRoute>
-            <Categories />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/cart',
-        element: (
-          <ProtectedRoute>
-            <Cart />
-          </ProtectedRoute>
-        ),
-      },
       {
         path: '/payment',
         element: (

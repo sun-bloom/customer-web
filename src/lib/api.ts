@@ -120,6 +120,14 @@ export async function getCategoriesApi(): Promise<{ categories: Category[] }> {
   return apiFetch<{ categories: Category[] }>('/api/categories');
 }
 
+export async function getRecentProductsApi(limit = 6): Promise<{ products: Product[] }> {
+  return apiFetch<{ products: Product[] }>(`/api/products/featured/recent?limit=${limit}`);
+}
+
+export async function getTopSellingProductsApi(limit = 6): Promise<{ products: Product[] }> {
+  return apiFetch<{ products: Product[] }>(`/api/products/featured/top-selling?limit=${limit}`);
+}
+
 export async function getCategoryBySlugApi(slug: string): Promise<Category | null> {
   const { categories } = await getCategoriesApi();
   return categories.find((c) => c.slug === slug) || null;
