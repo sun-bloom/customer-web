@@ -86,9 +86,9 @@ export const Privacy: React.FC = () => {
                   B. Customer Account &amp; Contact Details
                 </h3>
                 <ul className="list-disc list-inside space-y-1 text-xs text-[#6B534E] pl-2">
-                  <li><strong>Mobile Phone Number:</strong> Required for consignment dispatch and courier delivery verification across India.</li>
-                  <li><strong>WhatsApp Number:</strong> Collected on an opt-in basis for real-time shipment tracking alerts and concierge styling assistance.</li>
-                  <li><strong>Email Address &amp; Password:</strong> If you choose direct email/password registration rather than Google Sign-In. Passwords are salted and hashed through Firebase Authentication; we never store or see plain text passwords.</li>
+                  <li><strong>Mobile Phone Number:</strong> Used for account sign-in via external SMS One-Time Password (OTP) verification and required for consignment courier dispatch across India. Mobile OTP codes are transmitted via authorized external SMS telecommunication gateway providers, not by Firebase Phone SMS. Upon successful verification, a cryptographic Firebase Custom Authentication Token is issued to authenticate your session.</li>
+                  <li><strong>WhatsApp Number:</strong> Collected on an opt-in basis for real-time consignment dispatch tracking alerts and concierge styling assistance. Clients may mirror their mobile number or provide an independent WhatsApp number.</li>
+                  <li><strong>Email Address &amp; Password:</strong> If you choose email registration rather than Google or Mobile OTP. Email accounts require verification via Firebase Email Verification before first login. Passwords are salted and hashed through Firebase Authentication; Sunbloom Adorn never stores or sees plaintext passwords.</li>
                 </ul>
               </div>
 
@@ -162,7 +162,7 @@ export const Privacy: React.FC = () => {
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-[#DFC598] mt-0.5 shrink-0" />
-                <span><strong>Account Authentication:</strong> To authenticate your identity securely through Google Sign-In or email credentials and maintain your client order history.</span>
+                <span><strong>Account Authentication:</strong> To authenticate your client identity securely through Google Sign-In, Firebase Email Verification, or External Mobile SMS OTP verification with Firebase Custom Token session authorization, preserving your order history seamlessly without duplicate accounts.</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-[#DFC598] mt-0.5 shrink-0" />
@@ -222,7 +222,8 @@ export const Privacy: React.FC = () => {
               We share your information solely with trusted infrastructure and service providers essential to fulfilling our ecommerce services:
             </p>
             <ul className="space-y-2 text-xs sm:text-sm text-[#5E4742] pl-2 sm:pl-4">
-              <li><strong>Firebase by Google LLC:</strong> Authentication provider and secure identity verification infrastructure.</li>
+              <li><strong>Firebase by Google LLC:</strong> Customer authentication token issuance, session verification infrastructure, and email verification link delivery. (Mobile SMS OTP transmission is handled independently via authorized external telecom SMS gateway partners).</li>
+              <li><strong>Authorized External SMS Gateway Providers:</strong> Indian telecom-compliant SMS gateway providers used strictly to transmit 6-digit cryptographic verification codes directly to client mobile numbers. OTP codes expire within 5 minutes and are never logged or stored in plaintext.</li>
               <li><strong>PayU Payments Private Limited:</strong> RBI-licensed payment gateway partner handling secure payment settlement.</li>
               <li><strong>Cloudflare, Inc.:</strong> CDN, DDoS mitigation, and SSL/TLS edge certificate provider ensuring safe website browsing.</li>
               <li><strong>Aiven Cloud:</strong> Encrypted PostgreSQL database hosting provider storing product catalog and client order history.</li>

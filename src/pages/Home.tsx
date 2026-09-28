@@ -75,39 +75,72 @@ export const Home: React.FC = () => {
     return products.slice(0, 4);
   }, [products]);
 
+  // Real Jewellery Image Hero Slider: Cycles automatically through real active products
+  const heroSlides = React.useMemo(() => {
+    const valid = products
+      .map((p) => {
+        const primaryImg =
+          p.variants?.find((v) => v.isAvailable && Array.isArray(v.images) && v.images.length > 0)?.images?.[0] ||
+          p.variants?.find((v) => Array.isArray(v.images) && v.images.length > 0)?.images?.[0] ||
+          p.images?.[0];
 
+        if (!primaryImg) return null;
 
-  // Real Jewellery Image for the Hero: first real necklace asset or active product
-  const heroJewellery = React.useMemo(() => {
-    const foundNecklace = products.find(
-      (p) =>
-        p.slug.includes('necklace') ||
-        p.category?.toLowerCase() === 'necklace' ||
-        p.category?.toLowerCase() === 'necklaces'
-    ) || products[0];
+        const defaultVariant = p.variants?.[0];
+        const effectivePrice = defaultVariant
+          ? p.basePrice + (defaultVariant.additionalPrice || 0)
+          : p.basePrice;
 
-    if (foundNecklace) {
-      return {
-        name: foundNecklace.name,
-        link: `/products/${foundNecklace.slug}`,
-        subtitle: '18K Gold Plated • Waterproof • Anti-Tarnish',
-        tag: 'Signature Creation',
-        image:
-          foundNecklace.variants?.find((v) => v.isAvailable && Array.isArray(v.images) && v.images.length > 0)?.images?.[0] ||
-          foundNecklace.variants?.[0]?.images?.[0] ||
-          foundNecklace.images?.[0] ||
-          '/logo.png',
-      };
-    }
+        return {
+          id: p.id,
+          name: p.name,
+          slug: p.slug || p.id,
+          category: p.category || 'Fine Jewellery',
+          subtitle: '18K Gold Plated • Waterproof • Anti-Tarnish',
+          tag: 'Signature Creation',
+          price: effectivePrice,
+          image: primaryImg,
+        };
+      })
+      .filter((s): s is NonNullable<typeof s> => s !== null);
 
-    return {
-      name: 'Sunbloom Adorn Atelier',
-      link: '/products',
-      subtitle: 'Waterproof 18K Gold • Anti-Tarnish • 316L Steel',
-      tag: 'Haute Atelier',
-      image: '/logo.png',
-    };
+    if (valid.length > 0) return valid;
+
+    return [
+      {
+        id: 'default',
+        name: 'Sunbloom Adorn Atelier',
+        slug: '',
+        category: 'Haute Jewellery',
+        subtitle: 'Waterproof 18K Gold • Anti-Tarnish • 316L Steel',
+        tag: 'Haute Atelier',
+        price: 200,
+        image: '/logo.png',
+      },
+    ];
   }, [products]);
+
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [isSliderPaused, setIsSliderPaused] = useState(false);
+
+  // Automatic image sliding every 5 seconds
+  useEffect(() => {
+    if (heroSlides.length <= 1 || isSliderPaused) return;
+    const interval = setInterval(() => {
+      setCurrentSlideIndex((prev) => (prev + 1) % heroSlides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [heroSlides.length, isSliderPaused]);
+
+  const activeSlide = heroSlides[currentSlideIndex] || heroSlides[0];
+
+  const handlePrevSlide = () => {
+    setCurrentSlideIndex((prev) => (prev === 0 ? heroSlides.length - 1 : prev - 1));
+  };
+
+  const handleNextSlide = () => {
+    setCurrentSlideIndex((prev) => (prev + 1) % heroSlides.length);
+  };
 
   return (
     <div className="w-full bg-[#FCF9F5] text-[#2A1C19]">
@@ -194,58 +227,112 @@ export const Home: React.FC = () => {
 
             </div>
 
-            {/* RIGHT COLUMN: Static, Clean, High-End Jewellery Presentation */}
-            <div className="lg:col-span-6 xl:col-span-6 flex justify-center">
+            {/* RIGHT COLUMN: Interactive Signature Hero Product Image Slider */}
+            <div
+              className="lg:col-span-6 xl:col-span-6 flex justify-center"
+              onMouseEnter={() => setIsSliderPaused(true)}
+              onMouseLeave={() => setIsSliderPaused(false)}
+            >
               <div className="relative w-full max-w-[420px] lg:max-w-[460px]">
                 
                 {/* Decorative Champagne Outline Frame */}
                 <div className="absolute -inset-2.5 sm:-inset-3 rounded-[32px] border border-[#DFC598]/40 pointer-events-none -z-0"></div>
 
-                {/* Primary Image Card */}
+                {/* Primary Slider Card */}
                 <div className="relative rounded-[24px] sm:rounded-[28px] overflow-hidden bg-white border border-[#E8DCCF] shadow-md group">
                   
-                  {/* Subtle Top Atelier Tag */}
-                  <div className="absolute top-3.5 left-3.5 z-10">
+                  {/* Subtle Top Atelier Tag & Slide Counter */}
+                  <div className="absolute top-3.5 left-3.5 right-3.5 z-10 flex items-center justify-between pointer-events-none">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase tracking-widest font-semibold bg-[#FFF9FA]/95 text-[#7A223B] border border-[#DFC598]/50 shadow-2xs backdrop-blur-xs">
                       <Gem className="w-3 h-3 text-[#DFC598]" />
-                      <span>{heroJewellery.tag}</span>
+                      <span>{activeSlide.tag}</span>
                     </span>
+
+                    {heroSlides.length > 1 && (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-black/40 text-white backdrop-blur-xs">
+                        {currentSlideIndex + 1} / {heroSlides.length}
+                      </span>
+                    )}
                   </div>
 
-                  {/* High Quality Real Necklace Image */}
-                  <div className="aspect-4/5 overflow-hidden bg-[#FAF4EF] flex items-center justify-center">
+                  {/* High Quality Real Product Image */}
+                  <div className="aspect-4/5 overflow-hidden bg-[#FAF4EF] flex items-center justify-center relative">
                     <img
-                      src={heroJewellery.image}
-                      alt={heroJewellery.name}
-                      className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-700 ease-out"
+                      key={activeSlide.id}
+                      src={activeSlide.image}
+                      alt={activeSlide.name}
+                      className="w-full h-full object-cover object-center transition-all duration-700 ease-out animate-fadeIn"
                       loading="eager"
                       decoding="async"
                     />
+
+                    {/* Navigation Controls: Prev & Next Buttons */}
+                    {heroSlides.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handlePrevSlide}
+                          aria-label="Previous slide"
+                          className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 hover:bg-white text-[#7A223B] shadow-xs flex items-center justify-center transition-all opacity-80 hover:opacity-100 hover:scale-105 cursor-pointer z-10"
+                        >
+                          <ArrowRight className="w-4 h-4 rotate-180 text-[#7A223B]" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleNextSlide}
+                          aria-label="Next slide"
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 hover:bg-white text-[#7A223B] shadow-xs flex items-center justify-center transition-all opacity-80 hover:opacity-100 hover:scale-105 cursor-pointer z-10"
+                        >
+                          <ArrowRight className="w-4 h-4 text-[#7A223B]" />
+                        </button>
+                      </>
+                    )}
                   </div>
 
                   {/* Clean Bottom Overlay Card */}
                   <div className="p-4 sm:p-4.5 bg-white/95 backdrop-blur-xs border-t border-[#F4ECE5] flex items-center justify-between">
                     <div>
                       <span className="text-[10px] uppercase tracking-widest text-[#7A223B] font-medium block">
-                        Haute Fine Jewellery
+                        {activeSlide.category}
                       </span>
                       <h3 className="font-heading text-base sm:text-lg font-normal text-[#2A1C19]">
-                        {heroJewellery.name}
+                        {activeSlide.name}
                       </h3>
-                      <p className="text-xs text-[#755B55] mt-0.5 font-light">
-                        {heroJewellery.subtitle}
+                      <p className="text-xs text-[#7A223B] font-medium mt-0.5">
+                        ₹{activeSlide.price.toLocaleString('en-IN')}
                       </p>
                     </div>
 
                     <Link
-                      to={heroJewellery.link}
-                      className="inline-flex items-center justify-center w-9 h-9 rounded-xl btn-rose-primary transition-colors shadow-2xs"
-                      title="View collection"
-                      aria-label={`View ${heroJewellery.name}`}
+                      to={`/products/${activeSlide.slug}`}
+                      className="inline-flex items-center justify-center px-3.5 py-2 rounded-xl btn-rose-primary text-xs uppercase tracking-wider font-semibold transition-colors shadow-2xs gap-1.5"
+                      title="View creation"
+                      aria-label={`View ${activeSlide.name}`}
                     >
-                      <ArrowRight className="w-4 h-4 text-[#DFC598]" />
+                      <span>Explore</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#DFC598]" />
                     </Link>
                   </div>
+
+                  {/* Slide Indicators / Dots */}
+                  {heroSlides.length > 1 && (
+                    <div className="py-2 bg-white flex items-center justify-center gap-1.5 border-t border-[#FAF6F0]">
+                      {heroSlides.map((_, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setCurrentSlideIndex(idx)}
+                          aria-label={`Go to slide ${idx + 1}`}
+                          className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                            currentSlideIndex === idx
+                              ? 'w-6 bg-[#7A223B]'
+                              : 'w-1.5 bg-[#E8DCCF] hover:bg-[#DFC598]'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
 
                 </div>
 
@@ -339,39 +426,39 @@ export const Home: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* 3. CATEGORIES SECTION: SHOP BY CATEGORY                                   */}
+      {/* 3. MOST POPULAR: CHERISHED BY CONNOISSEURS                                */}
       {/* ========================================================================= */}
-      {categories.length > 0 && (
-        <section className="py-14 sm:py-18 lg:py-22 bg-[#FCF9F5]">
+      {mostPopular.length > 0 && (
+        <section className="py-14 sm:py-18 lg:py-22 bg-[#FAF6F0] border-t border-[#E8DCCF]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             {/* Section Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 sm:mb-10 gap-4">
               <div>
                 <span className="text-[10px] sm:text-xs uppercase tracking-[0.28em] text-[#7A223B] font-medium block mb-1.5">
-                  Curated Universes
+                  Cherished by Connoisseurs
                 </span>
                 <h2 className="font-heading text-2xl sm:text-4xl text-[#2A1C19] font-normal">
-                  Shop by <span className="font-serif italic text-rose-gold-gradient">Category</span>
+                  Most <span className="font-serif italic text-rose-gold-gradient">Popular</span>
                 </h2>
                 <p className="text-xs sm:text-sm text-[#755B55] font-light mt-1 max-w-md">
-                  Explore our signature realms, each handcrafted to bring effortless brilliance to your daily light.
+                  Timeless designs most cherished by our discerning patrons for everyday grace and gifting.
                 </p>
               </div>
 
               <Link
-                to="/categories"
-                className="text-xs uppercase tracking-widest font-medium text-[#7A223B] hover:text-[#5E152A] transition-colors inline-flex items-center gap-1.5 shrink-0"
+                to="/products"
+                className="text-xs uppercase tracking-widest font-medium text-[#7A223B] hover:text-[#DFC598] transition-colors inline-flex items-center gap-1.5 shrink-0"
               >
-                <span>View All Categories</span>
+                <span>Explore Popular</span>
                 <ArrowRight className="w-3.5 h-3.5 text-[#DFC598]" />
               </Link>
             </div>
 
-            {/* Category Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5">
-              {categories.map((cat) => (
-                <CategoryCard key={cat.id} category={cat} />
+            {/* Responsive Products Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-7">
+              {mostPopular.map((product) => (
+                <ProductCard key={`popular-${product.id}`} product={product} />
               ))}
             </div>
 
@@ -381,7 +468,6 @@ export const Home: React.FC = () => {
 
       {/* ========================================================================= */}
       {/* 4. RECENTLY ADDED: FRESH FROM THE ATELIER                                 */}
-      {/* Uses Existing Products API (Desktop 4, Tablet 2-3, Mobile 2)               */}
       {/* ========================================================================= */}
       {recentlyAdded.length > 0 && (
         <section className="py-14 sm:py-18 lg:py-22 bg-white border-t border-[#E8DCCF]">
@@ -422,40 +508,39 @@ export const Home: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* 5. MOST POPULAR: CHERISHED BY CONNOISSEURS                                */}
-      {/* Uses Existing Products Data safely                                        */}
+      {/* 5. CATEGORIES SECTION: SHOP BY CATEGORY                                   */}
       {/* ========================================================================= */}
-      {mostPopular.length > 0 && (
-        <section className="py-14 sm:py-18 lg:py-22 bg-[#FAF6F0] border-t border-[#E8DCCF]">
+      {categories.length > 0 && (
+        <section className="py-14 sm:py-18 lg:py-22 bg-[#FCF9F5] border-t border-[#E8DCCF]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             {/* Section Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 sm:mb-10 gap-4">
               <div>
                 <span className="text-[10px] sm:text-xs uppercase tracking-[0.28em] text-[#7A223B] font-medium block mb-1.5">
-                  Cherished by Connoisseurs
+                  Curated Universes
                 </span>
                 <h2 className="font-heading text-2xl sm:text-4xl text-[#2A1C19] font-normal">
-                  Most <span className="font-serif italic text-rose-gold-gradient">Popular</span>
+                  Shop by <span className="font-serif italic text-rose-gold-gradient">Category</span>
                 </h2>
                 <p className="text-xs sm:text-sm text-[#755B55] font-light mt-1 max-w-md">
-                  Timeless designs most cherished by our discerning patrons for everyday grace and gifting.
+                  Explore our signature realms, each handcrafted to bring effortless brilliance to your daily light.
                 </p>
               </div>
 
               <Link
-                to="/products"
-                className="text-xs uppercase tracking-widest font-medium text-[#7A223B] hover:text-[#DFC598] transition-colors inline-flex items-center gap-1.5 shrink-0"
+                to="/categories"
+                className="text-xs uppercase tracking-widest font-medium text-[#7A223B] hover:text-[#5E152A] transition-colors inline-flex items-center gap-1.5 shrink-0"
               >
-                <span>Explore Popular</span>
+                <span>View All Categories</span>
                 <ArrowRight className="w-3.5 h-3.5 text-[#DFC598]" />
               </Link>
             </div>
 
-            {/* Responsive Products Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-7">
-              {mostPopular.map((product) => (
-                <ProductCard key={`popular-${product.id}`} product={product} />
+            {/* Category Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5">
+              {categories.map((cat) => (
+                <CategoryCard key={cat.id} category={cat} />
               ))}
             </div>
 
