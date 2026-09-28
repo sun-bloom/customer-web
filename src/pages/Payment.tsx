@@ -73,7 +73,7 @@ export const Payment: React.FC = () => {
   const cartItems = useStore($cartItems);
   const subtotal = useStore($cartSubtotal);
 
-  // Form Fields (Defaults: Tamil Nadu, Tiruppur, 641602)
+  // Form Fields
   const [name, setName] = useState(profile?.name || user?.displayName || '');
   const [phone, setPhone] = useState(profile?.phone || '');
   const [whatsappNumber, setWhatsappNumber] = useState(profile?.whatsappNumber || profile?.phone || '');
@@ -81,10 +81,10 @@ export const Payment: React.FC = () => {
 
   // Normalized Postal Address Hierarchy States
   const [statesList, setStatesList] = useState<string[]>(INDIAN_STATES_AND_UTS);
-  const [state, setState] = useState(profile?.state || 'Tamil Nadu');
-  const [districtsList, setDistrictsList] = useState<string[]>(['Tiruppur', 'Coimbatore', 'Chennai', 'Salem', 'Erode', 'Madurai']);
-  const [city, setCity] = useState(profile?.city || 'Tiruppur');
-  const [pincode, setPincode] = useState(profile?.pincode || '641602');
+  const [state, setState] = useState(profile?.state || '');
+  const [districtsList, setDistrictsList] = useState<string[]>([]);
+  const [city, setCity] = useState(profile?.city || '');
+  const [pincode, setPincode] = useState(profile?.pincode || '');
 
   // Verification & Delivery States
   const [pincodeVerified, setPincodeVerified] = useState(false);
@@ -96,8 +96,7 @@ export const Payment: React.FC = () => {
   const [deliveryMessage, setDeliveryMessage] = useState<string | null>(null);
   const [requiresEnquiry, setRequiresEnquiry] = useState(false);
 
-  const [shippingCharge, setShippingCharge] = useState(0);
-  const [freeShippingThreshold, setFreeShippingThreshold] = useState(1500);
+  const [shippingCharge, setShippingCharge] = useState<number | null>(null);
 
   // Checkout Agreement States
   const [trackingPreference, setTrackingPreference] = useState<'yes' | 'no'>('yes');
@@ -148,7 +147,12 @@ export const Payment: React.FC = () => {
       if (profile.address && !address) setAddress(profile.address);
       if (profile.state && !state) setState(profile.state);
       if (profile.city && !city) setCity(profile.city);
-      if (profile.pincode && !pincode) setPincode(profile.pincode);
+      if (profile.pincode && !pincode) {
+        setPincode(profile.pincode);
+        if (/^\d{6}$/.test(profile.pincode.trim())) {
+          verifyAndLookupPincode(profile.pincode.trim());
+        }
+      }
     }
   }, [profile]);
 
@@ -166,7 +170,7 @@ export const Payment: React.FC = () => {
       setCity('');
       setState('');
       setDistrictsList([]);
-      setShippingCharge(0);
+      setShippingCharge(null);
       return;
     }
 
@@ -180,7 +184,7 @@ export const Payment: React.FC = () => {
       setCity('');
       setState('');
       setDistrictsList([]);
-      setShippingCharge(0);
+      setShippingCharge(null);
       return;
     }
 
@@ -201,7 +205,7 @@ export const Payment: React.FC = () => {
         setCity('');
         setState('');
         setDistrictsList([]);
-        setShippingCharge(0);
+        setShippingCharge(null);
         return;
       }
 
@@ -232,18 +236,16 @@ export const Payment: React.FC = () => {
         city: verifiedDistrict,
       });
 
-      setFreeShippingThreshold(deliveryRes.freeShippingThreshold ?? 1500);
-
       if (deliveryRes.isSupported) {
         setDeliverySupported(true);
         setRequiresEnquiry(false);
         setDeliveryMessage('Delivery available');
-        setShippingCharge(deliveryRes.shippingCharge ?? (subtotal >= 1500 ? 0 : 50));
+        setShippingCharge(typeof deliveryRes.shippingCharge === 'number' ? deliveryRes.shippingCharge : 0);
       } else {
         setDeliverySupported(false);
         setRequiresEnquiry(true);
         setDeliveryMessage('Delivery availability needs confirmation');
-        setShippingCharge(0);
+        setShippingCharge(null);
       }
 
     } catch (err: any) {
@@ -256,16 +258,17 @@ export const Payment: React.FC = () => {
       setCity('');
       setState('');
       setDistrictsList([]);
-      setShippingCharge(0);
+      setShippingCharge(null);
     } finally {
       setPincodeChecking(false);
     }
   };
 
-  // Initial verification on form load for default 641602
+  // Initial verification on form load only if valid 6-digit pin is present
   useEffect(() => {
-    const initialPin = pincode || '641602';
-    verifyAndLookupPincode(initialPin);
+    if (pincode && /^\d{6}$/.test(pincode.trim())) {
+      verifyAndLookupPincode(pincode.trim());
+    }
   }, []);
 
   // Recalculate shipping if cart subtotal changes while delivery is supported
@@ -278,8 +281,7 @@ export const Payment: React.FC = () => {
       })
         .then((res) => {
           if (res.isSupported) {
-            setShippingCharge(res.shippingCharge ?? (subtotal >= 1500 ? 0 : 50));
-            if (res.freeShippingThreshold !== undefined) setFreeShippingThreshold(res.freeShippingThreshold);
+            setShippingCharge(typeof res.shippingCharge === 'number' ? res.shippingCharge : 0);
           }
         })
         .catch(() => {});
@@ -300,7 +302,7 @@ export const Payment: React.FC = () => {
       setCity('');
       setState('');
       setDistrictsList([]);
-      setShippingCharge(0);
+      setShippingCharge(null);
 
       if (digitsOnly.length > 0 && digitsOnly.length < 6) {
         setPincodeStatus('Invalid pincode. Please enter a 6-digit numeric pincode.');
@@ -323,7 +325,7 @@ export const Payment: React.FC = () => {
     setPincodeValid(null);
     setDeliverySupported(null);
     setDeliveryMessage(null);
-    setShippingCharge(0);
+    setShippingCharge(null);
 
     const distRes = await getPostalDistrictsApi(newState).catch(() => ({ districts: [] }));
     setDistrictsList(distRes.districts || []);
@@ -544,7 +546,8 @@ export const Payment: React.FC = () => {
     );
   }
 
-  const finalTotal = subtotal + shippingCharge;
+  const isDeliveryVerified = deliverySupported === true && shippingCharge !== null;
+  const finalTotal = isDeliveryVerified ? subtotal + (shippingCharge || 0) : subtotal;
 
   return (
     <div className="min-h-screen bg-[#FCF9F5] py-10 md:py-14 relative overflow-hidden">
@@ -861,7 +864,11 @@ export const Payment: React.FC = () => {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="font-heading text-sm font-normal text-[#2A1C19] truncate">{item.productName}</p>
-                    <p className="text-[11px] text-[#A8928D]">{item.color} • {item.quantity} unit{item.quantity > 1 ? 's' : ''}</p>
+                    <p className="text-[11px] text-[#A8928D]">
+                      {item.color}
+                      {item.pattern && !['null', 'undefined', 'n/a', 'none', ''].includes(String(item.pattern).trim().toLowerCase()) ? ` • ${item.pattern}` : ''}
+                      {` • ${item.quantity} unit${item.quantity > 1 ? 's' : ''}`}
+                    </p>
                   </div>
                   <span className="font-heading text-sm font-medium text-[#7A223B]">
                     ₹{(item.unitPrice * item.quantity).toLocaleString('en-IN')}
@@ -879,28 +886,27 @@ export const Payment: React.FC = () => {
               <div className="flex justify-between text-[#7D6460]">
                 <span>Shipping</span>
                 <span className="font-medium text-[#2A1C19]">
-                  {pincodeValid === null && !pincodeChecking ? (
-                    <span className="text-[#A8928D] italic text-[11px]">Enter pincode</span>
-                  ) : pincodeChecking ? (
+                  {pincodeChecking ? (
                     <span className="text-[#A8928D] italic text-[11px]">Calculating…</span>
-                  ) : deliverySupported === true && shippingCharge === 0 ? (
-                    <span className="text-[#7A223B] font-semibold">COMPLIMENTARY</span>
-                  ) : deliverySupported === true ? (
-                    `₹${shippingCharge}`
+                  ) : isDeliveryVerified ? (
+                    shippingCharge === 0 ? (
+                      <span className="text-[#7A223B] font-semibold">Free Delivery</span>
+                    ) : (
+                      `₹${shippingCharge.toLocaleString('en-IN')}`
+                    )
+                  ) : deliverySupported === false ? (
+                    <span className="text-amber-700 italic text-[11px]">Delivery unavailable for this location</span>
                   ) : (
-                    <span className="text-amber-700 italic text-[11px]">Needs confirmation</span>
+                    <span className="text-[#A8928D] italic text-[11px]">Shipping calculated at checkout</span>
                   )}
                 </span>
               </div>
-              {deliverySupported === true && shippingCharge > 0 && freeShippingThreshold > subtotal && (
-                <p className="text-[11px] text-[#7A223B]">
-                  Add ₹{(freeShippingThreshold - subtotal).toLocaleString('en-IN')} more for free shipping!
-                </p>
-              )}
               <div className="pt-2 flex justify-between items-baseline">
                 <div>
                   <span className="font-heading text-lg font-medium text-[#2A1C19] block">Total Amount</span>
-                  <span className="text-[11px] text-[#A8928D]">Inclusive of all taxes</span>
+                  <span className="text-[11px] text-[#A8928D]">
+                    {isDeliveryVerified ? 'Inclusive of all taxes & shipping' : 'Shipping calculated at checkout'}
+                  </span>
                 </div>
                 <span className="font-heading text-2xl font-bold text-[#7A223B]">
                   ₹{finalTotal.toLocaleString('en-IN')}
@@ -1089,10 +1095,15 @@ export const Payment: React.FC = () => {
                       <ShieldCheck className="w-4 h-4 text-[#DFC598]" />
                       <span>Proceed to Pay ₹{finalTotal.toLocaleString('en-IN')}</span>
                     </>
+                  ) : deliverySupported === false ? (
+                    <>
+                      <Lock className="w-4 h-4 text-[#7D6460]" />
+                      <span>Delivery Unavailable for Location</span>
+                    </>
                   ) : (
                     <>
                       <Lock className="w-4 h-4 text-[#7D6460]" />
-                      <span>Delivery Confirmation Required</span>
+                      <span>Delivery Verification Required</span>
                     </>
                   )}
                 </button>

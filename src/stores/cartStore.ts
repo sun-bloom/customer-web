@@ -80,7 +80,7 @@ export function addToCart(item: CartItem) {
   $cartItems.set(newItems);
   saveCartToStorage(newItems);
   dispatchCartEvent('cart:updated', newItems);
-  openCart();
+  dispatchCartEvent('cart:item-added', newItems);
 }
 
 export function removeFromCart(variantId: string) {

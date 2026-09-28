@@ -10,34 +10,27 @@ import {
   clearCart,
   initCart,
 } from '../stores/cartStore';
-import { ShoppingBag, ArrowRight, Trash2, ArrowLeft, ShieldCheck, Sparkles, AlertCircle, Lock } from 'lucide-react';
-
-import { getDeliverySettingsApi } from '../lib/api';
+import { ShoppingBag, ArrowRight, Trash2, ArrowLeft, ShieldCheck, AlertCircle, Lock } from 'lucide-react';
 
 const MINIMUM_ORDER_VALUE = 200;
 
 export const Cart: React.FC = () => {
   const cartItems = useStore($cartItems);
   const subtotal = useStore($cartSubtotal);
-  const [shippingThreshold, setShippingThreshold] = React.useState(1500);
 
   useEffect(() => {
     initCart();
-    getDeliverySettingsApi()
-      .then((settings) => {
-        if (settings?.freeShippingThreshold) {
-          setShippingThreshold(settings.freeShippingThreshold);
-        }
-      })
-      .catch(() => {});
   }, []);
 
   const isBelowMinimum = subtotal < MINIMUM_ORDER_VALUE;
   const amountToMinimum = Math.max(0, Number((MINIMUM_ORDER_VALUE - subtotal).toFixed(2)));
 
-  const isComplimentary = subtotal >= shippingThreshold && subtotal > 0;
-  const amountToFreeShipping = Math.max(0, shippingThreshold - subtotal);
-  const progressPercent = Math.min(100, Math.round((subtotal / shippingThreshold) * 100));
+  const isPatternValueValid = (p?: string | null): p is string => {
+    if (!p) return false;
+    const trimmed = p.trim();
+    if (!trimmed) return false;
+    return !/^(null|undefined|none|n\/a)$/i.test(trimmed);
+  };
 
   if (cartItems.length === 0) {
     return (
@@ -91,102 +84,85 @@ export const Cart: React.FC = () => {
           </button>
         </div>
 
-        {/* Free Shipping Notification Bar (Soft Blush + Champagne Gold) */}
-        <div className="bg-white rounded-2xl border border-[#E8DCCF] p-4 mb-6 shadow-2xs">
-          <div className="flex justify-between items-center text-xs mb-2">
-            <span className="font-medium text-[#2A1C19]">
-              {amountToFreeShipping === 0 ? (
-                <span className="text-[#7A223B] flex items-center gap-1.5 font-semibold">
-                  <Sparkles className="w-4 h-4 text-[#DFC598]" />
-                  Complimentary Pan-India Insured Shipping Unlocked ✨
-                </span>
-              ) : (
-                `Add ₹${amountToFreeShipping.toLocaleString('en-IN')} more for Complimentary Shipping`
-              )}
-            </span>
-            <span className="font-bold text-[#7A223B]">{progressPercent}%</span>
-          </div>
-          <div className="w-full bg-[#FAF6F0] h-2 rounded-full overflow-hidden border border-[#E8DCCF]">
-            <div
-              className="bg-gradient-to-r from-[#E29BB0] via-[#DFC598] to-[#7A223B] h-full rounded-full transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
-
         {/* 2-Column Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-start">
           
           {/* Left: Bag Items List (8 Cols) */}
           <div className="lg:col-span-8 space-y-3.5">
-            {cartItems.map((item) => (
-              <div
-                key={item.variantId}
-                className="bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
-              >
-                <div className="flex gap-3.5 items-center min-w-0">
-                  <Link
-                    to={`/products/${item.productSlug}`}
-                    className="w-18 h-22 sm:w-20 sm:h-24 rounded-xl overflow-hidden bg-[#FAF6F0] border border-[#E8DCCF] flex-shrink-0 block"
-                  >
-                    <img
-                      src={item.productImage}
-                      alt={item.productName}
-                      className="w-full h-full object-cover"
-                    />
-                  </Link>
+            {cartItems.map((item) => {
+              const cleanPattern = isPatternValueValid(item.pattern) ? item.pattern.trim() : null;
 
-                  <div className="min-w-0">
-                    <Link to={`/products/${item.productSlug}`}>
-                      <h3 className="font-heading text-sm sm:text-base font-normal text-[#2A1C19] hover:text-[#7A223B] transition-colors break-words">
-                        {item.productName}
-                      </h3>
+              return (
+                <div
+                  key={item.variantId}
+                  className="bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
+                >
+                  <div className="flex gap-3.5 items-center min-w-0">
+                    <Link
+                      to={`/products/${item.productSlug}`}
+                      className="w-18 h-22 sm:w-20 sm:h-24 rounded-xl overflow-hidden bg-[#FAF6F0] border border-[#E8DCCF] flex-shrink-0 block"
+                    >
+                      <img
+                        src={item.productImage}
+                        alt={item.productName}
+                        className="w-full h-full object-cover"
+                      />
                     </Link>
-                    <p className="text-xs text-[#755B55] mt-0.5">
-                      Finish: {item.color} {item.pattern ? `• ${item.pattern}` : ''}
-                    </p>
-                    <p className="font-heading text-sm sm:text-base font-medium text-[#7A223B] mt-1.5">
-                      ₹{item.unitPrice.toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Controls: Quantity & Total & Remove */}
-                <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2.5 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-[#F4ECE5]">
-                  <div className="flex items-center border border-[#E8DCCF] rounded-xl bg-[#FAF6F0] p-0.5">
-                    <button
-                      onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
-                      disabled={item.quantity <= 1}
-                      className="w-6.5 h-6.5 rounded-lg text-sm text-[#2A1C19] hover:bg-white flex items-center justify-center disabled:opacity-30 cursor-pointer"
-                    >
-                      -
-                    </button>
-                    <span className="w-6.5 text-center text-xs font-semibold text-[#2A1C19]">
-                      {item.quantity}
-                    </span>
-                    <button
-                      onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
-                      className="w-6.5 h-6.5 rounded-lg text-sm text-[#2A1C19] hover:bg-white flex items-center justify-center cursor-pointer"
-                    >
-                      +
-                    </button>
+                    <div className="min-w-0">
+                      <Link to={`/products/${item.productSlug}`}>
+                        <h3 className="font-heading text-sm sm:text-base font-normal text-[#2A1C19] hover:text-[#7A223B] transition-colors break-words">
+                          {item.productName}
+                        </h3>
+                      </Link>
+                      <p className="text-xs text-[#755B55] mt-0.5">
+                        Finish: {item.color || 'Standard'}{cleanPattern ? ` • ${cleanPattern}` : ''}
+                      </p>
+                      <p className="font-heading text-sm sm:text-base font-medium text-[#7A223B] mt-1.5">
+                        ₹{item.unitPrice.toLocaleString('en-IN')}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="font-heading text-base sm:text-lg font-medium text-[#2A1C19]">
-                      ₹{(item.unitPrice * item.quantity).toLocaleString('en-IN')}
-                    </span>
-                    <button
-                      onClick={() => removeFromCart(item.variantId)}
-                      className="p-1.5 rounded-lg text-[#755B55] hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                      title="Remove item"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                  {/* Controls: Quantity & Total & Remove */}
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2.5 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-[#F4ECE5]">
+                    <div className="flex items-center border border-[#E8DCCF] rounded-xl bg-[#FAF6F0] p-0.5">
+                      <button
+                        onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
+                        disabled={item.quantity <= 1}
+                        className="w-6.5 h-6.5 rounded-lg text-sm text-[#2A1C19] hover:bg-white flex items-center justify-center disabled:opacity-30 cursor-pointer"
+                        aria-label="Decrease quantity"
+                      >
+                        -
+                      </button>
+                      <span className="w-6.5 text-center text-xs font-semibold text-[#2A1C19]">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
+                        className="w-6.5 h-6.5 rounded-lg text-sm text-[#2A1C19] hover:bg-white flex items-center justify-center cursor-pointer"
+                        aria-label="Increase quantity"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="font-heading text-base sm:text-lg font-medium text-[#2A1C19]">
+                        ₹{(item.unitPrice * item.quantity).toLocaleString('en-IN')}
+                      </span>
+                      <button
+                        onClick={() => removeFromCart(item.variantId)}
+                        className="p-1.5 rounded-lg text-[#755B55] hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                        title="Remove item"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             <div className="pt-2">
               <Link
@@ -212,19 +188,15 @@ export const Cart: React.FC = () => {
               </div>
               <div className="flex justify-between text-[#755B55]">
                 <span>Insured Shipping</span>
-                <span className="font-medium text-[#2A1C19]">
-                  {isComplimentary ? (
-                    <span className="text-[#7A223B] font-semibold">COMPLIMENTARY</span>
-                  ) : (
-                    <span className="text-xs text-[#A8928D]">Calculated at checkout</span>
-                  )}
+                <span className="font-medium text-[#755B55] text-xs">
+                  Calculated at checkout
                 </span>
               </div>
               <div className="pt-2.5 border-t border-[#F4ECE5] flex justify-between items-baseline">
                 <div>
                   <span className="font-heading text-base sm:text-lg font-medium text-[#2A1C19] block">Total</span>
                   <span className="text-[11px] text-[#A8928D]">
-                    {isComplimentary ? 'Includes complimentary delivery' : 'Delivery calculated at checkout'}
+                    Shipping calculated at checkout
                   </span>
                 </div>
                 <span className="font-heading text-xl sm:text-2xl font-bold text-[#7A223B]">

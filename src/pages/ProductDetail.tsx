@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getProductBySlugApi, getProductsApi } from '../lib/api';
 import type { Product, Variant } from '../types';
-import { addToCart, openCart } from '../stores/cartStore';
+import { addToCart } from '../stores/cartStore';
 import { ProductCard } from '../components/products/ProductCard';
 import { ShieldCheck, Sparkles, Truck, RefreshCw, ShoppingBag, ArrowLeft, Check } from 'lucide-react';
 
@@ -112,7 +112,6 @@ export const ProductDetail: React.FC = () => {
 
     setAddedNotice(true);
     setTimeout(() => setAddedNotice(false), 2500);
-    openCart();
   };
 
   if (loading) {

@@ -1,9 +1,9 @@
 // src/components/layout/Header.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useStore } from '@nanostores/react';
-import { $cartCount, toggleCart } from '../../stores/cartStore';
+import { $cartCount } from '../../stores/cartStore';
 import {
   ShoppingBag,
   Menu,
@@ -22,8 +22,19 @@ export const Header: React.FC = () => {
   const { user, profile, logout } = useAuth();
   const cartCount = useStore($cartCount);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [addedToast, setAddedToast] = useState(false);
+  const prevCountRef = useRef(cartCount);
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (cartCount > prevCountRef.current) {
+      setAddedToast(true);
+      const timer = setTimeout(() => setAddedToast(false), 2400);
+      return () => clearTimeout(timer);
+    }
+    prevCountRef.current = cartCount;
+  }, [cartCount]);
 
   const handleLogout = async () => {
     try {
@@ -131,20 +142,34 @@ export const Header: React.FC = () => {
 
           {/* RIGHT: Action Icons & Controls */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-            {/* Cart Button: Available to ALL users (Guest & Authenticated) */}
-            <button
-              onClick={toggleCart}
-              className="relative p-2 rounded-full text-[#2A1C19] hover:bg-[#FCE7EC]/70 hover:text-[#7A223B] transition-colors cursor-pointer"
-              aria-label="Shopping Bag"
-              title="View Shopping Bag"
-            >
-              <ShoppingBag className="w-4.5 h-4.5 text-[#2A1C19]" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] bg-gradient-to-r from-[#7A223B] to-[#C96884] text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 shadow-xs border border-[#DFC598] animate-scale-in">
-                  {cartCount}
-                </span>
+            {/* Cart Button: Directly opens FULL cart page with subtle animation/toast */}
+            <div className="relative">
+              <Link
+                to="/cart"
+                className={`relative p-2 rounded-full text-[#2A1C19] hover:bg-[#FCE7EC]/70 hover:text-[#7A223B] transition-all flex items-center justify-center ${
+                  addedToast ? 'scale-110 text-[#7A223B]' : ''
+                }`}
+                aria-label="Shopping Bag"
+                title="View Shopping Bag"
+              >
+                <ShoppingBag className="w-4.5 h-4.5" />
+                {cartCount > 0 && (
+                  <span className={`absolute -top-1 -right-1 min-w-[17px] h-[17px] bg-gradient-to-r from-[#7A223B] to-[#C96884] text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 shadow-xs border border-[#DFC598] ${
+                    addedToast ? 'animate-bounce' : 'animate-scale-in'
+                  }`}>
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+
+              {/* Subtle toast notice on item added */}
+              {addedToast && (
+                <div className="absolute top-full right-0 mt-2 px-3 py-1.5 rounded-full bg-[#7A223B] text-white text-[11px] font-medium shadow-md border border-[#DFC598] flex items-center gap-1.5 whitespace-nowrap animate-fade-in pointer-events-none z-50">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#DFC598] animate-ping" />
+                  <span>Added to bag</span>
+                </div>
               )}
-            </button>
+            </div>
 
             {user ? (
               <>
@@ -289,7 +314,7 @@ export const Header: React.FC = () => {
               <span>Categories</span>
             </Link>
 
-            {user ? (
+            {user && (
               <>
                 <Link
                   to="/orders"
@@ -324,19 +349,16 @@ export const Header: React.FC = () => {
                   <span>Profile Settings</span>
                 </Link>
               </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  toggleCart();
-                }}
-                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-medium uppercase tracking-wider text-[#5E4742] hover:bg-[#FCE7EC]/60 text-left cursor-pointer"
-              >
-                <ShoppingBag className="w-4 h-4 text-[#DFC598]" />
-                <span>Shopping Bag ({cartCount})</span>
-              </button>
             )}
+
+            <Link
+              to="/cart"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-medium uppercase tracking-wider text-[#5E4742] hover:bg-[#FCE7EC]/60 text-left cursor-pointer"
+            >
+              <ShoppingBag className="w-4 h-4 text-[#DFC598]" />
+              <span>Shopping Bag ({cartCount})</span>
+            </Link>
           </div>
 
           {user ? (

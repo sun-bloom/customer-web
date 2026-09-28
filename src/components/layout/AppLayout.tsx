@@ -3,7 +3,6 @@ import React from 'react';
 import { Outlet, ScrollRestoration } from 'react-router-dom';
 import { Header } from './Header';
 import { Footer } from './Footer';
-import { CartDrawer } from '../cart/CartDrawer';
 import { WhatsAppFloat } from './WhatsAppFloat';
 
 export const AppLayout: React.FC = () => {
@@ -15,7 +14,6 @@ export const AppLayout: React.FC = () => {
         <Outlet />
       </main>
       <Footer />
-      <CartDrawer />
       <WhatsAppFloat />
     </div>
   );

@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useStore } from '@nanostores/react';
-import { $cartItems, addToCart, toggleCart, openCart } from '../stores/cartStore';
+import { $cartItems, addToCart } from '../stores/cartStore';
 import {
   getProductsApi,
   getCategoriesApi,
@@ -180,7 +180,6 @@ export const Dashboard: React.FC = () => {
         productImage: product.images?.[0] || '/logo.png',
       };
       addToCart(item);
-      openCart();
       return;
     }
 
@@ -200,7 +199,6 @@ export const Dashboard: React.FC = () => {
         productImage: v.images?.[0] || product.images?.[0] || '/logo.png',
       };
       addToCart(item);
-      openCart();
     } else {
       setSelectedProductForModal(product);
       setChosenVariantId(product.variants[0].id);
@@ -227,7 +225,6 @@ export const Dashboard: React.FC = () => {
     };
     addToCart(item);
     setSelectedProductForModal(null);
-    openCart();
   };
 
   if (loading) {
@@ -265,14 +262,13 @@ export const Dashboard: React.FC = () => {
                 <Package className="w-3.5 h-3.5 text-[#DFC598]" />
                 <span>Orders ({orders.length})</span>
               </Link>
-              <button
-                type="button"
-                onClick={toggleCart}
+              <Link
+                to="/cart"
                 className="text-[#5E4742] hover:text-[#7A223B] transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <ShoppingBag className="w-3.5 h-3.5 text-[#DFC598]" />
                 <span>Bag ({cartItems.length})</span>
-              </button>
+              </Link>
               <Link
                 to="/settings"
                 className="text-[#7A223B] hover:text-[#5E182C] underline decoration-[#DFC598] underline-offset-2 transition-colors"
