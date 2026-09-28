@@ -13,11 +13,7 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
-  signInWithCustomToken,
   sendEmailVerification,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  type ConfirmationResult,
   type User,
 } from 'firebase/auth';
 
@@ -105,13 +101,6 @@ export function subscribeToAuth(callback: (user: User | null) => void) {
   return onAuthStateChanged(auth, callback);
 }
 
-export async function loginWithCustomToken(customToken: string): Promise<User> {
-  const cred = await signInWithCustomToken(auth, customToken);
-  return cred.user;
-}
-
 export async function sendVerificationToUser(user: User): Promise<void> {
   await sendEmailVerification(user);
 }
-
-export { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult };

@@ -98,28 +98,6 @@ export async function updateCustomerProfileApi(token: string, data: any) {
   });
 }
 
-export async function sendOtpApi(phone: string) {
-  return apiFetch<{
-    success: boolean;
-    message: string;
-    resendCooldown?: number;
-    expiresIn?: number;
-  }>('/api/auth/otp/send', {
-    method: 'POST',
-    body: JSON.stringify({ phone }),
-  });
-}
-
-export async function verifyOtpApi(phone: string, otp: string, name?: string) {
-  return apiFetch<{
-    success: boolean;
-    customToken: string;
-    customer: any;
-  }>('/api/auth/otp/verify', {
-    method: 'POST',
-    body: JSON.stringify({ phone, otp, name }),
-  });
-}
 
 // ── Products & Categories ────────────────────────────────────────────────
 export async function getProductsApi(): Promise<{ products: Product[] }> {

@@ -1,9 +1,7 @@
 // src/components/CustomerAuth.tsx
 // Sunbloom Adorn Haute Jewellery Atelier — Customer Authentication
 // ONLY TWO TOP-LEVEL OPTIONS: [ SIGN IN ] and [ CREATE ACCOUNT ]
-// Single shared identifier field (Email / Mobile) with auto-detection.
-// Email Flow: Password authentication + Firebase Email Verification enforcement + Resend Link.
-// Mobile Flow: External India SMS OTP provider + Firebase Custom Token issuance (zero Firebase Phone SMS dependency).
+// Email + Password flow with Firebase Email Verification enforcement.
 // Google Sign-In button preserved below the main form.
 
 import React, { useState, useEffect } from 'react';
@@ -16,13 +14,12 @@ import {
   checkRedirectResult,
   logout,
   subscribeToAuth,
-  loginWithCustomToken,
   sendVerificationToUser,
 } from '../lib/firebase';
 import { mapFirebaseAuthError } from '../lib/authErrors';
 import type { User } from 'firebase/auth';
-import { API_BASE_URL, sendOtpApi, verifyOtpApi } from '../lib/api';
-import { ShieldCheck, ArrowRight, Mail, Phone, Lock, Eye, EyeOff, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { API_BASE_URL } from '../lib/api';
+import { Eye, EyeOff, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 
 interface CustomerAuthProps {
   apiUrl?: string;
@@ -33,7 +30,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: CustomerAuthProps) {
   const [user, setUser] = useState<User | null>(null);
-  
+
   // Top-level mode: ONLY [ SIGN IN ] (true) or [ CREATE ACCOUNT ] (false)
   const [isLogin, setIsLogin] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -46,16 +43,11 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
 
   // Form Fields
   const [name, setName] = useState('');
-  const [identifier, setIdentifier] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // Mobile OTP States
-  const [otpCode, setOtpCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [countdown, setCountdown] = useState(0);
 
   // Verification & Status States
   const [error, setError] = useState<string | null>(null);
@@ -63,15 +55,7 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [emailResentSuccess, setEmailResentSuccess] = useState(false);
-  const [loadingAction, setLoadingAction] = useState<'login' | 'signup' | 'google' | 'otp-send' | 'otp-verify' | null>(null);
-
-  // Identify whether user has typed an email or a mobile number
-  const cleanInput = identifier.trim();
-  const isEmailInput = cleanInput.includes('@') || /[a-zA-Z]/.test(cleanInput);
-  const cleanDigits = cleanInput.replace(/\D/g, '');
-  const isMobileInput = !isEmailInput && cleanDigits.length > 0;
-  const isCompleteMobile = isMobileInput && cleanDigits.slice(-10).length === 10;
-  const activeMobileNumber = cleanDigits.slice(-10);
+  const [loadingAction, setLoadingAction] = useState<'login' | 'signup' | 'google' | null>(null);
 
   // Safe redirect helper
   const handleAuthRedirect = () => {
@@ -145,15 +129,6 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
     return () => unsubscribe();
   }, [apiUrl]);
 
-  // OTP Countdown timer
-  useEffect(() => {
-    let timer: any;
-    if (countdown > 0) {
-      timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
-    }
-    return () => clearTimeout(timer);
-  }, [countdown]);
-
   // Switch between Sign In and Create Account
   const handleTabSwitch = (loginTab: boolean) => {
     setIsLogin(loginTab);
@@ -161,91 +136,10 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
     setInfoMessage(null);
     setUnverifiedEmail(null);
     setEmailResentSuccess(false);
-    setOtpSent(false);
-    setOtpCode('');
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       params.set('mode', loginTab ? 'login' : 'signup');
       window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
-    }
-  };
-
-  // ── Send External SMS OTP ───────────────────────────────────────────
-  const handleSendOtp = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (loadingAction) return;
-    setError(null);
-    setInfoMessage(null);
-
-    if (!isLogin && !name.trim()) {
-      setError('Please enter your full name.');
-      return;
-    }
-
-    if (!/^[6-9]\d{9}$/.test(activeMobileNumber)) {
-      setError('Please enter a valid 10-digit Indian mobile number starting with 6-9 (e.g. 9876543210).');
-      return;
-    }
-
-    setLoadingAction('otp-send');
-    try {
-      const res = await sendOtpApi(activeMobileNumber);
-      setOtpSent(true);
-      setCountdown(res.resendCooldown || 60);
-      setInfoMessage(`Verification code sent to +91 ${activeMobileNumber}`);
-    } catch (err: any) {
-      if (err.body?.error === 'SMS_SERVICE_NOT_CONFIGURED') {
-        setError('Mobile SMS verification service is currently being configured. Please use Email Sign In or Google Sign In in the interim.');
-      } else {
-        setError(err.message || 'Failed to dispatch verification code. Please try again.');
-      }
-    } finally {
-      setLoadingAction(null);
-    }
-  };
-
-  // ── Verify External SMS OTP & Sign In via Firebase Custom Token ──────
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (loadingAction) return;
-    setError(null);
-    setInfoMessage(null);
-
-    const cleanOtp = otpCode.replace(/\D/g, '').slice(0, 6);
-    if (cleanOtp.length !== 6) {
-      setError('Please enter the complete 6-digit OTP code.');
-      return;
-    }
-
-    setLoadingAction('otp-verify');
-    try {
-      // 1. Backend validates OTP and issues Firebase Custom Token
-      const response = await verifyOtpApi(
-        activeMobileNumber,
-        cleanOtp,
-        !isLogin ? name.trim() : undefined
-      );
-
-      if (!response.customToken) {
-        throw new Error('Verification completed but custom session token was not returned.');
-      }
-
-      // 2. Client signs in with Firebase Custom Token
-      const firebaseUser = await loginWithCustomToken(response.customToken);
-
-      // 3. Synchronize verified session token with PostgreSQL customer record
-      const idToken = await firebaseUser.getIdToken(true);
-      await syncCustomerWithBackend(idToken);
-
-      // 4. Redirect seamlessly to destination
-      handleAuthRedirect();
-    } catch (err: any) {
-      if (import.meta.env.DEV) {
-        console.error('[OTP Verification Error]:', err);
-      }
-      setError(err.message || 'Invalid or expired OTP code. Please check and try again.');
-    } finally {
-      setLoadingAction(null);
     }
   };
 
@@ -258,7 +152,7 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
     setUnverifiedEmail(null);
     setEmailResentSuccess(false);
 
-    const trimmedEmail = cleanInput.toLowerCase();
+    const trimmedEmail = email.trim().toLowerCase();
 
     if (!isLogin && !name.trim()) {
       setError('Please enter your full name.');
@@ -420,9 +314,9 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
             Client Profile
           </span>
           <h3 className="font-heading text-2xl sm:text-3xl font-normal text-[#2A1C19]">
-            {user.displayName || (user.phoneNumber ? `Client (${user.phoneNumber})` : 'Welcome Back')}
+            {user.displayName || 'Welcome Back'}
           </h3>
-          <p className="text-xs text-[#7D6460] font-light mt-1 font-sans">{user.email || user.phoneNumber}</p>
+          <p className="text-xs text-[#7D6460] font-light mt-1 font-sans">{user.email}</p>
         </div>
 
         <div className="pt-2 flex flex-col gap-3">
@@ -536,10 +430,10 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
       )}
 
       {/* ========================================================================= */}
-      {/* 2. SIGN IN OR CREATE ACCOUNT CREDENTIAL FORM                              */}
+      {/* 2. EMAIL CREDENTIAL FORM                                                    */}
       {/* ========================================================================= */}
-      <div className="relative z-10 space-y-4">
-        
+      <form onSubmit={handleEmailSubmit} className="relative z-10 space-y-4" noValidate>
+
         {/* Full Name field (Only shown for CREATE ACCOUNT) */}
         {!isLogin && (
           <div>
@@ -558,216 +452,94 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
           </div>
         )}
 
-        {/* ONE SINGLE SHARED IDENTIFIER FIELD: Email address / Mobile number */}
+        {/* Email Address */}
         <div>
-          <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5 flex items-center justify-between">
-            <span>Email address / Mobile number *</span>
-            {isMobileInput ? (
-              <span className="text-[10px] text-[#7A223B] font-semibold uppercase tracking-wider">Mobile Flow</span>
-            ) : isEmailInput ? (
-              <span className="text-[10px] text-[#7A223B] font-semibold uppercase tracking-wider">Email Flow</span>
-            ) : null}
+          <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
+            Email Address *
           </label>
-
-          <div className="relative flex rounded-xl border border-[#E8DCCF] bg-[#FAF6F0]/70 focus-within:border-[#7A223B] focus-within:ring-1 focus-within:ring-[#7A223B]/20 transition-all overflow-hidden">
-            {isMobileInput && (
-              <span className="inline-flex items-center px-3 bg-[#FAF6F0] border-r border-[#E8DCCF] text-xs font-semibold text-[#7A223B]">
-                +91
-              </span>
-            )}
-            <input
-              type={isMobileInput ? 'tel' : 'text'}
-              id="auth-identifier-input"
-              required
-              disabled={otpSent && loadingAction !== 'otp-send'}
-              value={identifier}
-              onChange={(e) => {
-                setIdentifier(e.target.value);
-                setError(null);
-                setUnverifiedEmail(null);
-              }}
-              placeholder="name@example.com or 10-digit mobile"
-              className="w-full px-3.5 py-2.5 bg-transparent text-xs sm:text-sm text-[#2A1C19] focus:outline-none disabled:opacity-60"
-            />
-          </div>
-
-          <p className="text-[11px] text-[#A8928D] mt-1 font-light">
-            {isMobileInput
-              ? 'Mobile detected: We will send a 6-digit OTP code to verify your mobile number.'
-              : isEmailInput
-              ? 'Email detected: Please enter your password below.'
-              : 'Enter your email address or 10-digit Indian mobile number.'}
-          </p>
+          <input
+            type="email"
+            id="auth-email-input"
+            required
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setError(null);
+              setUnverifiedEmail(null);
+            }}
+            placeholder="name@example.com"
+            className="w-full px-3.5 py-2.5 bg-[#FAF6F0]/70 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B] focus:ring-1 focus:ring-[#7A223B]/20 transition-all"
+          />
         </div>
 
-        {/* ── FLOW A: EMAIL AUTHENTICATION ──────────────────────────────── */}
-        {isEmailInput && (
-          <form onSubmit={handleEmailSubmit} className="space-y-4" noValidate>
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="text-xs font-semibold text-[#5C4540] uppercase tracking-wider">
-                  Password *
-                </label>
-              </div>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="auth-password-input"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 bg-[#FAF6F0]/70 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B] focus:ring-1 focus:ring-[#7A223B]/20 transition-all pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8928D] hover:text-[#5C4540] cursor-pointer"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Confirm Password (Only for Create Account) */}
-            {!isLogin && (
-              <div>
-                <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
-                  Confirm Password *
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    id="auth-confirm-password-input"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-3.5 py-2.5 bg-[#FAF6F0]/70 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B] focus:ring-1 focus:ring-[#7A223B]/20 transition-all pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8928D] hover:text-[#5C4540] cursor-pointer"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-            )}
-
+        {/* Password */}
+        <div>
+          <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
+            Password *
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              id="auth-password-input"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="w-full px-3.5 py-2.5 bg-[#FAF6F0]/70 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B] focus:ring-1 focus:ring-[#7A223B]/20 transition-all pr-10"
+            />
             <button
-              type="submit"
-              id="auth-email-submit-btn"
-              disabled={loadingAction !== null}
-              className="w-full btn-rose-primary py-3 px-4 font-semibold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-all duration-300 disabled:opacity-50 mt-2 cursor-pointer flex items-center justify-center gap-2"
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8928D] hover:text-[#5C4540] cursor-pointer"
             >
-              {loadingAction === 'login' || loadingAction === 'signup' ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                  <span>{isLogin ? 'SIGNING IN…' : 'CREATING ACCOUNT…'}</span>
-                </>
-              ) : (
-                <span>{isLogin ? 'SIGN IN WITH EMAIL' : 'CREATE ACCOUNT'}</span>
-              )}
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
-          </form>
-        )}
+          </div>
+        </div>
 
-        {/* ── FLOW B: MOBILE OTP AUTHENTICATION (NO PASSWORD) ───────────── */}
-        {isMobileInput && (
-          <div className="space-y-4 pt-1">
-            {!otpSent ? (
+        {/* Confirm Password (Only for Create Account) */}
+        {!isLogin && (
+          <div>
+            <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
+              Confirm Password *
+            </label>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                id="auth-confirm-password-input"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-3.5 py-2.5 bg-[#FAF6F0]/70 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B] focus:ring-1 focus:ring-[#7A223B]/20 transition-all pr-10"
+              />
               <button
                 type="button"
-                id="phone-send-otp-btn"
-                onClick={() => handleSendOtp()}
-                disabled={loadingAction !== null || !isCompleteMobile}
-                className="w-full btn-rose-primary py-3 px-4 font-semibold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-all duration-300 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8928D] hover:text-[#5C4540] cursor-pointer"
               >
-                {loadingAction === 'otp-send' ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                    <span>SENDING OTP…</span>
-                  </>
-                ) : (
-                  <span>GET VERIFICATION CODE</span>
-                )}
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
-            ) : (
-              <form onSubmit={handleVerifyOtp} className="space-y-3.5" noValidate>
-                <div className="p-3 bg-[#FAF6F0] rounded-xl border border-[#E8DCCF] flex items-center justify-between">
-                  <div>
-                    <span className="block text-[10px] uppercase tracking-wider text-[#A8928D] font-bold">Code sent to</span>
-                    <span className="text-xs font-semibold text-[#2A1C19]">+91 {activeMobileNumber}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOtpSent(false);
-                      setOtpCode('');
-                      setError(null);
-                    }}
-                    className="text-xs text-[#7A223B] hover:underline font-medium cursor-pointer"
-                  >
-                    Change
-                  </button>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
-                    6-Digit Verification Code *
-                  </label>
-                  <input
-                    type="text"
-                    id="phone-otp-code-input"
-                    required
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="123456"
-                    maxLength={6}
-                    autoComplete="one-time-code"
-                    disabled={loadingAction !== null}
-                    className="w-full text-center tracking-[0.5em] font-mono text-lg px-4 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-[#2A1C19] focus:outline-none focus:ring-1 focus:ring-[#7A223B]/20 focus:border-[#7A223B] transition-all disabled:opacity-50"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  id="phone-verify-otp-btn"
-                  disabled={loadingAction !== null || otpCode.replace(/\D/g, '').length !== 6}
-                  className="w-full btn-rose-primary py-3 px-4 font-semibold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-all duration-300 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
-                >
-                  {loadingAction === 'otp-verify' ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                      <span>VERIFYING CODE…</span>
-                    </>
-                  ) : (
-                    <span>{isLogin ? 'VERIFY & SIGN IN' : 'VERIFY & CREATE ACCOUNT'}</span>
-                  )}
-                </button>
-
-                <div className="text-center pt-1">
-                  {countdown > 0 ? (
-                    <span className="text-xs text-[#A8928D]">Resend code in {countdown}s</span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleSendOtp()}
-                      disabled={loadingAction !== null}
-                      className="text-xs text-[#7A223B] hover:underline font-medium cursor-pointer"
-                    >
-                      Resend verification code
-                    </button>
-                  )}
-                </div>
-              </form>
-            )}
+            </div>
           </div>
         )}
 
-      </div>
+        <button
+          type="submit"
+          id="auth-email-submit-btn"
+          disabled={loadingAction !== null}
+          className="w-full btn-rose-primary py-3 px-4 font-semibold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-all duration-300 disabled:opacity-50 mt-2 cursor-pointer flex items-center justify-center gap-2"
+        >
+          {loadingAction === 'login' || loadingAction === 'signup' ? (
+            <>
+              <RefreshCw className="w-4 h-4 animate-spin text-white" />
+              <span>{isLogin ? 'SIGNING IN…' : 'CREATING ACCOUNT…'}</span>
+            </>
+          ) : (
+            <span>{isLogin ? 'SIGN IN WITH EMAIL' : 'CREATE ACCOUNT'}</span>
+          )}
+        </button>
+      </form>
 
       {/* ========================================================================= */}
       {/* 3. GOOGLE SIGN-IN BUTTON BELOW MAIN CREDENTIAL FORM                        */}
