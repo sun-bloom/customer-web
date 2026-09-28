@@ -75,8 +75,9 @@ export const Payment: React.FC = () => {
 
   // Form Fields
   const [name, setName] = useState(profile?.name || user?.displayName || '');
-  const [phone, setPhone] = useState(profile?.phone || '');
-  const [whatsappNumber, setWhatsappNumber] = useState(profile?.whatsappNumber || profile?.phone || '');
+  const [email, setEmail] = useState(profile?.email || user?.email || '');
+  const [phone, setPhone] = useState(profile?.phone || (user?.phoneNumber ? user.phoneNumber.replace(/\D/g, '').slice(-10) : ''));
+  const [whatsappNumber, setWhatsappNumber] = useState(profile?.whatsappNumber || profile?.phone || (user?.phoneNumber ? user.phoneNumber.replace(/\D/g, '').slice(-10) : ''));
   const [whatsappSameAsPhone, setWhatsappSameAsPhone] = useState<boolean>(() => {
     if (profile?.phone && profile?.whatsappNumber) {
       return profile.phone.trim() === profile.whatsappNumber.trim();
@@ -116,8 +117,8 @@ export const Payment: React.FC = () => {
   const [enquiryLoading, setEnquiryLoading] = useState(false);
   const [consultantSent, setConsultantSent] = useState(false);
 
-  // Authenticated email from user/profile session
-  const authEmail = (user?.email || profile?.email || '').trim().toLowerCase();
+  // Authenticated email or user input email
+  const authEmail = (user?.email || profile?.email || email || '').trim().toLowerCase();
 
   // Load official states on mount
   useEffect(() => {
@@ -147,6 +148,7 @@ export const Payment: React.FC = () => {
   useEffect(() => {
     if (profile) {
       if (profile.name && !name) setName(profile.name);
+      if (profile.email && !email) setEmail(profile.email);
       if (profile.phone && !phone) setPhone(profile.phone);
       if (profile.whatsappNumber && !whatsappNumber) {
         setWhatsappNumber(profile.whatsappNumber);
@@ -167,7 +169,20 @@ export const Payment: React.FC = () => {
         }
       }
     }
-  }, [profile]);
+    if (user) {
+      if (user.email && !email) setEmail(user.email);
+      if (user.phoneNumber && !phone) {
+        const p = user.phoneNumber.replace(/\D/g, '').slice(-10);
+        if (p) {
+          setPhone(p);
+          if (!whatsappNumber) {
+            setWhatsappNumber(p);
+            setWhatsappSameAsPhone(true);
+          }
+        }
+      }
+    }
+  }, [profile, user]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -372,8 +387,9 @@ export const Payment: React.FC = () => {
     setErrorMessage(null);
     setEnquiryLoading(true);
 
-    if (!authEmail) {
-      setErrorMessage('Please sign in with your Google account to submit a delivery enquiry.');
+    const cleanEmail = (email || authEmail || '').trim().toLowerCase();
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setErrorMessage('Please provide a valid email address before submitting a delivery enquiry.');
       setEnquiryLoading(false);
       return;
     }
@@ -404,7 +420,7 @@ export const Payment: React.FC = () => {
         name: name.trim(),
         phone: rawPhone,
         whatsappNumber: rawWhatsapp,
-        email: authEmail,
+        email: cleanEmail,
         address: address.trim(),
         city: city.trim(),
         state: state.trim(),
@@ -426,8 +442,19 @@ export const Payment: React.FC = () => {
     setErrorMessage(null);
     setStockErrors([]);
 
-    if (!authEmail) {
-      setErrorMessage('Please sign in with your authenticated Google account to proceed with checkout.');
+    if (!user) {
+      setErrorMessage('Please sign in to proceed with checkout.');
+      return;
+    }
+
+    const cleanEmail = (email || authEmail || '').trim().toLowerCase();
+    if (!cleanEmail) {
+      setErrorMessage('Please provide an email address for order confirmation & consignment tracking.');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setErrorMessage('Please enter a valid email address (e.g. name@example.com).');
       return;
     }
 
@@ -491,10 +518,11 @@ export const Payment: React.FC = () => {
     setLoading(true);
 
     try {
-      // 1. Update customer profile in the background if logged in
+      // 1. Update customer profile with email, phone, and delivery info
       if (token) {
         updateCustomerProfileApi(token, {
           name: name.trim(),
+          email: cleanEmail,
           phone: rawPhone,
           whatsappNumber: rawWhatsapp,
           address: address.trim(),
@@ -512,7 +540,7 @@ export const Payment: React.FC = () => {
             name: name.trim(),
             phone: rawPhone,
             whatsappNumber: rawWhatsapp,
-            email: authEmail,
+            email: cleanEmail,
             address: address.trim(),
             city: city.trim(),
             state: state.trim(),
@@ -617,18 +645,18 @@ export const Payment: React.FC = () => {
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Authenticated Account Information (Non-editable) */}
+                {/* Authenticated Account Information */}
                 <div className="md:col-span-2 p-3.5 bg-[#FAF6F0]/80 border border-[#E8DCCF] rounded-xl flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <span className="block text-[10px] font-bold text-[#A8928D] uppercase tracking-wider">
                       Signed In As
                     </span>
                     <span className="text-xs sm:text-sm font-medium text-[#2A1C19] truncate block">
-                      {authEmail || 'Authenticated Google Account'}
+                      {user?.email || profile?.email || user?.phoneNumber || profile?.phone || 'Authenticated Customer'}
                     </span>
                   </div>
                   <span className="text-[10px] uppercase tracking-wider bg-[#FDF2F5] text-[#7A223B] border border-[#FCE7EC] px-2.5 py-1 rounded-full font-semibold flex-shrink-0">
-                    Google Account
+                    {user?.phoneNumber && !user?.email ? 'Verified Mobile' : user?.email ? 'Verified Account' : 'Authenticated'}
                   </span>
                 </div>
 
@@ -642,6 +670,25 @@ export const Payment: React.FC = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Radhika Sharma"
+                    className="w-full px-3.5 py-2.5 bg-[#FAF6F0]/60 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Email Address *</span>
+                    {(!profile?.email && !user?.email) && (
+                      <span className="text-[10px] text-[#7A223B] font-medium normal-case tracking-normal">
+                        Required for order confirmation &amp; tracking
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@example.com"
                     className="w-full px-3.5 py-2.5 bg-[#FAF6F0]/60 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                   />
                 </div>

@@ -8,6 +8,7 @@ export const Settings: React.FC = () => {
   const { user, profile, token, refreshProfile, logout } = useAuth();
 
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [whatsappSameAsPhone, setWhatsappSameAsPhone] = useState(false);
@@ -23,6 +24,7 @@ export const Settings: React.FC = () => {
   useEffect(() => {
     if (profile) {
       setName(profile.name || user?.displayName || '');
+      setEmail(profile.email || user?.email || '');
       setPhone(profile.phone || '');
       const wa = profile.whatsappNumber || profile.phone || '';
       setWhatsappNumber(wa);
@@ -37,6 +39,7 @@ export const Settings: React.FC = () => {
       setPincode(profile.pincode || '');
     } else if (user) {
       setName(user.displayName || '');
+      setEmail(user.email || '');
     }
   }, [profile, user]);
 
@@ -62,6 +65,13 @@ export const Settings: React.FC = () => {
     setSuccessMsg(null);
     setErrorMsg(null);
 
+    const cleanEmail = email.trim();
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setErrorMsg('Please enter a valid email address.');
+      setSaving(false);
+      return;
+    }
+
     const cleanPhone = phone.trim();
     const cleanWhatsapp = (whatsappSameAsPhone ? phone : whatsappNumber).trim();
 
@@ -80,6 +90,7 @@ export const Settings: React.FC = () => {
     try {
       await updateCustomerProfileApi(token, {
         name: name.trim(),
+        email: cleanEmail || null,
         phone: cleanPhone,
         whatsappNumber: cleanWhatsapp,
         address: address.trim(),
@@ -126,17 +137,19 @@ export const Settings: React.FC = () => {
           <div className="p-4 rounded-xl sm:rounded-2xl bg-[#FAF6F0]/80 border border-[#E8DCCF] flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#7A223B] text-[#FFF6FA] flex items-center justify-center font-serif text-lg font-bold">
-                {name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'S'}
+                {name?.charAt(0)?.toUpperCase() || email?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'S'}
               </div>
               <div>
                 <span className="text-sm font-semibold text-[#2A1C19] block">
                   {name || user?.displayName || 'Client'}
                 </span>
-                <span className="text-xs text-[#A8928D]">{user?.email}</span>
+                <span className="text-xs text-[#A8928D]">
+                  {email || user?.email || user?.phoneNumber || profile?.phone || 'No email saved'}
+                </span>
               </div>
             </div>
             <span className="text-[10px] uppercase tracking-wider bg-[#FDF2F5] text-[#7A223B] border border-[#FCE7EC] px-2.5 py-1 rounded-full font-semibold">
-              Authenticated
+              {user?.phoneNumber && !user?.email ? 'Verified Mobile' : user?.email ? 'Verified Account' : 'Authenticated'}
             </span>
           </div>
 
@@ -172,6 +185,25 @@ export const Settings: React.FC = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Radhika Sharma"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="settingsEmail" className="block text-xs font-semibold uppercase tracking-wider text-[#5C4540] mb-1.5 flex items-center justify-between">
+                  <span>Email Address</span>
+                  {!email && (
+                    <span className="text-[10px] text-[#7A223B] font-medium normal-case">Add email</span>
+                  )}
+                </label>
+                <input
+                  id="settingsEmail"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                 />
               </div>

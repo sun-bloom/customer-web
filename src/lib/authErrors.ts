@@ -70,6 +70,21 @@ export function mapFirebaseAuthError(error: any): string {
     case 'auth/account-exists-with-different-credential':
       return 'An account already exists with this email. Please sign in using the original sign-in method.';
 
+    case 'auth/invalid-phone-number':
+      return 'Please enter a valid 10-digit mobile number.';
+
+    case 'auth/invalid-verification-code':
+      return 'The verification code you entered is incorrect. Please check and try again.';
+
+    case 'auth/code-expired':
+      return 'The verification code has expired. Please request a new code.';
+
+    case 'auth/captcha-check-failed':
+      return 'Security verification failed. Please try again.';
+
+    case 'auth/quota-exceeded':
+      return 'SMS limit reached. Please try again later or sign in with Google.';
+
     default:
       // If error message is already a custom user-friendly validation error without technical Firebase text, use it
       if (

@@ -10,6 +10,9 @@ import {
   checkRedirectResult,
   logout,
   subscribeToAuth,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  type ConfirmationResult,
 } from '../lib/firebase';
 import { mapFirebaseAuthError } from '../lib/authErrors';
 import type { User } from 'firebase/auth';
@@ -24,6 +27,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: CustomerAuthProps) {
   const [user, setUser] = useState<User | null>(null);
+  const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone');
   const [isLogin, setIsLogin] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -33,7 +37,14 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
     return true;
   });
 
-  // Form Fields
+  // Mobile OTP Fields
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  // Email/Password Form Fields
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,7 +54,7 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
 
   // States
   const [error, setError] = useState<string | null>(null);
-  const [loadingAction, setLoadingAction] = useState<'login' | 'signup' | 'google' | null>(null);
+  const [loadingAction, setLoadingAction] = useState<'login' | 'signup' | 'google' | 'otp-send' | 'otp-verify' | null>(null);
   const [popupBlocked, setPopupBlocked] = useState(false);
 
   // Safe redirect helper
@@ -119,6 +130,117 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
 
     return () => unsubscribe();
   }, [apiUrl]);
+
+  // Cleanup Recaptcha on component unmount
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && (window as any).recaptchaVerifier) {
+        try {
+          (window as any).recaptchaVerifier.clear();
+          (window as any).recaptchaVerifier = null;
+        } catch (e) {}
+      }
+    };
+  }, []);
+
+  // OTP Countdown timer
+  useEffect(() => {
+    let timer: any;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
+  // Recaptcha verifier helper
+  const setupRecaptcha = (containerId: string = 'recaptcha-container') => {
+    if (typeof window === 'undefined') return null;
+    const existing = (window as any).recaptchaVerifier;
+    if (existing) {
+      try {
+        existing.clear();
+      } catch (e) {}
+    }
+    const verifier = new RecaptchaVerifier(auth, containerId, {
+      size: 'invisible',
+      callback: () => {},
+      'expired-callback': () => {
+        setError('Security verification expired. Please try again.');
+      },
+    });
+    (window as any).recaptchaVerifier = verifier;
+    return verifier;
+  };
+
+  // Send OTP to Indian mobile number
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loadingAction) return;
+    setError(null);
+
+    const cleanPhone = phoneNumber.replace(/\D/g, '').slice(-10);
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      setError('Please enter a valid 10-digit Indian mobile number starting with 6-9.');
+      return;
+    }
+
+    setLoadingAction('otp-send');
+    try {
+      const verifier = setupRecaptcha('recaptcha-container');
+      if (!verifier) throw new Error('Security check initialization failed.');
+      const confirmation = await signInWithPhoneNumber(auth, `+91${cleanPhone}`, verifier);
+      setConfirmationResult(confirmation);
+      setOtpSent(true);
+      setCountdown(60);
+    } catch (err: any) {
+      if (import.meta.env.DEV) {
+        console.error('[Phone Auth Send Error]:', err);
+      }
+      setError(mapFirebaseAuthError(err));
+      if ((window as any).recaptchaVerifier) {
+        try {
+          (window as any).recaptchaVerifier.clear();
+          (window as any).recaptchaVerifier = null;
+        } catch (e) {}
+      }
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  // Verify OTP code
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loadingAction) return;
+    setError(null);
+
+    const cleanOtp = otpCode.replace(/\D/g, '').slice(0, 6);
+    if (cleanOtp.length !== 6) {
+      setError('Please enter the 6-digit OTP code sent to your mobile.');
+      return;
+    }
+
+    if (!confirmationResult) {
+      setError('Session expired. Please request a new OTP.');
+      setOtpSent(false);
+      return;
+    }
+
+    setLoadingAction('otp-verify');
+    try {
+      const userCredential = await confirmationResult.confirm(cleanOtp);
+      const idToken = await userCredential.user.getIdToken(true);
+      await syncCustomerWithBackend(idToken);
+      handleAuthRedirect();
+    } catch (err: any) {
+      if (import.meta.env.DEV) {
+        console.error('[Phone Auth Verify Error]:', err);
+      }
+      setError(mapFirebaseAuthError(err));
+    } finally {
+      setLoadingAction(null);
+    }
+  };
 
   // Tab switcher
   const handleTabSwitch = (loginTab: boolean) => {
@@ -268,9 +390,9 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
             Client Profile
           </span>
           <h3 className="font-heading text-2xl sm:text-3xl font-normal text-[#2A1C19]">
-            {user.displayName || 'Welcome Back'}
+            {user.displayName || (user.phoneNumber ? `Client (${user.phoneNumber})` : 'Welcome Back')}
           </h3>
-          <p className="text-xs text-[#7D6460] font-light mt-1 font-sans">{user.email}</p>
+          <p className="text-xs text-[#7D6460] font-light mt-1 font-sans">{user.email || user.phoneNumber}</p>
         </div>
 
         <div className="pt-2 flex flex-col gap-3">
@@ -332,27 +454,37 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
         <p className="text-xs text-[#7A223B] font-medium mt-0.5 tracking-wider uppercase">Haute Jewellery Atelier</p>
       </div>
 
-      {/* Tab Controls: Sign In vs Create Account */}
-      <div className="flex border-b border-[#FAF6F0] mb-7 relative z-10">
+      {/* Auth Method Switcher: Mobile OTP vs Email & Password */}
+      <div className="flex border-b border-[#FAF6F0] mb-6 relative z-10">
         <button
           type="button"
-          id="tab-sign-in"
-          onClick={() => handleTabSwitch(true)}
+          id="tab-mobile-otp"
+          onClick={() => {
+            setAuthMethod('phone');
+            setError(null);
+          }}
           className={`flex-1 py-3 text-xs font-semibold uppercase tracking-widest border-b-2 transition-all cursor-pointer ${
-            isLogin ? 'border-[#7A223B] text-[#7A223B]' : 'border-transparent text-[#A8928D] hover:text-[#5C4540]'
+            authMethod === 'phone'
+              ? 'border-[#7A223B] text-[#7A223B]'
+              : 'border-transparent text-[#A8928D] hover:text-[#5C4540]'
           }`}
         >
-          Sign In
+          Mobile OTP
         </button>
         <button
           type="button"
-          id="tab-create-account"
-          onClick={() => handleTabSwitch(false)}
+          id="tab-email-password"
+          onClick={() => {
+            setAuthMethod('email');
+            setError(null);
+          }}
           className={`flex-1 py-3 text-xs font-semibold uppercase tracking-widest border-b-2 transition-all cursor-pointer ${
-            !isLogin ? 'border-[#7A223B] text-[#7A223B]' : 'border-transparent text-[#A8928D] hover:text-[#5C4540]'
+            authMethod === 'email'
+              ? 'border-[#7A223B] text-[#7A223B]'
+              : 'border-transparent text-[#A8928D] hover:text-[#5C4540]'
           }`}
         >
-          Create Account
+          Email &amp; Password
         </button>
       </div>
 
@@ -366,124 +498,277 @@ export default function CustomerAuth({ apiUrl = API_BASE_URL, onSuccess }: Custo
         </div>
       )}
 
-      {/* Authentication Form (Email & Password Only) */}
-      <form onSubmit={handleSubmit} className="space-y-4 font-sans relative z-10" noValidate>
-        {/* Full Name (Sign Up only) */}
-        {!isLogin && (
-          <div>
-            <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
-              Full Name
-            </label>
-            <input
-              type="text"
-              id="signup-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Radhika Sharma"
-              disabled={loadingAction !== null}
-              className="w-full px-4 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-sm text-[#2A1C19] focus:outline-none focus:ring-1 focus:ring-[#7A223B]/20 focus:border-[#7A223B] transition-all disabled:opacity-50"
-            />
-          </div>
-        )}
+      {/* Mobile Number + OTP Flow */}
+      {authMethod === 'phone' && (
+        <div className="space-y-4 font-sans relative z-10">
+          <div id="recaptcha-container"></div>
 
-        {/* Email Address */}
-        <div>
-          <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
-            Email Address
-          </label>
-          <input
-            type="email"
-            id="auth-email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="name@example.com"
-            disabled={loadingAction !== null}
-            className="w-full px-4 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-sm text-[#2A1C19] focus:outline-none focus:ring-1 focus:ring-[#7A223B]/20 focus:border-[#7A223B] transition-all disabled:opacity-50"
-          />
+          {!otpSent ? (
+            <form onSubmit={handleSendOtp} className="space-y-4" noValidate>
+              <div>
+                <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
+                  Mobile Number
+                </label>
+                <div className="relative flex rounded-xl border border-[#E8DCCF] bg-[#FAF6F0]/70 overflow-hidden focus-within:border-[#7A223B] focus-within:ring-1 focus-within:ring-[#7A223B]/20">
+                  <span className="inline-flex items-center px-3.5 bg-[#FAF6F0] border-r border-[#E8DCCF] text-xs font-medium text-[#5C4540]">
+                    +91
+                  </span>
+                  <input
+                    type="tel"
+                    id="phone-auth-number"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    placeholder="9876543210"
+                    maxLength={10}
+                    disabled={loadingAction !== null}
+                    className="w-full px-3.5 py-2.5 bg-transparent text-sm text-[#2A1C19] focus:outline-none disabled:opacity-50"
+                  />
+                </div>
+                <p className="text-[11px] text-[#A8928D] mt-1.5">
+                  We will send a 6-digit OTP code to verify your mobile number.
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                id="phone-send-otp-btn"
+                disabled={loadingAction !== null || phoneNumber.replace(/\D/g, '').length !== 10}
+                className="w-full btn-rose-primary py-3 px-4 font-semibold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-all duration-300 disabled:opacity-50 mt-3 cursor-pointer flex items-center justify-center gap-2"
+              >
+                {loadingAction === 'otp-send' ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>SENDING OTP…</span>
+                  </>
+                ) : (
+                  <span>GET VERIFICATION CODE</span>
+                )}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="space-y-4" noValidate>
+              <div className="p-3 bg-[#FAF6F0] rounded-xl border border-[#E8DCCF] flex items-center justify-between">
+                <div>
+                  <span className="block text-[10px] uppercase tracking-wider text-[#A8928D] font-bold">Code sent to</span>
+                  <span className="text-xs font-semibold text-[#2A1C19]">+91 {phoneNumber}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOtpSent(false);
+                    setOtpCode('');
+                    setError(null);
+                  }}
+                  className="text-xs text-[#7A223B] hover:underline font-medium cursor-pointer"
+                >
+                  Change
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
+                  6-Digit OTP Code
+                </label>
+                <input
+                  type="text"
+                  id="phone-otp-code"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="123456"
+                  maxLength={6}
+                  autoComplete="one-time-code"
+                  disabled={loadingAction !== null}
+                  className="w-full text-center tracking-[0.5em] font-mono text-lg px-4 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-[#2A1C19] focus:outline-none focus:ring-1 focus:ring-[#7A223B]/20 focus:border-[#7A223B] transition-all disabled:opacity-50"
+                />
+              </div>
+
+              <button
+                type="submit"
+                id="phone-verify-otp-btn"
+                disabled={loadingAction !== null || otpCode.replace(/\D/g, '').length !== 6}
+                className="w-full btn-rose-primary py-3 px-4 font-semibold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-all duration-300 disabled:opacity-50 mt-3 cursor-pointer flex items-center justify-center gap-2"
+              >
+                {loadingAction === 'otp-verify' ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>VERIFYING CODE…</span>
+                  </>
+                ) : (
+                  <span>VERIFY &amp; SIGN IN</span>
+                )}
+              </button>
+
+              <div className="text-center pt-1">
+                {countdown > 0 ? (
+                  <span className="text-xs text-[#A8928D]">Resend code in {countdown}s</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={loadingAction !== null}
+                    className="text-xs text-[#7A223B] hover:underline font-medium cursor-pointer"
+                  >
+                    Resend verification code
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
         </div>
+      )}
 
-        {/* Password */}
-        <div>
-          <div className="flex justify-between items-center mb-1.5">
-            <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider">
-              Password
-            </label>
+      {/* Email & Password Flow */}
+      {authMethod === 'email' && (
+        <div className="relative z-10">
+          {/* Subtab Controls: Sign In vs Create Account */}
+          <div className="flex border-b border-[#FAF6F0] mb-5">
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="text-[11px] text-[#A8928D] hover:text-[#7A223B] transition-colors cursor-pointer"
+              id="tab-sign-in"
+              onClick={() => handleTabSwitch(true)}
+              className={`flex-1 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                isLogin ? 'border-[#7A223B] text-[#7A223B]' : 'border-transparent text-[#A8928D] hover:text-[#5C4540]'
+              }`}
             >
-              {showPassword ? 'Hide' : 'Show'}
+              Sign In
+            </button>
+            <button
+              type="button"
+              id="tab-create-account"
+              onClick={() => handleTabSwitch(false)}
+              className={`flex-1 py-2 text-xs font-semibold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                !isLogin ? 'border-[#7A223B] text-[#7A223B]' : 'border-transparent text-[#A8928D] hover:text-[#5C4540]'
+              }`}
+            >
+              Create Account
             </button>
           </div>
-          <input
-            type={showPassword ? 'text' : 'password'}
-            id="auth-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            disabled={loadingAction !== null}
-            className="w-full px-4 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-sm text-[#2A1C19] focus:outline-none focus:ring-1 focus:ring-[#7A223B]/20 focus:border-[#7A223B] transition-all disabled:opacity-50"
-          />
-        </div>
 
-        {/* Confirm Password (Sign Up only) */}
-        {!isLogin && (
-          <div>
-            <div className="flex justify-between items-center mb-1.5">
-              <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider">
-                Confirm Password
+          <form onSubmit={handleSubmit} className="space-y-4 font-sans" noValidate>
+            {/* Full Name (Sign Up only) */}
+            {!isLogin && (
+              <div>
+                <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="signup-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Radhika Sharma"
+                  disabled={loadingAction !== null}
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-sm text-[#2A1C19] focus:outline-none focus:ring-1 focus:ring-[#7A223B]/20 focus:border-[#7A223B] transition-all disabled:opacity-50"
+                />
+              </div>
+            )}
+
+            {/* Email Address */}
+            <div>
+              <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider mb-1.5">
+                Email Address
               </label>
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="text-[11px] text-[#A8928D] hover:text-[#7A223B] transition-colors cursor-pointer"
-              >
-                {showConfirmPassword ? 'Hide' : 'Show'}
-              </button>
+              <input
+                type="email"
+                id="auth-email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                disabled={loadingAction !== null}
+                className="w-full px-4 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-sm text-[#2A1C19] focus:outline-none focus:ring-1 focus:ring-[#7A223B]/20 focus:border-[#7A223B] transition-all disabled:opacity-50"
+              />
             </div>
-            <input
-              type={showConfirmPassword ? 'text' : 'password'}
-              id="signup-confirm-password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
-              disabled={loadingAction !== null}
-              className="w-full px-4 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-sm text-[#2A1C19] focus:outline-none focus:ring-1 focus:ring-[#7A223B]/20 focus:border-[#7A223B] transition-all disabled:opacity-50"
-            />
-          </div>
-        )}
 
-        {/* Submit Button */}
-        <button
-          type="submit"
-          id="auth-submit-btn"
-          disabled={loadingAction !== null}
-          className="w-full btn-rose-primary py-3 px-4 font-semibold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-all duration-300 disabled:opacity-50 mt-3 cursor-pointer flex items-center justify-center gap-2"
-        >
-          {loadingAction === 'login' && (
-            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          )}
-          {loadingAction === 'signup' && (
-            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          )}
-          <span>
-            {loadingAction === 'login'
-              ? 'SIGNING IN…'
-              : loadingAction === 'signup'
-              ? 'CREATING ACCOUNT…'
-              : isLogin
-              ? 'SIGN IN TO ATELIER'
-              : 'CREATE ATELIER ACCOUNT'}
-          </span>
-        </button>
-      </form>
+            {/* Password */}
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-[11px] text-[#A8928D] hover:text-[#7A223B] transition-colors cursor-pointer"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="auth-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                disabled={loadingAction !== null}
+                className="w-full px-4 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-sm text-[#2A1C19] focus:outline-none focus:ring-1 focus:ring-[#7A223B]/20 focus:border-[#7A223B] transition-all disabled:opacity-50"
+              />
+            </div>
+
+            {/* Confirm Password (Sign Up only) */}
+            {!isLogin && (
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="block text-xs font-semibold text-[#5C4540] uppercase tracking-wider">
+                    Confirm Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="text-[11px] text-[#A8928D] hover:text-[#7A223B] transition-colors cursor-pointer"
+                  >
+                    {showConfirmPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="signup-confirm-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  disabled={loadingAction !== null}
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-sm text-[#2A1C19] focus:outline-none focus:ring-1 focus:ring-[#7A223B]/20 focus:border-[#7A223B] transition-all disabled:opacity-50"
+                />
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              id="auth-submit-btn"
+              disabled={loadingAction !== null}
+              className="w-full btn-rose-primary py-3 px-4 font-semibold text-xs uppercase tracking-widest rounded-xl shadow-xs transition-all duration-300 disabled:opacity-50 mt-3 cursor-pointer flex items-center justify-center gap-2"
+            >
+              {loadingAction === 'login' && (
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              {loadingAction === 'signup' && (
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              <span>
+                {loadingAction === 'login'
+                  ? 'SIGNING IN…'
+                  : loadingAction === 'signup'
+                  ? 'CREATING ACCOUNT…'
+                  : isLogin
+                  ? 'SIGN IN TO ATELIER'
+                  : 'CREATE ATELIER ACCOUNT'}
+              </span>
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Google Sign In — Available on both Sign In and Sign Up tabs */}
       <div className="relative my-6 text-center z-10">

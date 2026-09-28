@@ -46,7 +46,7 @@ export const Header: React.FC = () => {
     }
   };
 
-  const displayName = profile?.name || user?.displayName || user?.email?.split('@')[0] || 'Client';
+  const displayName = profile?.name || user?.displayName || user?.email?.split('@')[0] || (user?.phoneNumber ? `Mobile ${user.phoneNumber.slice(-4)}` : 'Client');
   const initial = displayName.charAt(0).toUpperCase();
 
   const isActive = (path: string) => {

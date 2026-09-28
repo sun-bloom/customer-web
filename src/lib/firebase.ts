@@ -13,6 +13,9 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  type ConfirmationResult,
   type User,
 } from 'firebase/auth';
 
@@ -99,3 +102,5 @@ export const getIdToken = getCustomerIdToken;
 export function subscribeToAuth(callback: (user: User | null) => void) {
   return onAuthStateChanged(auth, callback);
 }
+
+export { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult };
