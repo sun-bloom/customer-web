@@ -142,6 +142,7 @@ export default function CustomerDashboard({ apiUrl }: Props) {
   const [profileName, setProfileName] = useState('');
   const [profilePhone, setProfilePhone] = useState('');
   const [profileWhatsapp, setProfileWhatsapp] = useState('');
+  const [profileWhatsappSameAsPhone, setProfileWhatsappSameAsPhone] = useState(false);
   const [profileAddress, setProfileAddress] = useState('');
   const [profileCity, setProfileCity] = useState('');
   const [profileState, setProfileState] = useState('');
@@ -279,7 +280,13 @@ export default function CustomerDashboard({ apiUrl }: Props) {
     if (profile) {
       setProfileName(profile.name || currentUser?.displayName || '');
       setProfilePhone(profile.phone || '');
-      setProfileWhatsapp(profile.whatsappNumber || profile.phone || '');
+      const wa = profile.whatsappNumber || profile.phone || '';
+      setProfileWhatsapp(wa);
+      if (profile.phone && profile.whatsappNumber && profile.phone.trim() === profile.whatsappNumber.trim()) {
+        setProfileWhatsappSameAsPhone(true);
+      } else if (profile.phone && !profile.whatsappNumber) {
+        setProfileWhatsappSameAsPhone(true);
+      }
       setProfileAddress(profile.address || '');
       setProfileCity(profile.city || '');
       setProfileState(profile.state || '');
@@ -288,6 +295,20 @@ export default function CustomerDashboard({ apiUrl }: Props) {
       setProfileName(currentUser.displayName || '');
     }
   }, [profile, currentUser]);
+
+  const handleProfilePhoneChange = (val: string) => {
+    setProfilePhone(val);
+    if (profileWhatsappSameAsPhone) {
+      setProfileWhatsapp(val);
+    }
+  };
+
+  const handleProfileWhatsappSameToggle = (checked: boolean) => {
+    setProfileWhatsappSameAsPhone(checked);
+    if (checked) {
+      setProfileWhatsapp(profilePhone);
+    }
+  };
 
   // 6. Handle Customer Profile Update
   const handleUpdateProfile = async (e?: React.FormEvent) => {
@@ -303,10 +324,13 @@ export default function CustomerDashboard({ apiUrl }: Props) {
         return;
       }
 
+      const cleanPhone = profilePhone.trim();
+      const cleanWhatsapp = (profileWhatsappSameAsPhone ? profilePhone : profileWhatsapp).trim();
+
       const payload = {
         name: profileName.trim(),
-        phone: profilePhone.trim() || null,
-        whatsappNumber: profileWhatsapp.trim() || null,
+        phone: cleanPhone || null,
+        whatsappNumber: cleanWhatsapp || null,
         address: profileAddress.trim() || null,
         city: profileCity.trim() || null,
         state: profileState.trim() || null,
@@ -1778,7 +1802,7 @@ export default function CustomerDashboard({ apiUrl }: Props) {
                       name="phone"
                       placeholder="10 digit mobile"
                       value={profilePhone}
-                      onChange={(e) => setProfilePhone(e.target.value)}
+                      onChange={(e) => handleProfilePhoneChange(e.target.value)}
                       className="w-full px-3.5 py-2.5 bg-white border border-[#E8E2D8] rounded-xl text-xs text-stone-900 focus:outline-none focus:border-[#C5A059]"
                     />
                   </div>
@@ -1790,11 +1814,28 @@ export default function CustomerDashboard({ apiUrl }: Props) {
                       type="tel"
                       name="whatsappNumber"
                       placeholder="10 digit WhatsApp number"
+                      readOnly={profileWhatsappSameAsPhone}
                       value={profileWhatsapp}
                       onChange={(e) => setProfileWhatsapp(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#E8E2D8] rounded-xl text-xs text-stone-900 focus:outline-none focus:border-[#C5A059]"
+                      className={`w-full px-3.5 py-2.5 border rounded-xl text-xs text-stone-900 focus:outline-none transition-colors ${
+                        profileWhatsappSameAsPhone
+                          ? 'bg-stone-50 border-[#E8E2D8] text-stone-500 cursor-not-allowed'
+                          : 'bg-white border-[#E8E2D8] focus:border-[#C5A059]'
+                      }`}
                     />
                   </div>
+                </div>
+
+                <div className="-mt-1.5 mb-1">
+                  <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs text-stone-600 hover:text-stone-900">
+                    <input
+                      type="checkbox"
+                      checked={profileWhatsappSameAsPhone}
+                      onChange={(e) => handleProfileWhatsappSameToggle(e.target.checked)}
+                      className="w-4 h-4 rounded border-[#E8E2D8] text-[#7A223B] focus:ring-[#7A223B]/30"
+                    />
+                    <span>WhatsApp number same as mobile number</span>
+                  </label>
                 </div>
 
                 <div>

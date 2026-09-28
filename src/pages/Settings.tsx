@@ -10,6 +10,7 @@ export const Settings: React.FC = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [whatsappSameAsPhone, setWhatsappSameAsPhone] = useState(false);
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
@@ -23,7 +24,13 @@ export const Settings: React.FC = () => {
     if (profile) {
       setName(profile.name || user?.displayName || '');
       setPhone(profile.phone || '');
-      setWhatsappNumber(profile.whatsappNumber || profile.phone || '');
+      const wa = profile.whatsappNumber || profile.phone || '';
+      setWhatsappNumber(wa);
+      if (profile.phone && profile.whatsappNumber && profile.phone.trim() === profile.whatsappNumber.trim()) {
+        setWhatsappSameAsPhone(true);
+      } else if (profile.phone && !profile.whatsappNumber) {
+        setWhatsappSameAsPhone(true);
+      }
       setAddress(profile.address || '');
       setCity(profile.city || '');
       setState(profile.state || '');
@@ -32,6 +39,20 @@ export const Settings: React.FC = () => {
       setName(user.displayName || '');
     }
   }, [profile, user]);
+
+  const handlePhoneChange = (val: string) => {
+    setPhone(val);
+    if (whatsappSameAsPhone) {
+      setWhatsappNumber(val);
+    }
+  };
+
+  const handleWhatsappSameToggle = (checked: boolean) => {
+    setWhatsappSameAsPhone(checked);
+    if (checked) {
+      setWhatsappNumber(phone);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +63,7 @@ export const Settings: React.FC = () => {
     setErrorMsg(null);
 
     const cleanPhone = phone.trim();
-    const cleanWhatsapp = whatsappNumber.trim();
+    const cleanWhatsapp = (whatsappSameAsPhone ? phone : whatsappNumber).trim();
 
     if (cleanPhone && !/^[6-9]\d{9}$/.test(cleanPhone)) {
       setErrorMsg('Please enter a valid 10-digit Indian mobile number starting with 6-9 (e.g. 9876543210).');
@@ -165,7 +186,7 @@ export const Settings: React.FC = () => {
                   type="tel"
                   autoComplete="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
                   placeholder="10 digit mobile"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                 />
@@ -180,11 +201,28 @@ export const Settings: React.FC = () => {
                   name="whatsappNumber"
                   type="tel"
                   autoComplete="tel"
+                  readOnly={whatsappSameAsPhone}
                   value={whatsappNumber}
                   onChange={(e) => setWhatsappNumber(e.target.value)}
                   placeholder="10 digit WhatsApp number"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm focus:outline-none transition-colors ${
+                    whatsappSameAsPhone
+                      ? 'bg-[#FAF6F0]/40 border-[#E8DCCF] text-[#7D6460] cursor-not-allowed'
+                      : 'bg-[#FAF6F0]/70 border-[#E8DCCF] text-[#2A1C19] focus:border-[#7A223B]'
+                  }`}
                 />
+              </div>
+
+              <div className="sm:col-span-2 -mt-1.5 mb-1">
+                <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs text-[#5C4540] hover:text-[#2A1C19]">
+                  <input
+                    type="checkbox"
+                    checked={whatsappSameAsPhone}
+                    onChange={(e) => handleWhatsappSameToggle(e.target.checked)}
+                    className="w-4 h-4 rounded border-[#E8DCCF] text-[#7A223B] focus:ring-[#7A223B]/30"
+                  />
+                  <span>WhatsApp number same as mobile number</span>
+                </label>
               </div>
 
               <div>

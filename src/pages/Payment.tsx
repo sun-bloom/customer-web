@@ -77,6 +77,12 @@ export const Payment: React.FC = () => {
   const [name, setName] = useState(profile?.name || user?.displayName || '');
   const [phone, setPhone] = useState(profile?.phone || '');
   const [whatsappNumber, setWhatsappNumber] = useState(profile?.whatsappNumber || profile?.phone || '');
+  const [whatsappSameAsPhone, setWhatsappSameAsPhone] = useState<boolean>(() => {
+    if (profile?.phone && profile?.whatsappNumber) {
+      return profile.phone.trim() === profile.whatsappNumber.trim();
+    }
+    return false;
+  });
   const [address, setAddress] = useState(profile?.address || '');
 
   // Normalized Postal Address Hierarchy States
@@ -142,8 +148,15 @@ export const Payment: React.FC = () => {
     if (profile) {
       if (profile.name && !name) setName(profile.name);
       if (profile.phone && !phone) setPhone(profile.phone);
-      if (profile.whatsappNumber && !whatsappNumber) setWhatsappNumber(profile.whatsappNumber);
-      else if (profile.phone && !whatsappNumber) setWhatsappNumber(profile.phone);
+      if (profile.whatsappNumber && !whatsappNumber) {
+        setWhatsappNumber(profile.whatsappNumber);
+        if (profile.phone && profile.phone.trim() === profile.whatsappNumber.trim()) {
+          setWhatsappSameAsPhone(true);
+        }
+      } else if (profile.phone && !whatsappNumber) {
+        setWhatsappNumber(profile.phone);
+        setWhatsappSameAsPhone(true);
+      }
       if (profile.address && !address) setAddress(profile.address);
       if (profile.state && !state) setState(profile.state);
       if (profile.city && !city) setCity(profile.city);
@@ -155,6 +168,25 @@ export const Payment: React.FC = () => {
       }
     }
   }, [profile]);
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setPhone(val);
+    if (whatsappSameAsPhone) {
+      setWhatsappNumber(val);
+    }
+  };
+
+  const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setWhatsappNumber(e.target.value);
+  };
+
+  const handleSameAsPhoneToggle = (checked: boolean) => {
+    setWhatsappSameAsPhone(checked);
+    if (checked) {
+      setWhatsappNumber(phone);
+    }
+  };
 
   // Authoritative Postal Pincode & Delivery Verification
   const verifyAndLookupPincode = async (code: string) => {
@@ -347,7 +379,7 @@ export const Payment: React.FC = () => {
     }
 
     const rawPhone = phone.trim();
-    const rawWhatsapp = (whatsappNumber || phone).trim();
+    const rawWhatsapp = (whatsappSameAsPhone ? phone : whatsappNumber).trim();
 
     if (!name.trim() || !rawPhone || !address.trim() || !pincode.trim() || !city.trim() || !state.trim()) {
       setErrorMessage('Please fill in your name, contact phone, and full address before submitting a delivery enquiry.');
@@ -409,13 +441,14 @@ export const Payment: React.FC = () => {
       return;
     }
 
-    if (!name.trim() || !phone.trim() || !whatsappNumber.trim() || !address.trim() || !city.trim() || !state.trim() || !pincode.trim()) {
+    const currentWhatsapp = whatsappSameAsPhone ? phone : whatsappNumber;
+    if (!name.trim() || !phone.trim() || !currentWhatsapp.trim() || !address.trim() || !city.trim() || !state.trim() || !pincode.trim()) {
       setErrorMessage('Please fill in all required shipping and contact details.');
       return;
     }
 
     const rawPhone = phone.trim();
-    const rawWhatsapp = (whatsappNumber || phone).trim();
+    const rawWhatsapp = currentWhatsapp.trim();
 
     if (!/^[6-9]\d{9}$/.test(rawPhone)) {
       setErrorMessage('Please provide a valid 10-digit Indian mobile number starting with 6-9 (e.g. 9876543210).');
@@ -622,7 +655,7 @@ export const Payment: React.FC = () => {
                     type="tel"
                     required
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={handlePhoneChange}
                     placeholder="e.g. 9790657579"
                     className="w-full px-3.5 py-2.5 bg-[#FAF6F0]/60 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
                   />
@@ -637,10 +670,27 @@ export const Payment: React.FC = () => {
                     type="tel"
                     required
                     value={whatsappNumber}
-                    onChange={(e) => setWhatsappNumber(e.target.value)}
+                    readOnly={whatsappSameAsPhone}
+                    onChange={handleWhatsappChange}
                     placeholder="e.g. 9790657579"
-                    className="w-full px-3.5 py-2.5 bg-[#FAF6F0]/60 border border-[#E8DCCF] rounded-xl text-xs sm:text-sm text-[#2A1C19] focus:outline-none focus:border-[#7A223B]"
+                    className={`w-full px-3.5 py-2.5 border rounded-xl text-xs sm:text-sm focus:outline-none transition-colors ${
+                      whatsappSameAsPhone
+                        ? 'bg-[#FAF6F0]/40 border-[#E8DCCF] text-[#7D6460] cursor-not-allowed'
+                        : 'bg-[#FAF6F0]/60 border-[#E8DCCF] text-[#2A1C19] focus:border-[#7A223B]'
+                    }`}
                   />
+                </div>
+
+                <div className="md:col-span-2 -mt-1.5 mb-1">
+                  <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs text-[#5C4540] hover:text-[#2A1C19]">
+                    <input
+                      type="checkbox"
+                      checked={whatsappSameAsPhone}
+                      onChange={(e) => handleSameAsPhoneToggle(e.target.checked)}
+                      className="w-4 h-4 rounded border-[#E8DCCF] text-[#7A223B] focus:ring-[#7A223B]/30"
+                    />
+                    <span>WhatsApp number same as mobile number</span>
+                  </label>
                 </div>
 
                 <div className="md:col-span-2">
