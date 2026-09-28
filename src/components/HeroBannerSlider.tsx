@@ -1,23 +1,30 @@
 // src/components/HeroBannerSlider.tsx
-// Sunbloom Adorn — Admin-managed Homepage Hero Banner Slider
-// Dynamic: loads images from backend API, no hardcoded/fallback banners.
-// Empty state: shown when no banners exist — clean neutral state.
+// Sunbloom Adorn — Horizontal Track Hero Banner Slider
+// Features: Centered active banner, partial neighboring previews (left & right),
+// smooth translateX horizontal translation, auto-slide (5s), pause on hover/focus,
+// responsive desktop/tablet/mobile, and seamless infinite wrap-around.
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getBannersApi, type HeroBanner } from '../lib/api';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const AUTO_SLIDE_MS = 5000;
+const TRANSITION_DURATION_MS = 600;
 
 export const HeroBannerSlider: React.FC = () => {
   const [banners, setBanners] = useState<HeroBanner[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  // trackIndex is 1-indexed because index 0 is the clone of the last banner
+  const [trackIndex, setTrackIndex] = useState(1);
+  const [withTransition, setWithTransition] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
 
-  // Fetch active banners from backend
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const transitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartX = useRef<number | null>(null);
+
+  // ── Fetch active banners from backend ──────────────────────────────────────
   useEffect(() => {
     let mounted = true;
     getBannersApi()
@@ -33,168 +40,330 @@ export const HeroBannerSlider: React.FC = () => {
           setLoading(false);
         }
       });
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // Auto-advance slide
-  const goTo = useCallback(
-    (idx: number) => {
-      if (isTransitioning || banners.length <= 1) return;
-      setIsTransitioning(true);
-      setCurrentIndex(idx);
-      setTimeout(() => setIsTransitioning(false), 600);
-    },
-    [banners.length, isTransitioning]
-  );
+  const totalBanners = banners.length;
 
+  // Real index corresponding to current trackIndex (0 to totalBanners - 1)
+  const realIndex =
+    totalBanners <= 1
+      ? 0
+      : trackIndex === 0
+      ? totalBanners - 1
+      : trackIndex === totalBanners + 1
+      ? 0
+      : trackIndex - 1;
+
+  // ── Transition End & Infinite Wrap-Around Snap ────────────────────────────
+  const handleTransitionEnd = useCallback(() => {
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+      transitionTimeoutRef.current = null;
+    }
+
+    if (trackIndex === 0) {
+      // Reached prepended clone of last banner -> instantaneously snap to real last banner
+      setWithTransition(false);
+      setTrackIndex(totalBanners);
+    } else if (trackIndex === totalBanners + 1) {
+      // Reached appended clone of first banner -> instantaneously snap to real first banner
+      setWithTransition(false);
+      setTrackIndex(1);
+    }
+    setIsTransitioning(false);
+  }, [trackIndex, totalBanners]);
+
+  // Re-enable transition after snap frame paint
+  useEffect(() => {
+    if (!withTransition) {
+      const frame = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setWithTransition(true);
+        });
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [withTransition]);
+
+  // ── Navigation Handlers ───────────────────────────────────────────────────
   const goNext = useCallback(() => {
-    goTo((currentIndex + 1) % banners.length);
-  }, [currentIndex, banners.length, goTo]);
+    if (isTransitioning || totalBanners <= 1) return;
+    setIsTransitioning(true);
+    setWithTransition(true);
+    setTrackIndex((prev) => prev + 1);
+
+    // Safety timeout in case onTransitionEnd doesn't fire
+    if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+    transitionTimeoutRef.current = setTimeout(() => {
+      handleTransitionEnd();
+    }, TRANSITION_DURATION_MS + 100);
+  }, [isTransitioning, totalBanners, handleTransitionEnd]);
 
   const goPrev = useCallback(() => {
-    goTo(currentIndex === 0 ? banners.length - 1 : currentIndex - 1);
-  }, [currentIndex, banners.length, goTo]);
+    if (isTransitioning || totalBanners <= 1) return;
+    setIsTransitioning(true);
+    setWithTransition(true);
+    setTrackIndex((prev) => prev - 1);
 
+    if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+    transitionTimeoutRef.current = setTimeout(() => {
+      handleTransitionEnd();
+    }, TRANSITION_DURATION_MS + 100);
+  }, [isTransitioning, totalBanners, handleTransitionEnd]);
+
+  const goTo = useCallback(
+    (targetRealIndex: number) => {
+      if (isTransitioning || totalBanners <= 1) return;
+      setIsTransitioning(true);
+      setWithTransition(true);
+      setTrackIndex(targetRealIndex + 1);
+
+      if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+      transitionTimeoutRef.current = setTimeout(() => {
+        handleTransitionEnd();
+      }, TRANSITION_DURATION_MS + 100);
+    },
+    [isTransitioning, totalBanners, handleTransitionEnd]
+  );
+
+  // ── Auto-slide Timer (5 seconds) ──────────────────────────────────────────
   useEffect(() => {
-    if (banners.length <= 1 || isPaused) {
+    if (totalBanners <= 1 || isPaused) {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
-    timerRef.current = setInterval(goNext, AUTO_SLIDE_MS);
+    timerRef.current = setInterval(() => {
+      goNext();
+    }, AUTO_SLIDE_MS);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [banners.length, isPaused, goNext]);
+  }, [totalBanners, isPaused, goNext]);
 
-  // ── Loading ────────────────────────────────────────────────────────────────
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+    };
+  }, []);
+
+  // ── Touch / Swipe support for mobile ──────────────────────────────────────
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    setIsPaused(true);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX.current - touchEndX;
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) goNext();
+      else goPrev();
+    }
+    touchStartX.current = null;
+    setIsPaused(false);
+  };
+
+  // ── 1. Loading State ──────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-[#FAF4EF] animate-pulse"
-        style={{ aspectRatio: '16/6', minHeight: 160 }}
+      <div
+        className="w-full max-w-7xl mx-auto rounded-2xl sm:rounded-3xl overflow-hidden bg-[#FAF4EF] animate-pulse border border-[#E8DCCF]/60"
+        style={{ aspectRatio: '16/7', minHeight: 180 }}
       />
     );
   }
 
-  // ── Empty State: No banners configured ────────────────────────────────────
-  if (banners.length === 0) {
+  // ── 2. Empty State: No banners configured ────────────────────────────────
+  if (totalBanners === 0) {
     return (
       <div
-        className="w-full rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col items-center justify-center gap-3 border border-[#E8DCCF]/60 bg-gradient-to-br from-[#FAF6F0] via-[#FDF2F5]/60 to-[#FAF5EB]"
-        style={{ minHeight: 180, aspectRatio: '16/6' }}
+        className="w-full max-w-7xl mx-auto rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col items-center justify-center gap-3 border border-[#E8DCCF]/60 bg-gradient-to-br from-[#FAF6F0] via-[#FDF2F5]/60 to-[#FAF5EB] shadow-xs"
+        style={{ minHeight: 220, aspectRatio: '16/7' }}
       >
         <img
           src="/logo.png"
           alt="Sunbloom Adorn"
-          className="w-12 h-12 rounded-full object-cover opacity-50"
+          className="w-14 h-14 rounded-full object-cover opacity-50"
         />
-        <p className="text-[11px] uppercase tracking-[0.24em] text-[#A8928D] font-medium">Sunbloom Adorn</p>
+        <div className="text-center">
+          <p className="text-xs uppercase tracking-[0.26em] text-[#7A223B] font-medium">
+            Sunbloom Adorn
+          </p>
+          <p className="text-[11px] text-[#A8928D] mt-1 font-light tracking-wide">
+            Fine Jewellery Atelier
+          </p>
+        </div>
       </div>
     );
   }
 
-  const currentBanner = banners[currentIndex];
-
-  // ── Single Banner (no controls needed) ────────────────────────────────────
-  if (banners.length === 1) {
-    const content = (
-      <div className="relative w-full overflow-hidden rounded-2xl sm:rounded-3xl border border-[#E8DCCF]/60 shadow-sm bg-[#FAF4EF]">
+  // ── 3. Single Banner State (no slider needed) ─────────────────────────────
+  if (totalBanners === 1) {
+    const banner = banners[0];
+    const singleContent = (
+      <div className="relative w-full max-w-6xl mx-auto overflow-hidden rounded-2xl sm:rounded-3xl border border-[#DFC598]/60 shadow-md bg-[#FAF4EF]">
         <img
-          src={currentBanner.imageUrl}
-          alt={currentBanner.altText || 'Sunbloom Adorn Banner'}
+          src={banner.imageUrl}
+          alt={banner.altText || 'Sunbloom Adorn Banner'}
           className="w-full object-cover object-center"
-          style={{ aspectRatio: '16/6', display: 'block' }}
+          style={{ aspectRatio: '16/7', display: 'block' }}
           loading="eager"
           decoding="async"
         />
       </div>
     );
-    return currentBanner.linkUrl ? (
-      <a href={currentBanner.linkUrl} className="block w-full">{content}</a>
-    ) : content;
+    return banner.linkUrl ? (
+      <a href={banner.linkUrl} className="block w-full">
+        {singleContent}
+      </a>
+    ) : (
+      singleContent
+    );
   }
 
-  // ── Multi-Banner Slider ────────────────────────────────────────────────────
+  // ── 4. Multi-Banner Horizontal Sliding Carousel ───────────────────────────
+  // Items array: [clone of last, ...all banners, clone of first]
+  const extendedItems = [banners[totalBanners - 1], ...banners, banners[0]];
+
   return (
     <div
-      className="relative w-full overflow-hidden rounded-2xl sm:rounded-3xl border border-[#E8DCCF]/60 shadow-sm group bg-[#FAF4EF]"
+      className="sunbloom-hero-carousel relative w-full overflow-hidden select-none py-2"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
+      onFocus={() => setIsPaused(true)}
+      onBlur={() => setIsPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
-      {/* Slides Track */}
-      <div className="relative w-full" style={{ aspectRatio: '16/6', minHeight: 140 }}>
-        {banners.map((banner, idx) => {
-          const isActive = idx === currentIndex;
+      {/* Responsive Dimensions & Layout Variables */}
+      <style>{`
+        .sunbloom-hero-carousel {
+          --slide-w: 86%;
+          --slide-gap: 12px;
+          --slide-ratio: 16/8;
+        }
+        @media (min-width: 640px) {
+          .sunbloom-hero-carousel {
+            --slide-w: 84%;
+            --slide-gap: 18px;
+            --slide-ratio: 16/7;
+          }
+        }
+        @media (min-width: 1024px) {
+          .sunbloom-hero-carousel {
+            --slide-w: 80%;
+            --slide-gap: 24px;
+            --slide-ratio: 16/6.5;
+          }
+        }
+      `}</style>
+
+      {/* Horizontal Translating Track */}
+      <div
+        className="flex items-center"
+        style={{
+          transform: `translateX(calc(50% - (var(--slide-w) / 2) - ${trackIndex} * (var(--slide-w) + var(--slide-gap))))`,
+          transition: withTransition
+            ? `transform ${TRANSITION_DURATION_MS}ms cubic-bezier(0.25, 1, 0.5, 1)`
+            : 'none',
+          willChange: 'transform',
+        }}
+        onTransitionEnd={handleTransitionEnd}
+      >
+        {extendedItems.map((banner, idx) => {
+          const isCentered = idx === trackIndex;
+          const isNeighbor = idx === trackIndex - 1 || idx === trackIndex + 1;
+
           return (
             <div
-              key={banner.id}
-              className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
-              }`}
-              aria-hidden={!isActive}
+              key={`${banner.id}-${idx}`}
+              className="shrink-0 transition-transform duration-500 ease-out"
+              style={{
+                width: 'var(--slide-w)',
+                marginRight: 'var(--slide-gap)',
+              }}
+              onClick={() => {
+                if (idx < trackIndex) goPrev();
+                else if (idx > trackIndex) goNext();
+              }}
             >
-              {banner.linkUrl ? (
-                <a href={banner.linkUrl} className="block w-full h-full" tabIndex={isActive ? 0 : -1}>
+              <div
+                className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border transition-all duration-500 ${
+                  isCentered
+                    ? 'border-[#DFC598]/90 shadow-lg scale-100 opacity-100 ring-1 ring-[#DFC598]/30'
+                    : isNeighbor
+                    ? 'border-[#E8DCCF]/70 shadow-xs scale-[0.97] opacity-75 sm:opacity-85 hover:opacity-95 cursor-pointer'
+                    : 'border-[#E8DCCF]/50 scale-[0.94] opacity-50'
+                }`}
+              >
+                {banner.linkUrl && isCentered ? (
+                  <a
+                    href={banner.linkUrl}
+                    className="block w-full h-full"
+                    tabIndex={isCentered ? 0 : -1}
+                  >
+                    <img
+                      src={banner.imageUrl}
+                      alt={banner.altText || `Sunbloom Adorn Banner ${idx}`}
+                      className="w-full h-full object-cover object-center"
+                      style={{ aspectRatio: 'var(--slide-ratio)', display: 'block' }}
+                      loading={idx <= 2 ? 'eager' : 'lazy'}
+                      decoding={idx <= 2 ? 'sync' : 'async'}
+                    />
+                  </a>
+                ) : (
                   <img
                     src={banner.imageUrl}
-                    alt={banner.altText || `Sunbloom Adorn Banner ${idx + 1}`}
+                    alt={banner.altText || `Sunbloom Adorn Banner ${idx}`}
                     className="w-full h-full object-cover object-center"
-                    loading={idx === 0 ? 'eager' : 'lazy'}
-                    decoding={idx === 0 ? 'sync' : 'async'}
+                    style={{ aspectRatio: 'var(--slide-ratio)', display: 'block' }}
+                    loading={idx <= 2 ? 'eager' : 'lazy'}
+                    decoding={idx <= 2 ? 'sync' : 'async'}
                   />
-                </a>
-              ) : (
-                <img
-                  src={banner.imageUrl}
-                  alt={banner.altText || `Sunbloom Adorn Banner ${idx + 1}`}
-                  className="w-full h-full object-cover object-center"
-                  loading={idx === 0 ? 'eager' : 'lazy'}
-                  decoding={idx === 0 ? 'sync' : 'async'}
-                />
-              )}
+                )}
+              </div>
             </div>
           );
         })}
-
-        {/* Gradient overlays for control visibility */}
-        <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-black/10 to-transparent pointer-events-none z-20" />
-        <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-black/10 to-transparent pointer-events-none z-20" />
-
-        {/* Prev / Next Controls */}
-        <button
-          type="button"
-          onClick={goPrev}
-          aria-label="Previous banner"
-          className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/80 hover:bg-white shadow-sm flex items-center justify-center text-[#7A223B] opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-105 cursor-pointer"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <button
-          type="button"
-          onClick={goNext}
-          aria-label="Next banner"
-          className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/80 hover:bg-white shadow-sm flex items-center justify-center text-[#7A223B] opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-105 cursor-pointer"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-
-        {/* Slide counter badge */}
-        <div className="absolute top-3 right-3 z-30 px-2.5 py-1 rounded-full bg-black/40 text-white text-[10px] font-mono backdrop-blur-xs">
-          {currentIndex + 1} / {banners.length}
-        </div>
       </div>
 
+      {/* Prev / Next Controls */}
+      <button
+        type="button"
+        onClick={goPrev}
+        aria-label="Previous banner"
+        className="absolute left-2 sm:left-4 lg:left-6 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/95 sm:bg-white/90 hover:bg-white text-[#7A223B] border border-[#DFC598]/70 shadow-md flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
+      >
+        <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+      </button>
+
+      <button
+        type="button"
+        onClick={goNext}
+        aria-label="Next banner"
+        className="absolute right-2 sm:right-4 lg:right-6 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/95 sm:bg-white/90 hover:bg-white text-[#7A223B] border border-[#DFC598]/70 shadow-md flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
+      >
+        <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+      </button>
+
       {/* Navigation Dots */}
-      <div className="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-1.5 z-30 pointer-events-none">
-        {banners.map((_, idx) => (
+      <div className="flex items-center justify-center gap-2 pt-4 sm:pt-5">
+        {banners.map((_, i) => (
           <button
-            key={idx}
+            key={i}
             type="button"
-            onClick={() => goTo(idx)}
-            aria-label={`Go to slide ${idx + 1}`}
-            className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer pointer-events-auto ${
-              currentIndex === idx
-                ? 'w-6 bg-white shadow-xs'
-                : 'w-1.5 bg-white/50 hover:bg-white/75'
+            onClick={() => goTo(i)}
+            aria-label={`Go to slide ${i + 1}`}
+            className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+              realIndex === i
+                ? 'w-7 sm:w-8 bg-[#7A223B] shadow-xs'
+                : 'w-2 bg-[#DFC598]/70 hover:bg-[#DFC598]'
             }`}
           />
         ))}
@@ -202,3 +371,5 @@ export const HeroBannerSlider: React.FC = () => {
     </div>
   );
 };
+
+export default HeroBannerSlider;
