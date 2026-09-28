@@ -99,6 +99,22 @@ export async function updateCustomerProfileApi(token: string, data: any) {
 }
 
 
+// ── Hero Banners ─────────────────────────────────────────────────────────
+export interface HeroBanner {
+  id: string;
+  imageUrl: string;
+  altText: string | null;
+  linkUrl: string | null;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export async function getBannersApi(): Promise<{ banners: HeroBanner[] }> {
+  return apiFetch<{ banners: HeroBanner[] }>('/api/banners', {
+    cache: 'no-store',
+  });
+}
+
 // ── Products & Categories ────────────────────────────────────────────────
 export async function getProductsApi(): Promise<{ products: Product[] }> {
   return apiFetch<{ products: Product[] }>('/api/products', { cache: 'no-store' });

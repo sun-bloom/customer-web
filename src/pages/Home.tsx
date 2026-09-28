@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { ProductCard } from '../components/products/ProductCard';
 import { CategoryCard } from '../components/products/CategoryCard';
+import { HeroBannerSlider } from '../components/HeroBannerSlider';
 import { getProductsApi, getCategoriesApi } from '../lib/api';
 import type { Product, Category } from '../types';
 import {
@@ -75,72 +76,7 @@ export const Home: React.FC = () => {
     return products.slice(0, 4);
   }, [products]);
 
-  // Real Jewellery Image Hero Slider: Cycles automatically through real active products
-  const heroSlides = React.useMemo(() => {
-    const valid = products
-      .map((p) => {
-        const primaryImg =
-          p.variants?.find((v) => v.isAvailable && Array.isArray(v.images) && v.images.length > 0)?.images?.[0] ||
-          p.variants?.find((v) => Array.isArray(v.images) && v.images.length > 0)?.images?.[0] ||
-          p.images?.[0];
 
-        if (!primaryImg) return null;
-
-        const defaultVariant = p.variants?.[0];
-        const effectivePrice = defaultVariant
-          ? p.basePrice + (defaultVariant.additionalPrice || 0)
-          : p.basePrice;
-
-        return {
-          id: p.id,
-          name: p.name,
-          slug: p.slug || p.id,
-          category: p.category || 'Fine Jewellery',
-          subtitle: '18K Gold Plated • Waterproof • Anti-Tarnish',
-          tag: 'Signature Creation',
-          price: effectivePrice,
-          image: primaryImg,
-        };
-      })
-      .filter((s): s is NonNullable<typeof s> => s !== null);
-
-    if (valid.length > 0) return valid;
-
-    return [
-      {
-        id: 'default',
-        name: 'Sunbloom Adorn Atelier',
-        slug: '',
-        category: 'Haute Jewellery',
-        subtitle: 'Waterproof 18K Gold • Anti-Tarnish • 316L Steel',
-        tag: 'Haute Atelier',
-        price: 200,
-        image: '/logo.png',
-      },
-    ];
-  }, [products]);
-
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
-  const [isSliderPaused, setIsSliderPaused] = useState(false);
-
-  // Automatic image sliding every 5 seconds
-  useEffect(() => {
-    if (heroSlides.length <= 1 || isSliderPaused) return;
-    const interval = setInterval(() => {
-      setCurrentSlideIndex((prev) => (prev + 1) % heroSlides.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [heroSlides.length, isSliderPaused]);
-
-  const activeSlide = heroSlides[currentSlideIndex] || heroSlides[0];
-
-  const handlePrevSlide = () => {
-    setCurrentSlideIndex((prev) => (prev === 0 ? heroSlides.length - 1 : prev - 1));
-  };
-
-  const handleNextSlide = () => {
-    setCurrentSlideIndex((prev) => (prev + 1) % heroSlides.length);
-  };
 
   return (
     <div className="w-full bg-[#FCF9F5] text-[#2A1C19]">
@@ -227,121 +163,12 @@ export const Home: React.FC = () => {
 
             </div>
 
-            {/* RIGHT COLUMN: Interactive Signature Hero Product Image Slider */}
-            <div
-              className="lg:col-span-6 xl:col-span-6 flex justify-center"
-              onMouseEnter={() => setIsSliderPaused(true)}
-              onMouseLeave={() => setIsSliderPaused(false)}
-            >
+            {/* RIGHT COLUMN: Admin-managed Hero Banner Slider */}
+            <div className="lg:col-span-6 xl:col-span-6 flex justify-center">
               <div className="relative w-full max-w-[420px] lg:max-w-[460px]">
-                
                 {/* Decorative Champagne Outline Frame */}
                 <div className="absolute -inset-2.5 sm:-inset-3 rounded-[32px] border border-[#DFC598]/40 pointer-events-none -z-0"></div>
-
-                {/* Primary Slider Card */}
-                <div className="relative rounded-[24px] sm:rounded-[28px] overflow-hidden bg-white border border-[#E8DCCF] shadow-md group">
-                  
-                  {/* Subtle Top Atelier Tag & Slide Counter */}
-                  <div className="absolute top-3.5 left-3.5 right-3.5 z-10 flex items-center justify-between pointer-events-none">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase tracking-widest font-semibold bg-[#FFF9FA]/95 text-[#7A223B] border border-[#DFC598]/50 shadow-2xs backdrop-blur-xs">
-                      <Gem className="w-3 h-3 text-[#DFC598]" />
-                      <span>{activeSlide.tag}</span>
-                    </span>
-
-                    {heroSlides.length > 1 && (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium bg-black/40 text-white backdrop-blur-xs">
-                        {currentSlideIndex + 1} / {heroSlides.length}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* High Quality Real Product Image */}
-                  <div className="aspect-4/5 overflow-hidden bg-[#FAF4EF] flex items-center justify-center relative">
-                    <img
-                      key={activeSlide.id}
-                      src={activeSlide.image}
-                      alt={activeSlide.name}
-                      className="w-full h-full object-cover object-center transition-all duration-700 ease-out animate-fadeIn"
-                      loading="eager"
-                      decoding="async"
-                    />
-
-                    {/* Navigation Controls: Prev & Next Buttons */}
-                    {heroSlides.length > 1 && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={handlePrevSlide}
-                          aria-label="Previous slide"
-                          className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 hover:bg-white text-[#7A223B] shadow-xs flex items-center justify-center transition-all opacity-80 hover:opacity-100 hover:scale-105 cursor-pointer z-10"
-                        >
-                          <ArrowRight className="w-4 h-4 rotate-180 text-[#7A223B]" />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={handleNextSlide}
-                          aria-label="Next slide"
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 hover:bg-white text-[#7A223B] shadow-xs flex items-center justify-center transition-all opacity-80 hover:opacity-100 hover:scale-105 cursor-pointer z-10"
-                        >
-                          <ArrowRight className="w-4 h-4 text-[#7A223B]" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Clean Bottom Overlay Card */}
-                  <div className="p-4 sm:p-4.5 bg-white/95 backdrop-blur-xs border-t border-[#F4ECE5] flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] uppercase tracking-widest text-[#7A223B] font-medium block">
-                        {activeSlide.category}
-                      </span>
-                      <h3 className="font-heading text-base sm:text-lg font-normal text-[#2A1C19]">
-                        {activeSlide.name}
-                      </h3>
-                      <p className="text-xs text-[#7A223B] font-medium mt-0.5">
-                        ₹{activeSlide.price.toLocaleString('en-IN')}
-                      </p>
-                    </div>
-
-                    <Link
-                      to={`/products/${activeSlide.slug}`}
-                      className="inline-flex items-center justify-center px-3.5 py-2 rounded-xl btn-rose-primary text-xs uppercase tracking-wider font-semibold transition-colors shadow-2xs gap-1.5"
-                      title="View creation"
-                      aria-label={`View ${activeSlide.name}`}
-                    >
-                      <span>Explore</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-[#DFC598]" />
-                    </Link>
-                  </div>
-
-                  {/* Slide Indicators / Dots */}
-                  {heroSlides.length > 1 && (
-                    <div className="py-2 bg-white flex items-center justify-center gap-1.5 border-t border-[#FAF6F0]">
-                      {heroSlides.map((_, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setCurrentSlideIndex(idx)}
-                          aria-label={`Go to slide ${idx + 1}`}
-                          className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                            currentSlideIndex === idx
-                              ? 'w-6 bg-[#7A223B]'
-                              : 'w-1.5 bg-[#E8DCCF] hover:bg-[#DFC598]'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                </div>
-
-                {/* Floating Aesthetic Corner Pill */}
-                <div className="hidden sm:flex absolute -bottom-2.5 -left-2.5 bg-[#FFF9FA] border border-[#DFC598]/60 px-3 py-1 rounded-full shadow-sm items-center gap-2 text-[10px] uppercase tracking-widest text-[#7A223B] font-medium z-10">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#DFC598]"></span>
-                  <span>Korean Minimalist Atelier</span>
-                </div>
-
+                <HeroBannerSlider />
               </div>
             </div>
 
