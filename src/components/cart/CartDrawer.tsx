@@ -25,6 +25,10 @@ export const CartDrawer: React.FC = () => {
     return null;
   }
 
+  const MINIMUM_ORDER_VALUE = 200;
+  const isBelowMinimum = subtotal < MINIMUM_ORDER_VALUE;
+  const amountToMinimum = Math.max(0, Number((MINIMUM_ORDER_VALUE - subtotal).toFixed(2)));
+
   const shippingThreshold = 1500;
   const shipping = subtotal >= shippingThreshold ? 0 : 50;
   const total = subtotal + shipping;
@@ -168,13 +172,28 @@ export const CartDrawer: React.FC = () => {
               </div>
 
               <div className="space-y-2.5 pt-1">
-                <Link
-                  to="/payment"
-                  onClick={closeCart}
-                  className="block w-full bg-stone-900 text-amber-200 hover:bg-stone-800 py-3.5 px-4 rounded-xl text-center font-sans text-xs uppercase tracking-[0.18em] font-medium shadow-md transition-all active:scale-98"
-                >
-                  Proceed to Checkout
-                </Link>
+                {isBelowMinimum ? (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      disabled
+                      className="block w-full bg-stone-300 text-stone-500 py-3.5 px-4 rounded-xl text-center font-sans text-xs uppercase tracking-[0.18em] font-medium cursor-not-allowed opacity-80"
+                    >
+                      Proceed to Checkout
+                    </button>
+                    <p className="text-[11px] text-center text-amber-900 font-medium px-2 leading-tight">
+                      Add ₹{amountToMinimum.toLocaleString('en-IN')} more to reach the minimum order value of ₹200.
+                    </p>
+                  </div>
+                ) : (
+                  <Link
+                    to="/payment"
+                    onClick={closeCart}
+                    className="block w-full bg-stone-900 text-amber-200 hover:bg-stone-800 py-3.5 px-4 rounded-xl text-center font-sans text-xs uppercase tracking-[0.18em] font-medium shadow-md transition-all active:scale-98"
+                  >
+                    Proceed to Checkout
+                  </Link>
+                )}
                 <Link
                   to="/cart"
                   onClick={closeCart}

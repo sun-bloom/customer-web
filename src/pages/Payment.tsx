@@ -430,6 +430,13 @@ export const Payment: React.FC = () => {
       return;
     }
 
+    const MINIMUM_ORDER_VALUE = 200;
+    if (subtotal < MINIMUM_ORDER_VALUE) {
+      const remaining = Number((MINIMUM_ORDER_VALUE - subtotal).toFixed(2));
+      setErrorMessage(`Add ₹${remaining.toLocaleString('en-IN')} more to reach the minimum order value of ₹200.`);
+      return;
+    }
+
     // Pincode & City/State validation check before order submission
     if (!pincode.trim() || !/^\d{6}$/.test(pincode.trim()) || !pincodeVerified || pincodeValid !== true) {
       setErrorMessage('Please enter and verify a valid 6-digit postal pincode.');
@@ -1042,32 +1049,54 @@ export const Payment: React.FC = () => {
 
             {/* Submit / PayU Checkout Button */}
             <div className="space-y-2">
-              <button
-                type="submit"
-                disabled={loading || deliverySupported !== true}
-                className={`w-full py-3.5 px-6 rounded-xl font-semibold text-xs uppercase tracking-[0.16em] transition-all duration-300 flex items-center justify-center gap-2 ${
-                  deliverySupported === true
-                    ? 'btn-rose-primary cursor-pointer active:scale-98 shadow-sm'
-                    : 'bg-[#E8DCCF] text-[#A8928D] cursor-not-allowed opacity-60'
-                }`}
-              >
-                {loading ? (
-                  <>
-                    <div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin"></div>
-                    <span>Processing…</span>
-                  </>
-                ) : deliverySupported === true ? (
-                  <>
-                    <ShieldCheck className="w-4 h-4 text-[#DFC598]" />
-                    <span>Proceed to Pay ₹{finalTotal.toLocaleString('en-IN')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-4 h-4 text-[#7D6460]" />
-                    <span>Delivery Confirmation Required</span>
-                  </>
-                )}
-              </button>
+              {subtotal < 200 ? (
+                <div className="space-y-2">
+                  <div className="p-3 bg-[#FAF0F4] border border-[#F7C6D3] rounded-xl text-xs text-[#7A223B]">
+                    <span className="font-semibold block">Minimum Order Value: ₹200</span>
+                    <span className="text-[11px] text-[#5C4540]">
+                      Add ₹{Math.max(0, Number((200 - subtotal).toFixed(2))).toLocaleString('en-IN')} more to reach the minimum order value of ₹200.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full py-3.5 px-6 rounded-xl font-semibold text-xs uppercase tracking-[0.16em] bg-[#E8DCCF] text-[#A8928D] cursor-not-allowed opacity-75 flex items-center justify-center gap-2"
+                  >
+                    <Lock className="w-4 h-4 text-[#A8928D]" />
+                    <span>Minimum Order Value ₹200</span>
+                  </button>
+                  <p className="text-[11px] text-center text-[#7A223B] font-medium leading-tight">
+                    Add ₹{Math.max(0, Number((200 - subtotal).toFixed(2))).toLocaleString('en-IN')} more to reach the minimum order value of ₹200.
+                  </p>
+                </div>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={loading || deliverySupported !== true}
+                  className={`w-full py-3.5 px-6 rounded-xl font-semibold text-xs uppercase tracking-[0.16em] transition-all duration-300 flex items-center justify-center gap-2 ${
+                    deliverySupported === true
+                      ? 'btn-rose-primary cursor-pointer active:scale-98 shadow-sm'
+                      : 'bg-[#E8DCCF] text-[#A8928D] cursor-not-allowed opacity-60'
+                  }`}
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin"></div>
+                      <span>Processing…</span>
+                    </>
+                  ) : deliverySupported === true ? (
+                    <>
+                      <ShieldCheck className="w-4 h-4 text-[#DFC598]" />
+                      <span>Proceed to Pay ₹{finalTotal.toLocaleString('en-IN')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4 text-[#7D6460]" />
+                      <span>Delivery Confirmation Required</span>
+                    </>
+                  )}
+                </button>
+              )}
               <p className="text-center text-[10px] text-[#A8928D]">
                 Secured by 256-bit SSL encryption
               </p>

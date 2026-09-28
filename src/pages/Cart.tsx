@@ -10,9 +10,11 @@ import {
   clearCart,
   initCart,
 } from '../stores/cartStore';
-import { ShoppingBag, ArrowRight, Trash2, ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react';
+import { ShoppingBag, ArrowRight, Trash2, ArrowLeft, ShieldCheck, Sparkles, AlertCircle, Lock } from 'lucide-react';
 
 import { getDeliverySettingsApi } from '../lib/api';
+
+const MINIMUM_ORDER_VALUE = 200;
 
 export const Cart: React.FC = () => {
   const cartItems = useStore($cartItems);
@@ -29,6 +31,9 @@ export const Cart: React.FC = () => {
       })
       .catch(() => {});
   }, []);
+
+  const isBelowMinimum = subtotal < MINIMUM_ORDER_VALUE;
+  const amountToMinimum = Math.max(0, Number((MINIMUM_ORDER_VALUE - subtotal).toFixed(2)));
 
   const isComplimentary = subtotal >= shippingThreshold && subtotal > 0;
   const amountToFreeShipping = Math.max(0, shippingThreshold - subtotal);
@@ -228,13 +233,42 @@ export const Cart: React.FC = () => {
               </div>
             </div>
 
-            <Link
-              to="/payment"
-              className="w-full btn-rose-primary py-3 px-6 rounded-xl font-semibold text-xs uppercase tracking-[0.16em] shadow-xs transition-all duration-300 flex items-center justify-center gap-2 active:scale-98"
-            >
-              <span>Proceed to Payment</span>
-              <ArrowRight className="w-3.5 h-3.5 text-[#DFC598]" />
-            </Link>
+            {/* Minimum Order Value Banner & Notice */}
+            {isBelowMinimum && (
+              <div className="p-3.5 bg-[#FAF0F4] border border-[#F7C6D3] rounded-2xl flex items-start gap-2.5 text-xs text-[#7A223B]">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#7A223B]" />
+                <div className="space-y-0.5">
+                  <span className="font-semibold block">Minimum Order Value: ₹{MINIMUM_ORDER_VALUE}</span>
+                  <span className="text-[11px] text-[#5C4540]">
+                    Add ₹{amountToMinimum.toLocaleString('en-IN')} more to reach the minimum order value of ₹200.
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {isBelowMinimum ? (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  disabled
+                  className="w-full bg-[#E8DCCF] text-[#A8928D] py-3.5 px-6 rounded-xl font-semibold text-xs uppercase tracking-[0.16em] flex items-center justify-center gap-2 cursor-not-allowed opacity-80"
+                >
+                  <Lock className="w-3.5 h-3.5 text-[#A8928D]" />
+                  <span>Proceed to Payment</span>
+                </button>
+                <p className="text-[11px] text-center text-[#7A223B] font-medium leading-tight">
+                  Add ₹{amountToMinimum.toLocaleString('en-IN')} more to reach the minimum order value of ₹200.
+                </p>
+              </div>
+            ) : (
+              <Link
+                to="/payment"
+                className="w-full btn-rose-primary py-3 px-6 rounded-xl font-semibold text-xs uppercase tracking-[0.16em] shadow-xs transition-all duration-300 flex items-center justify-center gap-2 active:scale-98"
+              >
+                <span>Proceed to Payment</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#DFC598]" />
+              </Link>
+            )}
 
             <div className="pt-1 flex items-center justify-center gap-1.5 text-[11px] text-[#755B55]">
               <ShieldCheck className="w-3.5 h-3.5 text-[#DFC598]" />
