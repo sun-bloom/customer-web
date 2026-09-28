@@ -450,7 +450,7 @@ export default function CustomerDashboard({ apiUrl }: Props) {
         productName: product.name,
         productSlug: product.slug,
         color: v.color || 'Standard',
-        pattern: v.pattern || 'Classic',
+        pattern: v.pattern || '',
         quantity: 1,
         unitPrice: product.basePrice + (v.additionalPrice || 0),
         totalPrice: product.basePrice + (v.additionalPrice || 0),
@@ -474,7 +474,7 @@ export default function CustomerDashboard({ apiUrl }: Props) {
       productName: selectedProductForModal.name,
       productSlug: selectedProductForModal.slug,
       color: v.color || 'Standard',
-      pattern: v.pattern || 'Classic',
+      pattern: v.pattern || '',
       quantity: 1,
       unitPrice: selectedProductForModal.basePrice + (v.additionalPrice || 0),
       totalPrice: selectedProductForModal.basePrice + (v.additionalPrice || 0),
@@ -1193,7 +1193,7 @@ export default function CustomerDashboard({ apiUrl }: Props) {
                             {item.productName}
                           </h4>
                           <p className="text-[11px] text-[#C5A059] font-medium mb-1">
-                            {item.color} • {item.pattern}
+                            {item.color}{item.pattern ? ` • ${item.pattern}` : ''}
                           </p>
                           <p className="text-xs font-semibold text-stone-900">
                             ₹{item.unitPrice}
@@ -1906,7 +1906,7 @@ export default function CustomerDashboard({ apiUrl }: Props) {
                       className="accent-[#C5A059]"
                     />
                     <span className="text-xs font-medium text-stone-800">
-                      {v.color || 'Standard'} • {v.pattern || 'Classic'}
+                      {v.color || 'Standard'}{v.pattern ? ` • ${v.pattern}` : ''}
                     </span>
                   </div>
                   <span className="text-xs font-semibold text-stone-900">

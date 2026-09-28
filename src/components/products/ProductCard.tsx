@@ -24,10 +24,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       productId: product.id,
       variantId: defaultVariant.id,
       productName: product.name,
-      productSlug: product.slug,
+      productSlug: product.slug || product.id,
       productImage: defaultVariant.images?.[0] || primaryImage,
       color: defaultVariant.color || 'Standard',
-      pattern: defaultVariant.pattern || 'Classic',
+      pattern: defaultVariant.pattern || '',
       quantity: 1,
       unitPrice: price,
       totalPrice: price,
@@ -37,7 +37,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <div className="group relative bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] overflow-hidden shadow-2xs hover:shadow-md hover:border-[#DFC598] transition-all duration-300 flex flex-col">
       {/* Product Image Container (Crisp, Balanced & Untinted) */}
-      <Link to={`/products/${product.slug}`} className="relative aspect-square sm:aspect-[4/4.5] max-h-[250px] sm:max-h-[280px] overflow-hidden bg-[#FAF5EB] block">
+      <Link to={`/products/${product.slug || product.id}`} className="relative aspect-square sm:aspect-[4/4.5] max-h-[250px] sm:max-h-[280px] overflow-hidden bg-[#FAF5EB] block">
         <img
           src={primaryImage}
           alt={product.name}
@@ -72,7 +72,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <span className="text-[10px] uppercase tracking-widest text-[#7A223B] font-medium block mb-1">
             {product.category || 'Fine Jewellery'}
           </span>
-          <Link to={`/products/${product.slug}`}>
+          <Link to={`/products/${product.slug || product.id}`}>
             <h3 className="font-heading text-sm sm:text-base font-normal text-[#2A1C19] group-hover:text-[#7A223B] transition-colors line-clamp-1">
               {product.name}
             </h3>

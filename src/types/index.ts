@@ -9,7 +9,7 @@ export interface CartItem {
   productSlug: string;
   productImage: string;
   color: string;
-  pattern: string;
+  pattern?: string | null;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
@@ -30,7 +30,7 @@ export interface CartSummary {
 export interface Variant {
   id: string;
   color: string;
-  pattern: string;
+  pattern?: string | null;
   stock: number;
   additionalPrice: number;
   sku: string;
@@ -92,7 +92,7 @@ export interface OrderItem {
   variantId: string;
   productName: string;
   color: string;
-  pattern: string;
+  pattern?: string | null;
   quantity: number;
   unitPrice: number;
   totalPrice: number;

@@ -62,6 +62,29 @@ export const ProductDetail: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [slug]);
 
+  const isPatternValueValid = (p?: string | null): p is string => {
+    if (!p) return false;
+    const trimmed = p.trim();
+    if (!trimmed) return false;
+    return !/^(null|undefined|none|n\/a)$/i.test(trimmed);
+  };
+
+  const getCleanPattern = (v?: Variant | null) => {
+    if (!v) return null;
+    return isPatternValueValid(v.pattern) ? v.pattern.trim() : null;
+  };
+
+  const getVariantDisplay = (v: Variant) => {
+    const pattern = getCleanPattern(v);
+    const color = v.color && v.color.trim() && !/^(standard|default)$/i.test(v.color.trim()) ? v.color.trim() : null;
+
+    if (pattern && color) {
+      if (pattern.toLowerCase() === color.toLowerCase()) return pattern;
+      return `${color} • ${pattern}`;
+    }
+    return pattern || color || v.color || 'Standard';
+  };
+
   const handleVariantChange = (variant: Variant) => {
     setSelectedVariant(variant);
     if (variant.images?.[0]) {
@@ -78,10 +101,10 @@ export const ProductDetail: React.FC = () => {
       productId: product.id,
       variantId: selectedVariant.id,
       productName: product.name,
-      productSlug: product.slug,
+      productSlug: product.slug || product.id,
       productImage: selectedImage || selectedVariant.images?.[0] || product.images?.[0] || '',
       color: selectedVariant.color || 'Standard',
-      pattern: selectedVariant.pattern || 'Classic',
+      pattern: getCleanPattern(selectedVariant) || '',
       quantity,
       unitPrice: price,
       totalPrice: price * quantity,
@@ -233,38 +256,73 @@ export const ProductDetail: React.FC = () => {
             )}
 
             {/* Variants Selection */}
-            {product.variants && product.variants.length > 0 && (
-              <div className="space-y-2.5">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#5E4742]">
-                  Select Finish / Variant
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {product.variants.map((v) => {
-                    const isSelected = selectedVariant?.id === v.id;
-                    return (
-                      <button
-                        key={v.id}
-                        onClick={() => handleVariantChange(v)}
-                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                          isSelected
-                            ? 'border-[#7A223B] bg-[#FAF0F4] shadow-2xs ring-1 ring-[#7A223B]'
-                            : 'border-[#E8DCCF] bg-[#FAF6F0] hover:border-[#DFC598]'
-                        }`}
-                      >
-                        <span className="block text-xs font-medium text-[#2A1C19]">
-                          {v.color || 'Standard'} {v.pattern ? `(${v.pattern})` : ''}
-                        </span>
-                        {v.additionalPrice > 0 && (
-                          <span className="text-[10px] text-[#7A223B] block mt-0.5 font-semibold">
-                            +₹{v.additionalPrice}
+            {(() => {
+              const allVariants = product.variants || [];
+              const validPatterns = Array.from(
+                new Set(allVariants.map(getCleanPattern).filter((p): p is string => p !== null))
+              );
+              const hasPatterns = validPatterns.length > 0;
+
+              // If product has NO pattern and only 1 variant: do NOT show empty pattern selector or selection UI
+              if (!hasPatterns && allVariants.length <= 1) {
+                return null;
+              }
+
+              // If product has only 1 variant and it has a pattern: show the available pattern normally
+              if (hasPatterns && allVariants.length === 1) {
+                return (
+                  <div className="space-y-2">
+                    <span className="block text-xs font-semibold uppercase tracking-wider text-[#5E4742]">
+                      Pattern
+                    </span>
+                    <div className="inline-flex items-center px-3.5 py-2 rounded-xl border border-[#7A223B] bg-[#FAF0F4] text-xs font-medium text-[#7A223B]">
+                      {validPatterns[0]}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Multiple variants: customer can switch between them
+              const selectorTitle = hasPatterns && validPatterns.length === allVariants.length
+                ? 'Select Pattern'
+                : hasPatterns
+                ? 'Select Pattern / Option'
+                : 'Select Option';
+
+              return (
+                <div className="space-y-2.5">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-[#5E4742]">
+                    {selectorTitle}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {allVariants.map((v) => {
+                      const isSelected = selectedVariant?.id === v.id;
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => handleVariantChange(v)}
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                            isSelected
+                              ? 'border-[#7A223B] bg-[#FAF0F4] shadow-2xs ring-1 ring-[#7A223B]'
+                              : 'border-[#E8DCCF] bg-[#FAF6F0] hover:border-[#DFC598]'
+                          }`}
+                        >
+                          <span className="block text-xs font-medium text-[#2A1C19]">
+                            {getVariantDisplay(v)}
                           </span>
-                        )}
-                      </button>
-                    );
-                  })}
+                          {v.additionalPrice > 0 && (
+                            <span className="text-[10px] text-[#7A223B] block mt-0.5 font-semibold">
+                              +₹{v.additionalPrice}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Quantity Selector & Add to Bag (Slim, Refined) */}
             <div className="space-y-3.5 pt-1">
