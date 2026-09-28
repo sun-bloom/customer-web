@@ -177,7 +177,7 @@ export const Dashboard: React.FC = () => {
         quantity: 1,
         unitPrice: product.basePrice,
         totalPrice: product.basePrice,
-        productImage: product.images?.[0] || '/logo.png',
+        productImage: product.variants?.[0]?.images?.[0] || product.images?.[0] || '/logo.png',
       };
       addToCart(item);
       return;
@@ -298,7 +298,16 @@ export const Dashboard: React.FC = () => {
               {/* Active Hero Slide */}
               {heroProducts.map((prod, idx) => {
                 if (idx !== currentSlide) return null;
-                const primaryImage = prod.images?.[0] || '/logo.png';
+                const defaultVar =
+                  prod.variants?.find((v) => v.isAvailable && Array.isArray(v.images) && v.images.length > 0) ||
+                  prod.variants?.find((v) => Array.isArray(v.images) && v.images.length > 0) ||
+                  prod.variants?.[0];
+                const primaryImage =
+                  defaultVar?.images?.[0] ||
+                  prod.images?.[0] ||
+                  (prod.variants || []).flatMap((v) => (Array.isArray(v.images) ? v.images : [])).filter(Boolean)[0] ||
+                  (prod as any).imageUrl ||
+                  '/logo.png';
                 const formattedPrice = prod.basePrice?.toLocaleString('en-IN') || '0';
 
                 return (

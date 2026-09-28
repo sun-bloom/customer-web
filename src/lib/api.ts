@@ -100,32 +100,32 @@ export async function updateCustomerProfileApi(token: string, data: any) {
 
 // ── Products & Categories ────────────────────────────────────────────────
 export async function getProductsApi(): Promise<{ products: Product[] }> {
-  return apiFetch<{ products: Product[] }>('/api/products');
+  return apiFetch<{ products: Product[] }>('/api/products', { cache: 'no-store' });
 }
 
 export async function getProductBySlugApi(slug: string): Promise<Product> {
   try {
-    return await apiFetch<Product>(`/api/products/slug/${encodeURIComponent(slug)}`);
+    return await apiFetch<Product>(`/api/products/slug/${encodeURIComponent(slug)}`, { cache: 'no-store' });
   } catch (err: any) {
     // If not found by slug, fallback to lookup by ID
-    return await apiFetch<Product>(`/api/products/${encodeURIComponent(slug)}`);
+    return await apiFetch<Product>(`/api/products/${encodeURIComponent(slug)}`, { cache: 'no-store' });
   }
 }
 
 export async function getProductByIdApi(id: string): Promise<Product> {
-  return apiFetch<Product>(`/api/products/${encodeURIComponent(id)}`);
+  return apiFetch<Product>(`/api/products/${encodeURIComponent(id)}`, { cache: 'no-store' });
 }
 
 export async function getCategoriesApi(): Promise<{ categories: Category[] }> {
-  return apiFetch<{ categories: Category[] }>('/api/categories');
+  return apiFetch<{ categories: Category[] }>('/api/categories', { cache: 'no-store' });
 }
 
 export async function getRecentProductsApi(limit = 6): Promise<{ products: Product[] }> {
-  return apiFetch<{ products: Product[] }>(`/api/products/featured/recent?limit=${limit}`);
+  return apiFetch<{ products: Product[] }>(`/api/products/featured/recent?limit=${limit}`, { cache: 'no-store' });
 }
 
 export async function getTopSellingProductsApi(limit = 6): Promise<{ products: Product[] }> {
-  return apiFetch<{ products: Product[] }>(`/api/products/featured/top-selling?limit=${limit}`);
+  return apiFetch<{ products: Product[] }>(`/api/products/featured/top-selling?limit=${limit}`, { cache: 'no-store' });
 }
 
 export async function getCategoryBySlugApi(slug: string): Promise<Category | null> {

@@ -93,8 +93,10 @@ export const Home: React.FC = () => {
         subtitle: '18K Gold Plated • Waterproof • Anti-Tarnish',
         tag: 'Signature Creation',
         image:
+          foundNecklace.variants?.find((v) => v.isAvailable && Array.isArray(v.images) && v.images.length > 0)?.images?.[0] ||
+          foundNecklace.variants?.[0]?.images?.[0] ||
           foundNecklace.images?.[0] ||
-          'https://images.unsplash.com/photo-1599643477877-530eb83abc8e?auto=format&fit=crop&q=80&w=1000',
+          '/logo.png',
       };
     }
 

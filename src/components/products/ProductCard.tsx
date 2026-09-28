@@ -10,9 +10,41 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const primaryImage = product.images?.[0] || 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=800';
-  const secondaryImage = product.images?.[1] || primaryImage;
-  const defaultVariant = product.variants?.[0];
+  // Authoritative variant resolution:
+  // 1. Prefer an available variant that has uploaded images
+  // 2. Fall back to any variant with images
+  // 3. Fall back to the first variant
+  const defaultVariant =
+    product.variants?.find((v) => v.isAvailable && Array.isArray(v.images) && v.images.length > 0) ||
+    product.variants?.find((v) => Array.isArray(v.images) && v.images.length > 0) ||
+    product.variants?.[0];
+
+  const allVariantImages = (product.variants || []).flatMap((v) => (Array.isArray(v.images) ? v.images : [])).filter(Boolean);
+
+  // Authoritative primary image:
+  // 1. First image of default/active variant
+  // 2. First image across any variant
+  // 3. Product's own images array
+  // 4. Product's primaryImage / imageUrl if provided
+  const primaryImage =
+    defaultVariant?.images?.[0] ||
+    allVariantImages[0] ||
+    product.images?.[0] ||
+    (product as any).primaryImage ||
+    (product as any).imageUrl ||
+    '';
+
+  // Authoritative secondary image (hover alternate view):
+  // 1. Second image of default variant
+  // 2. Second image across any variant
+  // 3. Second image in product.images
+  // 4. Fall back to primaryImage
+  const secondaryImage =
+    defaultVariant?.images?.[1] ||
+    allVariantImages[1] ||
+    product.images?.[1] ||
+    primaryImage;
+
   const price = defaultVariant ? product.basePrice + (defaultVariant.additionalPrice || 0) : product.basePrice;
 
   const handleQuickAdd = (e: React.MouseEvent) => {
@@ -25,7 +57,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       variantId: defaultVariant.id,
       productName: product.name,
       productSlug: product.slug || product.id,
-      productImage: defaultVariant.images?.[0] || primaryImage,
+      productImage: defaultVariant.images?.[0] || primaryImage || '/logo.png',
       color: defaultVariant.color || 'Standard',
       pattern: defaultVariant.pattern || '',
       quantity: 1,
@@ -38,19 +70,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     <div className="group relative bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] overflow-hidden shadow-2xs hover:shadow-md hover:border-[#DFC598] transition-all duration-300 flex flex-col">
       {/* Product Image Container (Crisp, Balanced & Untinted) */}
       <Link to={`/products/${product.slug || product.id}`} className="relative aspect-square sm:aspect-[4/4.5] max-h-[250px] sm:max-h-[280px] overflow-hidden bg-[#FAF5EB] block">
-        <img
-          src={primaryImage}
-          alt={product.name}
-          className="w-full h-full object-cover object-center group-hover:scale-104 transition-transform duration-500 ease-out"
-          loading="lazy"
-        />
-        {secondaryImage !== primaryImage && (
-          <img
-            src={secondaryImage}
-            alt={`${product.name} alternate view`}
-            className="absolute inset-0 w-full h-full object-cover object-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out"
-            loading="lazy"
-          />
+        {primaryImage ? (
+          <>
+            <img
+              src={primaryImage}
+              alt={product.name}
+              className="w-full h-full object-cover object-center group-hover:scale-104 transition-transform duration-500 ease-out"
+              loading="lazy"
+            />
+            {secondaryImage && secondaryImage !== primaryImage && (
+              <img
+                src={secondaryImage}
+                alt={`${product.name} alternate view`}
+                className="absolute inset-0 w-full h-full object-cover object-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out"
+                loading="lazy"
+              />
+            )}
+          </>
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAF5EB] text-[#7A223B]/60 p-4">
+            <ShoppingBag className="w-10 h-10 mb-2 text-[#DFC598]" />
+            <span className="text-[10px] uppercase tracking-widest font-medium text-[#7A223B]">Atelier Creation</span>
+          </div>
         )}
         
         {/* Quick Add overlay button */}

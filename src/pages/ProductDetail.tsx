@@ -39,7 +39,10 @@ export const ProductDetail: React.FC = () => {
         }
         setProduct(prod);
 
-        const defaultVar = prod.variants?.[0] || null;
+        const defaultVar =
+          prod.variants?.find((v) => v.isAvailable && Array.isArray(v.images) && v.images.length > 0) ||
+          prod.variants?.[0] ||
+          null;
         setSelectedVariant(defaultVar);
 
         const initialImg = defaultVar?.images?.[0] || prod.images?.[0] || '';
@@ -155,7 +158,7 @@ export const ProductDetail: React.FC = () => {
   ].filter((img, idx, arr) => img && arr.indexOf(img) === idx);
 
   if (galleryImages.length === 0) {
-    galleryImages.push('https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&q=80&w=800');
+    galleryImages.push('/logo.png');
   }
 
   const isAvailable = selectedVariant?.isAvailable !== false && (selectedVariant?.stock ?? 1) > 0;

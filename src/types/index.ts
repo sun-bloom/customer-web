@@ -47,6 +47,7 @@ export interface Product {
   description: string;
   basePrice: number;
   images: string[];
+  primaryImage?: string;
   variants: Variant[];
   isActive: boolean;
   createdAt: string;
