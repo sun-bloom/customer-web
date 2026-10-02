@@ -226,6 +226,7 @@ export async function checkPaymentStatusApi(orderId: string) {
   return apiFetch<{
     status: 'PAID' | 'FAILED' | 'ACTIVE' | 'PENDING' | string;
     orderNumber?: string;
+    totalAmount?: number;
     reason?: string;
   }>(`/api/payments/status/${encodeURIComponent(orderId)}`);
 }

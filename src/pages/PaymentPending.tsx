@@ -33,15 +33,14 @@ export const PaymentPending: React.FC = () => {
 
       if (status === 'PAID') {
         clearCart();
-        let num = res.orderNumber;
-        setOrderNumber(num || orderId);
+        const num = res.orderNumber || orderId;
+        setOrderNumber(num);
         setStatusState('success');
 
-        if (num) {
-          setTimeout(() => {
-            navigate(`/order/${encodeURIComponent(num)}`, { replace: true });
-          }, 2500);
-        }
+        // Redirect to canonical success page with orderNumber
+        setTimeout(() => {
+          navigate(`/payment/success?order_id=${encodeURIComponent(num)}`, { replace: true });
+        }, 1500);
         return;
       }
 

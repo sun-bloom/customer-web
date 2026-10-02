@@ -24,6 +24,7 @@ import {
   HelpCircle,
   Send,
 } from 'lucide-react';
+import { ENFORCE_MIN_PAYMENT_LIMIT } from '../config/testFlags';
 
 // Complete official list of Indian States and Union Territories
 const INDIAN_STATES_AND_UTS = [
@@ -493,7 +494,9 @@ export const Payment: React.FC = () => {
     }
 
     const MINIMUM_ORDER_VALUE = 200;
-    if (subtotal < MINIMUM_ORDER_VALUE) {
+    // TEMPORARY TESTING: Gated by ENFORCE_MIN_PAYMENT_LIMIT (src/config/testFlags.ts)
+    // To re-enable: set ENFORCE_MIN_PAYMENT_LIMIT = true in src/config/testFlags.ts
+    if (ENFORCE_MIN_PAYMENT_LIMIT && subtotal < MINIMUM_ORDER_VALUE) {
       const remaining = Number((MINIMUM_ORDER_VALUE - subtotal).toFixed(2));
       setErrorMessage(`Add ₹${remaining.toLocaleString('en-IN')} more to reach the minimum order value of ₹200.`);
       return;
@@ -1179,7 +1182,7 @@ export const Payment: React.FC = () => {
 
             {/* Submit / PayU Checkout Button */}
             <div className="space-y-2">
-              {subtotal < 200 ? (
+              {ENFORCE_MIN_PAYMENT_LIMIT && subtotal < 200 ? (
                 <div className="space-y-2">
                   <div className="p-3 bg-[#FAF0F4] border border-[#F7C6D3] rounded-xl text-xs text-[#7A223B]">
                     <span className="font-semibold block">Minimum Order Value: ₹200</span>

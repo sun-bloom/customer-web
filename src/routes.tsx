@@ -14,6 +14,7 @@ import { Categories } from './pages/Categories';
 import { Cart } from './pages/Cart';
 import { Payment } from './pages/Payment';
 import { PaymentPending } from './pages/PaymentPending';
+import { PaymentSuccess } from './pages/PaymentSuccess';
 import { Orders } from './pages/Orders';
 import { OrderDetail } from './pages/OrderDetail';
 import { TrackOrder } from './pages/TrackOrder';
@@ -67,6 +68,25 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        // Primary PayU success redirect target
+        path: '/payment/success',
+        element: (
+          <ProtectedRoute>
+            <PaymentSuccess />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        // PayU failure/pending redirect target
+        path: '/payment/pending',
+        element: (
+          <ProtectedRoute>
+            <PaymentPending />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        // Legacy alias — kept for backward compatibility
         path: '/order/pending',
         element: (
           <ProtectedRoute>

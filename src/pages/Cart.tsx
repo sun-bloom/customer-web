@@ -11,6 +11,7 @@ import {
   initCart,
 } from '../stores/cartStore';
 import { ShoppingBag, ArrowRight, Trash2, ArrowLeft, ShieldCheck, AlertCircle, Lock } from 'lucide-react';
+import { ENFORCE_MIN_PAYMENT_LIMIT } from '../config/testFlags';
 
 const MINIMUM_ORDER_VALUE = 200;
 
@@ -22,7 +23,10 @@ export const Cart: React.FC = () => {
     initCart();
   }, []);
 
+  // isBelowMinimum: always computed for banner display.
+  // When ENFORCE_MIN_PAYMENT_LIMIT is false (testing), it does NOT block the checkout button.
   const isBelowMinimum = subtotal < MINIMUM_ORDER_VALUE;
+  const isBelowMinimumEnforced = ENFORCE_MIN_PAYMENT_LIMIT && isBelowMinimum;
   const amountToMinimum = Math.max(0, Number((MINIMUM_ORDER_VALUE - subtotal).toFixed(2)));
 
   const isPatternValueValid = (p?: string | null): p is string => {
@@ -213,12 +217,15 @@ export const Cart: React.FC = () => {
                   <span className="font-semibold block">Minimum Order Value: ₹{MINIMUM_ORDER_VALUE}</span>
                   <span className="text-[11px] text-[#5C4540]">
                     Add ₹{amountToMinimum.toLocaleString('en-IN')} more to reach the minimum order value of ₹200.
+                    {!ENFORCE_MIN_PAYMENT_LIMIT && (
+                      <span className="ml-1 text-amber-700 font-medium">(Limit bypassed for testing)</span>
+                    )}
                   </span>
                 </div>
               </div>
             )}
 
-            {isBelowMinimum ? (
+            {isBelowMinimumEnforced ? (
               <div className="space-y-2">
                 <button
                   type="button"
