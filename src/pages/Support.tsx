@@ -10,6 +10,7 @@ import {
   getCustomerQueryByIdApi,
   sendCustomerQueryReplyApi,
   getCustomerOrdersApi,
+  getCustomerDeliveryEnquiriesApi,
 } from '../lib/api';
 import type { CustomerQuery, Order } from '../types';
 import {
@@ -28,6 +29,8 @@ import {
   ChevronRight,
   ShieldCheck,
   Headphones,
+  Truck,
+  MapPin,
 } from 'lucide-react';
 
 const CATEGORIES = ['Order', 'Payment', 'Delivery', 'Product', 'Return / Refund', 'Other'];
@@ -41,6 +44,11 @@ export const Support: React.FC = () => {
   // Queries list state
   const [queries, setQueries] = useState<CustomerQuery[]>([]);
   const [loadingQueries, setLoadingQueries] = useState(false);
+
+  // Delivery Enquiries list state
+  const [deliveryEnquiries, setDeliveryEnquiries] = useState<any[]>([]);
+  const [loadingEnquiries, setLoadingEnquiries] = useState(false);
+  const [queriesSubTab, setQueriesSubTab] = useState<'tickets' | 'delivery'>('tickets');
 
   // Customer orders (for linking to queries)
   const [orders, setOrders] = useState<Order[]>([]);
@@ -92,10 +100,25 @@ export const Support: React.FC = () => {
     }
   };
 
+  // Load delivery enquiries
+  const loadDeliveryEnquiries = async () => {
+    if (!token) return;
+    setLoadingEnquiries(true);
+    try {
+      const res = await getCustomerDeliveryEnquiriesApi(token);
+      setDeliveryEnquiries(res.enquiries || []);
+    } catch (err) {
+      console.warn('Failed to load delivery enquiries:', err);
+    } finally {
+      setLoadingEnquiries(false);
+    }
+  };
+
   useEffect(() => {
     if (token) {
       loadQueries();
       loadOrders();
+      loadDeliveryEnquiries();
     }
   }, [token]);
 
@@ -226,6 +249,52 @@ export const Support: React.FC = () => {
     }
   };
 
+  const getDeliveryStatusBadge = (status: string) => {
+    switch (status) {
+      case 'DELIVERY_AVAILABLE':
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            Delivery Confirmed
+          </span>
+        );
+      case 'DELIVERY_UNAVAILABLE':
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200 flex items-center gap-1">
+            <AlertCircle className="w-3.5 h-3.5 text-red-600" />
+            Location Unavailable
+          </span>
+        );
+      case 'CONTACTED':
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+            Team Contacted
+          </span>
+        );
+      case 'CONVERTED_TO_ORDER':
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+            Converted to Order
+          </span>
+        );
+      case 'CLOSED':
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-neutral-100 text-neutral-600 border border-neutral-200">
+            Closed
+          </span>
+        );
+      case 'PENDING':
+      case 'NEW':
+      default:
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5 text-amber-600" />
+            Pending Review
+          </span>
+        );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FCF9F5] py-8 md:py-14 relative overflow-hidden">
       <div className="absolute top-0 right-10 w-96 h-96 rounded-full bg-[#FCE7EC]/35 blur-3xl pointer-events-none" />
@@ -260,7 +329,7 @@ export const Support: React.FC = () => {
                 }`}
               >
                 <MessageSquare className="w-3.5 h-3.5 text-[#DFC598]" />
-                <span>My Queries ({queries.length})</span>
+                <span>My Queries ({queries.length + deliveryEnquiries.length})</span>
               </button>
 
               <button
@@ -283,92 +352,252 @@ export const Support: React.FC = () => {
         {/* TAB 1: MY QUERIES LIST */}
         {/* ========================================================================= */}
         {activeTab === 'my-queries' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-[#5C4540]">
-                Your Submitted Support Tickets
-              </h2>
+          <div className="space-y-5">
+            {/* Sub-tab selection between Support Tickets and Delivery Location Enquiries */}
+            <div className="flex flex-wrap items-center justify-between gap-3 px-1 pb-1">
+              <div className="inline-flex rounded-xl bg-white border border-[#E8DCCF] p-1 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setQueriesSubTab('tickets')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+                    queriesSubTab === 'tickets'
+                      ? 'bg-[#7A223B] text-[#FFF6FA] shadow-xs'
+                      : 'text-[#7D6460] hover:text-[#2A1C19]'
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Support Tickets ({queries.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQueriesSubTab('delivery')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+                    queriesSubTab === 'delivery'
+                      ? 'bg-[#7A223B] text-[#FFF6FA] shadow-xs'
+                      : 'text-[#7D6460] hover:text-[#2A1C19]'
+                  }`}
+                >
+                  <Truck className="w-3.5 h-3.5" />
+                  <span>Delivery Enquiries ({deliveryEnquiries.length})</span>
+                </button>
+              </div>
+
               <button
                 type="button"
-                onClick={loadQueries}
+                onClick={() => {
+                  loadQueries();
+                  loadDeliveryEnquiries();
+                }}
                 className="text-xs text-[#7A223B] hover:text-[#5E182C] flex items-center gap-1 font-medium cursor-pointer"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingQueries ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingQueries || loadingEnquiries ? 'animate-spin' : ''}`} />
                 <span>Refresh</span>
               </button>
             </div>
 
-            {loadingQueries ? (
-              <div className="p-12 text-center bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] text-[#7D6460] text-sm flex flex-col items-center gap-2">
-                <RefreshCw className="w-5 h-5 animate-spin text-[#7A223B]" />
-                <span>Loading your inquiries...</span>
-              </div>
-            ) : queries.length === 0 ? (
-              <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] p-10 text-center space-y-4">
-                <div className="w-12 h-12 rounded-full bg-[#FDF2F5] border border-[#FCE7EC] flex items-center justify-center mx-auto text-[#7A223B]">
-                  <HelpCircle className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="font-heading text-lg text-[#2A1C19]">No Support Queries Yet</h3>
-                  <p className="text-xs text-[#7D6460] mt-1 max-w-sm mx-auto">
-                    Have an issue with delivery, a payment query, or product question? Submit a ticket and our team will assist you.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('create-query')}
-                  className="btn-rose-primary px-6 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer"
-                >
-                  Create Your First Query
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {queries.map((q) => (
-                  <div
-                    key={q.id}
-                    onClick={() => openConversation(q.id)}
-                    className="bg-white rounded-2xl border border-[#E8DCCF] p-5 hover:border-[#DFC598] hover:shadow-xs transition-all cursor-pointer group flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                  >
-                    <div className="space-y-1.5 flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-[#7A223B] bg-[#FDF2F5] border border-[#FCE7EC] px-2 py-0.5 rounded">
-                          {q.queryNumber}
-                        </span>
-                        <span className="text-xs font-medium bg-[#FAF6F0] text-[#5C4540] border border-[#E8DCCF] px-2 py-0.5 rounded">
-                          {q.category}
-                        </span>
-                        {getStatusBadge(q.status)}
-                        {q.order && (
-                          <span className="text-xs text-[#7D6460] bg-white border border-[#E8DCCF] px-2 py-0.5 rounded flex items-center gap-1">
-                            <ShoppingBag className="w-3 h-3 text-[#C9A86A]" />
-                            #{q.order.orderNumber}
-                          </span>
-                        )}
-                      </div>
-
-                      <h3 className="font-heading text-base text-[#2A1C19] group-hover:text-[#7A223B] transition-colors truncate">
-                        {q.subject}
-                      </h3>
-
-                      <p className="text-xs text-[#A8928D] flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        Last updated {new Date(q.updatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+            {/* SUB-TAB A: SUPPORT TICKETS */}
+            {queriesSubTab === 'tickets' && (
+              <>
+                {loadingQueries ? (
+                  <div className="p-12 text-center bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] text-[#7D6460] text-sm flex flex-col items-center gap-2">
+                    <RefreshCw className="w-5 h-5 animate-spin text-[#7A223B]" />
+                    <span>Loading your inquiries...</span>
+                  </div>
+                ) : queries.length === 0 ? (
+                  <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] p-10 text-center space-y-4">
+                    <div className="w-12 h-12 rounded-full bg-[#FDF2F5] border border-[#FCE7EC] flex items-center justify-center mx-auto text-[#7A223B]">
+                      <HelpCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-heading text-lg text-[#2A1C19]">No Support Queries Yet</h3>
+                      <p className="text-xs text-[#7D6460] mt-1 max-w-sm mx-auto">
+                        Have an issue with delivery, a payment query, or product question? Submit a ticket and our team will assist you.
                       </p>
                     </div>
-
-                    <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 pt-2 sm:pt-0">
-                      <span className="text-xs text-[#A8928D] flex items-center gap-1">
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        {q._count?.messages || 1} messages
-                      </span>
-                      <span className="text-xs font-semibold text-[#7A223B] flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
-                        Open Conversation <ChevronRight className="w-4 h-4 text-[#C9A86A]" />
-                      </span>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('create-query')}
+                      className="btn-rose-primary px-6 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer"
+                    >
+                      Create Your First Query
+                    </button>
                   </div>
-                ))}
-              </div>
+                ) : (
+                  <div className="space-y-3">
+                    {queries.map((q) => (
+                      <div
+                        key={q.id}
+                        onClick={() => openConversation(q.id)}
+                        className="bg-white rounded-2xl border border-[#E8DCCF] p-5 hover:border-[#DFC598] hover:shadow-xs transition-all cursor-pointer group flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      >
+                        <div className="space-y-1.5 flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-[#7A223B] bg-[#FDF2F5] border border-[#FCE7EC] px-2 py-0.5 rounded">
+                              {q.queryNumber}
+                            </span>
+                            <span className="text-xs font-medium bg-[#FAF6F0] text-[#5C4540] border border-[#E8DCCF] px-2 py-0.5 rounded">
+                              {q.category}
+                            </span>
+                            {getStatusBadge(q.status)}
+                            {q.order && (
+                              <span className="text-xs text-[#7D6460] bg-white border border-[#E8DCCF] px-2 py-0.5 rounded flex items-center gap-1">
+                                <ShoppingBag className="w-3 h-3 text-[#C9A86A]" />
+                                #{q.order.orderNumber}
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="font-heading text-base text-[#2A1C19] group-hover:text-[#7A223B] transition-colors truncate">
+                            {q.subject}
+                          </h3>
+
+                          <p className="text-xs text-[#A8928D] flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            Last updated {new Date(q.updatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 pt-2 sm:pt-0">
+                          <span className="text-xs text-[#A8928D] flex items-center gap-1">
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            {q._count?.messages || 1} messages
+                          </span>
+                          <span className="text-xs font-semibold text-[#7A223B] flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                            Open Conversation <ChevronRight className="w-4 h-4 text-[#C9A86A]" />
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* SUB-TAB B: DELIVERY LOCATION ENQUIRIES */}
+            {queriesSubTab === 'delivery' && (
+              <>
+                {loadingEnquiries ? (
+                  <div className="p-12 text-center bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] text-[#7D6460] text-sm flex flex-col items-center gap-2">
+                    <RefreshCw className="w-5 h-5 animate-spin text-[#7A223B]" />
+                    <span>Loading your delivery enquiries...</span>
+                  </div>
+                ) : deliveryEnquiries.length === 0 ? (
+                  <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] p-10 text-center space-y-4">
+                    <div className="w-12 h-12 rounded-full bg-[#FAF5EB] border border-[#E8DCCF] flex items-center justify-center mx-auto text-[#7A223B]">
+                      <Truck className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-heading text-lg text-[#2A1C19]">No Delivery Enquiries Submitted</h3>
+                      <p className="text-xs text-[#7D6460] mt-1 max-w-sm mx-auto">
+                        If a delivery destination needs confirmation during checkout, you can raise an enquiry and track its approval status here.
+                      </p>
+                    </div>
+                    <Link
+                      to="/cart"
+                      className="btn-rose-primary inline-block px-6 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer"
+                    >
+                      View Shopping Bag
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {deliveryEnquiries.map((enq) => {
+                      const isAvailable = enq.status === 'DELIVERY_AVAILABLE';
+                      const isUnavailable = enq.status === 'DELIVERY_UNAVAILABLE';
+                      return (
+                        <div
+                          key={enq.id}
+                          className={`bg-white rounded-2xl border p-5 sm:p-6 transition-all space-y-3.5 ${
+                            isAvailable
+                              ? 'border-emerald-300 shadow-xs ring-1 ring-emerald-200'
+                              : isUnavailable
+                              ? 'border-red-200'
+                              : 'border-[#E8DCCF]'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E8DCCF]/60">
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs font-bold text-[#2A1C19]">
+                                  {enq.city}, {enq.state}
+                                </span>
+                                <span className="font-mono text-xs font-semibold text-[#7A223B] bg-[#FDF2F5] border border-[#FCE7EC] px-2 py-0.5 rounded">
+                                  PIN: {enq.pincode}
+                                </span>
+                                {getDeliveryStatusBadge(enq.status)}
+                              </div>
+                              <p className="text-[11px] text-[#A8928D] mt-1 flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                Requested on {new Date(enq.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                              </p>
+                            </div>
+
+                            {/* Direct Action when delivery is confirmed */}
+                            {isAvailable && (
+                              <Link
+                                to="/payment"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 shadow-xs transition-all self-start sm:self-auto cursor-pointer"
+                              >
+                                <span>Proceed to Checkout</span>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </Link>
+                            )}
+                          </div>
+
+                          {/* Address and Hierarchy */}
+                          <div className="text-xs text-[#5C4540] space-y-1">
+                            <p className="flex items-start gap-1 text-[#7D6460]">
+                              <MapPin className="w-3.5 h-3.5 text-[#7A223B] mt-0.5 flex-shrink-0" />
+                              <span>{enq.address}</span>
+                            </p>
+                          </div>
+
+                          {/* Cart items attached */}
+                          {Array.isArray(enq.cartItems) && enq.cartItems.length > 0 && (
+                            <div className="bg-[#FAF6F0]/60 rounded-xl p-3 border border-[#E8DCCF]/60 text-xs">
+                              <div className="flex items-center justify-between pb-1.5 border-b border-[#E8DCCF]/40 font-medium text-[#2A1C19]">
+                                <span className="flex items-center gap-1.5">
+                                  <ShoppingBag className="w-3.5 h-3.5 text-[#C9A86A]" /> Requested Bag Items
+                                </span>
+                                {enq.subtotal != null && (
+                                  <span className="font-semibold text-[#7A223B]">
+                                    Est. Value: ₹{Number(enq.subtotal).toLocaleString('en-IN')}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                {enq.cartItems.map((item: any, idx: number) => (
+                                  <div key={item.variantId || idx} className="flex items-center justify-between text-[11px] text-[#5C4540]">
+                                    <span className="truncate max-w-[200px]">{item.productName || 'Jewellery Creation'}</span>
+                                    <span className="font-mono text-[#A8928D]">Qty: {item.quantity}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Status Context Guidance Message */}
+                          <div className="pt-1">
+                            {isAvailable ? (
+                              <p className="text-xs text-emerald-800 bg-emerald-50/70 p-2.5 rounded-lg border border-emerald-200">
+                                <strong>Delivery Verified:</strong> Our logistics atelier has confirmed service availability for your destination. Click &ldquo;Proceed to Checkout&rdquo; above to place your order.
+                              </p>
+                            ) : isUnavailable ? (
+                              <p className="text-xs text-red-800 bg-red-50/70 p-2.5 rounded-lg border border-red-200">
+                                <strong>Location Notice:</strong> Courier partner coverage is currently not available for this postal code. Please contact concierge support if you have an alternative delivery address.
+                              </p>
+                            ) : (
+                              <p className="text-xs text-amber-800 bg-amber-50/70 p-2.5 rounded-lg border border-amber-200">
+                                <strong>Under Review:</strong> Our dispatch team is verifying courier partner coverage for this address. Once approved, the status will update here automatically.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

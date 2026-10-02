@@ -318,6 +318,13 @@ export async function submitOrderConsultantRequestApi(token: string, data: any) 
   });
 }
 
+export async function getCustomerDeliveryEnquiriesApi(token: string) {
+  return apiFetch<{ success: boolean; enquiries: any[] }>('/api/customer/order-consultants', {
+    method: 'GET',
+    token,
+  });
+}
+
 // ── Customer Support & Queries ───────────────────────────────────────────
 export async function createCustomerQueryApi(
   data: {
