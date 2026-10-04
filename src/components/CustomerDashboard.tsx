@@ -102,7 +102,7 @@ export default function CustomerDashboard({ apiUrl }: Props) {
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+
 
   // Data states
   const [products, setProducts] = useState<Product[]>([]);
@@ -571,11 +571,7 @@ export default function CustomerDashboard({ apiUrl }: Props) {
       !selectedCategory ||
       p.category?.toLowerCase() === selectedCategory.toLowerCase() ||
       p.categoryDetails?.slug === selectedCategory;
-    const matchesQuery =
-      !searchQuery.trim() ||
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCat && matchesQuery;
+    return matchesCat;
   });
 
   const getCustomerFirstName = () => {
@@ -983,29 +979,6 @@ export default function CustomerDashboard({ apiUrl }: Props) {
                   </h1>
                 </div>
 
-                {/* Search Bar */}
-                <div className="relative w-full sm:w-72">
-                  <input
-                    type="text"
-                    placeholder="Search by piece name..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-white border border-[#E8E2D8] rounded-xl text-xs text-stone-900 focus:outline-none focus:border-[#C5A059] transition-all"
-                  />
-                  <svg
-                    className="w-4 h-4 text-stone-400 absolute left-3 top-2.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="1.5"
-                      d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                    />
-                  </svg>
-                </div>
               </div>
 
               {/* Category Filter Pills */}
@@ -1045,10 +1018,7 @@ export default function CustomerDashboard({ apiUrl }: Props) {
                   </p>
                   <button
                     type="button"
-                    onClick={() => {
-                      setSelectedCategory(null);
-                      setSearchQuery('');
-                    }}
+                    onClick={() => setSelectedCategory(null)}
                     className="px-5 py-2 rounded-xl bg-stone-900 text-amber-200 text-xs uppercase tracking-widest font-medium cursor-pointer"
                   >
                     Reset Filters
