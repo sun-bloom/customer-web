@@ -213,7 +213,7 @@ export const Header: React.FC = () => {
               </>
             ) : (
               /* Guest Actions */
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
                 <Link
                   to="/login?mode=login"
                   className="px-3 sm:px-4 py-1.5 rounded-xl border border-[#DFC598] text-[10px] sm:text-xs font-semibold uppercase tracking-[0.14em] text-[#7A223B] hover:border-[#7A223B] hover:bg-[#FCE7EC]/50 transition-all shadow-2xs whitespace-nowrap"

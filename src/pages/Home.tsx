@@ -14,12 +14,7 @@ import {
   Award,
   Truck,
   ArrowRight,
-  Phone,
-  Mail,
-  MapPin,
-  MessageCircle,
   Gem,
-  Clock,
 } from 'lucide-react';
 
 export const Home: React.FC = () => {
@@ -67,16 +62,6 @@ export const Home: React.FC = () => {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 4);
   }, [products]);
-
-  // 2. Most Popular (Curated highlight slice)
-  const mostPopular = React.useMemo(() => {
-    if (products.length > 4) {
-      return products.slice(4, 8);
-    }
-    return products.slice(0, 4);
-  }, [products]);
-
-
 
   return (
     <div className="w-full bg-[#FCF9F5] text-[#2A1C19]">
@@ -253,39 +238,39 @@ export const Home: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* 3. MOST POPULAR: CHERISHED BY CONNOISSEURS                                */}
+      {/* 3. CATEGORIES SECTION: SHOP BY CATEGORY                                   */}
       {/* ========================================================================= */}
-      {mostPopular.length > 0 && (
-        <section className="py-14 sm:py-18 lg:py-22 bg-[#FAF6F0] border-t border-[#E8DCCF]">
+      {categories.length > 0 && (
+        <section className="py-14 sm:py-18 lg:py-22 bg-[#FCF9F5] border-t border-[#E8DCCF]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             {/* Section Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 sm:mb-10 gap-4">
               <div>
                 <span className="text-[10px] sm:text-xs uppercase tracking-[0.28em] text-[#7A223B] font-medium block mb-1.5">
-                  Cherished by Connoisseurs
+                  Curated Universes
                 </span>
                 <h2 className="font-heading text-2xl sm:text-4xl text-[#2A1C19] font-normal">
-                  Most <span className="font-serif italic text-rose-gold-gradient">Popular</span>
+                  Shop by <span className="font-serif italic text-rose-gold-gradient">Category</span>
                 </h2>
                 <p className="text-xs sm:text-sm text-[#755B55] font-light mt-1 max-w-md">
-                  Timeless designs most cherished by our discerning patrons for everyday grace and gifting.
+                  Explore our signature realms, each handcrafted to bring effortless brilliance to your daily life.
                 </p>
               </div>
 
               <Link
-                to="/products"
-                className="text-xs uppercase tracking-widest font-medium text-[#7A223B] hover:text-[#DFC598] transition-colors inline-flex items-center gap-1.5 shrink-0"
+                to="/categories"
+                className="text-xs uppercase tracking-widest font-medium text-[#7A223B] hover:text-[#5E152A] transition-colors inline-flex items-center gap-1.5 shrink-0"
               >
-                <span>Explore Popular</span>
+                <span>View All Categories</span>
                 <ArrowRight className="w-3.5 h-3.5 text-[#DFC598]" />
               </Link>
             </div>
 
-            {/* Responsive Products Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-7">
-              {mostPopular.map((product) => (
-                <ProductCard key={`popular-${product.id}`} product={product} />
+            {/* Category Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5">
+              {categories.map((cat) => (
+                <CategoryCard key={cat.id} category={cat} />
               ))}
             </div>
 
@@ -335,50 +320,7 @@ export const Home: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* 5. CATEGORIES SECTION: SHOP BY CATEGORY                                   */}
-      {/* ========================================================================= */}
-      {categories.length > 0 && (
-        <section className="py-14 sm:py-18 lg:py-22 bg-[#FCF9F5] border-t border-[#E8DCCF]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            
-            {/* Section Header */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 sm:mb-10 gap-4">
-              <div>
-                <span className="text-[10px] sm:text-xs uppercase tracking-[0.28em] text-[#7A223B] font-medium block mb-1.5">
-                  Curated Universes
-                </span>
-                <h2 className="font-heading text-2xl sm:text-4xl text-[#2A1C19] font-normal">
-                  Shop by <span className="font-serif italic text-rose-gold-gradient">Category</span>
-                </h2>
-                <p className="text-xs sm:text-sm text-[#755B55] font-light mt-1 max-w-md">
-                  Explore our signature realms, each handcrafted to bring effortless brilliance to your daily light.
-                </p>
-              </div>
-
-              <Link
-                to="/categories"
-                className="text-xs uppercase tracking-widest font-medium text-[#7A223B] hover:text-[#5E152A] transition-colors inline-flex items-center gap-1.5 shrink-0"
-              >
-                <span>View All Categories</span>
-                <ArrowRight className="w-3.5 h-3.5 text-[#DFC598]" />
-              </Link>
-            </div>
-
-            {/* Category Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-5">
-              {categories.map((cat) => (
-                <CategoryCard key={cat.id} category={cat} />
-              ))}
-            </div>
-
-          </div>
-        </section>
-      )}
-
-
-
-      {/* ========================================================================= */}
-      {/* 7. BRAND STORY / SHOP INFORMATION: THE SUNBLOOM ADORN STORY               */}
+      {/* 5. BRAND STORY / SHOP INFORMATION: THE SUNBLOOM ADORN STORY               */}
       {/* Authentic craftsmanship story & four atelier pillars                      */}
       {/* ========================================================================= */}
       <section className="py-16 lg:py-24 bg-[#FAF6F0] border-t border-[#E8DCCF] relative overflow-hidden">
@@ -456,126 +398,6 @@ export const Home: React.FC = () => {
               <h4 className="font-heading text-base font-semibold text-[#2A1C19]">Pan-India Insured Dispatch</h4>
               <p className="text-xs text-[#755B55] leading-relaxed">
                 Tamper-evident luxury packaging and insured courier tracking directly to your doorstep.
-              </p>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 8. CONTACT / WHATSAPP SECTION: "LET'S CONNECT" / "NEED HELP?"             */}
-      {/* Uses Official Sunbloom Adorn Contact & Atelier Information                */}
-      {/* ========================================================================= */}
-      <section className="py-14 sm:py-18 lg:py-22 bg-white border-t border-[#E8DCCF]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          {/* Header */}
-          <div className="max-w-2xl mx-auto text-center space-y-2.5 mb-10">
-            <span className="text-[10px] sm:text-xs uppercase tracking-[0.28em] text-[#7A223B] font-medium block">
-              Atelier Concierge
-            </span>
-            <h2 className="font-heading text-2xl sm:text-4xl text-[#2A1C19] font-normal">
-              Let's <span className="font-serif italic text-rose-gold-gradient">Connect</span>
-            </h2>
-            <p className="text-xs sm:text-sm text-[#755B55] font-light">
-              Have a question about a piece, custom sizing, or order curation? Our jewellery specialists are here to help.
-            </p>
-
-            {/* Prominent Quick Action Buttons */}
-            <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
-              <a
-                href="https://wa.me/919789325964?text=Hello%20Sunbloom%20Adorn%20Team%2C%20I%20would%20like%20to%20enquire%20about%20your%20jewellery%20collection."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#25D366] text-white text-xs uppercase tracking-wider font-semibold hover:bg-[#20ba5a] transition-all shadow-2xs hover:scale-101"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>WhatsApp Us</span>
-              </a>
-
-              <a
-                href="tel:+919789325964"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl btn-rose-primary text-xs uppercase tracking-wider font-semibold transition-all shadow-2xs hover:scale-101"
-              >
-                <Phone className="w-4 h-4 text-[#DFC598]" />
-                <span>Call Concierge</span>
-              </a>
-            </div>
-          </div>
-
-          {/* Contact Details & Ateliers Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-            
-            {/* Card 1: Direct Concierge Contacts */}
-            <div className="bg-[#FAF6F0] border border-[#E8DCCF] p-6 rounded-2xl space-y-3.5 shadow-2xs hover:border-[#DFC598] transition-all">
-              <div className="w-9 h-9 rounded-xl bg-white border border-[#E8DCCF] flex items-center justify-center text-[#7A223B]">
-                <MessageCircle className="w-4.5 h-4.5" />
-              </div>
-              <h3 className="font-heading text-base font-semibold text-[#2A1C19]">Direct Concierge</h3>
-              <div className="space-y-2 text-xs text-[#5E4742]">
-                <p className="flex items-center gap-2">
-                  <span className="font-medium text-[#2A1C19]">Phone:</span>
-                  <a href="tel:+919789325964" className="text-[#7A223B] hover:underline font-mono">
-                    +91 97893 25964
-                  </a>
-                </p>
-                <p className="flex items-center gap-2">
-                  <span className="font-medium text-[#2A1C19]">WhatsApp:</span>
-                  <a
-                    href="https://wa.me/919789325964?text=Hello%20Sunbloom%20Adorn%20Team%2C%20I%20would%20like%20to%20enquire%20about%20your%20jewellery%20collection."
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#25D366] hover:underline font-mono"
-                  >
-                    +91 97893 25964
-                  </a>
-                </p>
-                <p className="flex items-center gap-2">
-                  <span className="font-medium text-[#2A1C19]">Email:</span>
-                  <a href="mailto:support@sunbloomadorn.com" className="text-[#7A223B] hover:underline">
-                    support@sunbloomadorn.com
-                  </a>
-                </p>
-              </div>
-              <div className="pt-2 text-[11px] text-[#755B55] flex items-center gap-1.5 border-t border-[#E8DCCF]">
-                <Clock className="w-3.5 h-3.5 text-[#DFC598]" />
-                <span>Mon – Sat: 10:00 AM – 7:30 PM IST</span>
-              </div>
-            </div>
-
-            {/* Card 2: Coonoor Atelier */}
-            <div className="bg-[#FAF6F0] border border-[#E8DCCF] p-6 rounded-2xl space-y-3.5 shadow-2xs hover:border-[#DFC598] transition-all">
-              <div className="w-9 h-9 rounded-xl bg-white border border-[#DFC598]/50 flex items-center justify-center text-[#DFC598]">
-                <MapPin className="w-4.5 h-4.5 text-[#7A223B]" />
-              </div>
-              <h3 className="font-heading text-base font-semibold text-[#2A1C19]">Coonoor Atelier</h3>
-              <p className="text-xs text-[#5E4742] leading-relaxed">
-                Bedford Circle, Nilgiris District, Tamil Nadu 643101
-              </p>
-              <div className="pt-2 text-[11px] text-[#7A223B] font-medium uppercase tracking-wider">
-                Private Appointments &amp; Boutique Display
-              </div>
-              <p className="text-[11px] text-[#755B55]">
-                Experience custom styling in the serene Nilgiris hills.
-              </p>
-            </div>
-
-            {/* Card 3: Coimbatore Atelier */}
-            <div className="bg-[#FAF6F0] border border-[#E8DCCF] p-6 rounded-2xl space-y-3.5 shadow-2xs hover:border-[#DFC598] transition-all">
-              <div className="w-9 h-9 rounded-xl bg-white border border-[#E8DCCF] flex items-center justify-center text-[#7A223B]">
-                <MapPin className="w-4.5 h-4.5 text-[#DFC598]" />
-              </div>
-              <h3 className="font-heading text-base font-semibold text-[#2A1C19]">Coimbatore Atelier</h3>
-              <p className="text-xs text-[#5E4742] leading-relaxed">
-                Race Course Road, Coimbatore, Tamil Nadu 641018
-              </p>
-              <div className="pt-2 text-[11px] text-[#7A223B] font-medium uppercase tracking-wider">
-                Design Studio &amp; Express Dispatch Center
-              </div>
-              <p className="text-[11px] text-[#755B55]">
-                Direct fulfillment &amp; bespoke sizing center.
               </p>
             </div>
 

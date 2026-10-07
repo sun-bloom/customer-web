@@ -3,7 +3,6 @@ import React from 'react';
 import { Outlet, ScrollRestoration } from 'react-router-dom';
 import { Header } from './Header';
 import { Footer } from './Footer';
-import { WhatsAppFloat } from './WhatsAppFloat';
 
 export const AppLayout: React.FC = () => {
   return (
@@ -14,7 +13,6 @@ export const AppLayout: React.FC = () => {
         <Outlet />
       </main>
       <Footer />
-      <WhatsAppFloat />
     </div>
   );
 };

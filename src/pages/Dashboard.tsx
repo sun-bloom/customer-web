@@ -9,7 +9,6 @@ import {
   getProductsApi,
   getCategoriesApi,
   getRecentProductsApi,
-  getTopSellingProductsApi,
   getCustomerOrdersApi,
 } from '../lib/api';
 import type { Product, Category, Order, CartItem, Variant } from '../types';
@@ -24,8 +23,6 @@ import {
   ShieldCheck,
   Award,
   Truck,
-  MessageCircle,
-  Phone,
   X,
   User as UserIcon,
 } from 'lucide-react';
@@ -37,7 +34,6 @@ export const Dashboard: React.FC = () => {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [recentProducts, setRecentProducts] = useState<Product[]>([]);
-  const [topSellingProducts, setTopSellingProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,11 +48,10 @@ export const Dashboard: React.FC = () => {
     async function loadData() {
       setLoading(true);
       try {
-        const [prodRes, catRes, recentRes, topRes] = await Promise.all([
+        const [prodRes, catRes, recentRes] = await Promise.all([
           getProductsApi().catch(() => ({ products: [] })),
           getCategoriesApi().catch(() => ({ categories: [] })),
           getRecentProductsApi(8).catch(() => ({ products: [] })),
-          getTopSellingProductsApi(8).catch(() => ({ products: [] })),
         ]);
 
         if (isMounted) {
@@ -73,14 +68,6 @@ export const Dashboard: React.FC = () => {
               (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
             setRecentProducts(sortedByDate.slice(0, 4));
-          }
-
-          // Real top selling / popular products from backend or fallback to activeProds
-          const top = (topRes.products || []).filter((p: Product) => p.isActive);
-          if (top.length > 0) {
-            setTopSellingProducts(top);
-          } else {
-            setTopSellingProducts(activeProds.slice(0, 4));
           }
 
           if (token) {
@@ -222,7 +209,7 @@ export const Dashboard: React.FC = () => {
               <span>
                 Welcome back, <strong className="font-semibold text-[#2A1C19]">{getCustomerFirstName()}</strong>
               </span>
-              <span className="hidden sm:inline text-[#A8928D]">• Atelier Patron</span>
+              <span className="hidden sm:inline text-[#A8928D]">• Sunbloom Member</span>
             </div>
             <div className="flex items-center gap-3 sm:gap-4 text-[11px] font-medium">
               <Link
@@ -264,37 +251,36 @@ export const Dashboard: React.FC = () => {
       </section>
 
       {/* ============================================================ */}
-      {/* 2. MOST POPULAR                                              */}
+      {/* 2. ATELIER CATEGORIES                                        */}
       {/* ============================================================ */}
-      {topSellingProducts.length > 0 && (
-        <section className="py-12 sm:py-16 bg-[#FAF6F0] border-b border-[#E8DCCF]">
+      {categories.length > 0 && (
+        <section className="py-12 sm:py-16 lg:py-20 bg-[#FCF9F5] border-b border-[#E8DCCF]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 sm:mb-10 gap-3">
               <div>
                 <span className="text-[10px] sm:text-xs uppercase tracking-[0.28em] text-[#7A223B] font-medium block mb-1">
-                  Cherished by Connoisseurs
+                  Curated Universes
                 </span>
                 <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl text-[#2A1C19] font-normal">
-                  Most <span className="font-serif italic text-rose-gold-gradient">Popular</span>
+                  Shop by <span className="font-serif italic text-rose-gold-gradient">Category</span>
                 </h2>
                 <p className="text-xs sm:text-sm text-[#755B55] font-light mt-1 max-w-md">
-                  Signature designs cherished by our patrons for effortless everyday grace and thoughtful gifting.
+                  Explore our signature realms, each handcrafted to bring effortless brilliance to your daily life.
                 </p>
               </div>
 
               <Link
-                to="/products"
+                to="/categories"
                 className="text-xs uppercase tracking-widest font-medium text-[#7A223B] hover:text-[#5E182C] transition-colors inline-flex items-center gap-1.5 shrink-0 group"
               >
-                <span>View All Products</span>
+                <span>All Categories</span>
                 <ArrowRight className="w-3.5 h-3.5 text-[#DFC598] group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
 
-            {/* Responsive Products Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-7">
-              {topSellingProducts.map((product) => (
-                <ProductCard key={`popular-${product.id}`} product={product} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+              {categories.map((cat) => (
+                <CategoryCard key={cat.id} category={cat} />
               ))}
             </div>
           </div>
@@ -310,13 +296,13 @@ export const Dashboard: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 sm:mb-10 gap-3">
               <div>
                 <span className="text-[10px] sm:text-xs uppercase tracking-[0.28em] text-[#7A223B] font-medium block mb-1">
-                  Fresh from the Atelier
+                  FRESH ARRIVALS
                 </span>
                 <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl text-[#2A1C19] font-normal">
-                  Recently <span className="font-serif italic text-rose-gold-gradient">Added</span>
+                  Newly <span className="font-serif italic text-rose-gold-gradient">Added</span>
                 </h2>
                 <p className="text-xs sm:text-sm text-[#755B55] font-light mt-1 max-w-md">
-                  The latest handcrafted creations fresh off our Coimbatore &amp; Coonoor atelier benches.
+                  Discover our latest jewellery pieces, newly added to the collection.
                 </p>
               </div>
 
@@ -340,57 +326,19 @@ export const Dashboard: React.FC = () => {
       )}
 
       {/* ============================================================ */}
-      {/* 4. ATELIER CATEGORIES                                        */}
-      {/* ============================================================ */}
-      {categories.length > 0 && (
-        <section className="py-12 sm:py-16 lg:py-20 bg-[#FCF9F5] border-b border-[#E8DCCF]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 sm:mb-10 gap-3">
-              <div>
-                <span className="text-[10px] sm:text-xs uppercase tracking-[0.28em] text-[#7A223B] font-medium block mb-1">
-                  Curated Universes
-                </span>
-                <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl text-[#2A1C19] font-normal">
-                  Shop by <span className="font-serif italic text-rose-gold-gradient">Category</span>
-                </h2>
-                <p className="text-xs sm:text-sm text-[#755B55] font-light mt-1 max-w-md">
-                  Explore our signature realms, each handcrafted to bring effortless brilliance to your daily light.
-                </p>
-              </div>
-
-              <Link
-                to="/categories"
-                className="text-xs uppercase tracking-widest font-medium text-[#7A223B] hover:text-[#5E182C] transition-colors inline-flex items-center gap-1.5 shrink-0 group"
-              >
-                <span>All Categories</span>
-                <ArrowRight className="w-3.5 h-3.5 text-[#DFC598] group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </div>
-
-            {/* Category Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-              {categories.map((cat) => (
-                <CategoryCard key={cat.id} category={cat} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ============================================================ */}
-      {/* 5. ATELIER CRAFTSMANSHIP PILLARS (Reassurance)               */}
+      {/* 4. JEWELLERY STANDARDS                                       */}
       {/* ============================================================ */}
       <section className="py-12 sm:py-16 bg-[#FAF6F0] border-b border-[#E8DCCF]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
             <span className="text-[10px] uppercase tracking-[0.24em] text-[#7A223B] font-semibold block">
-              Atelier Standards
+              JEWELLERY STANDARDS
             </span>
             <h2 className="font-heading text-2xl sm:text-3xl text-[#2A1C19] font-normal">
-              Enduring <span className="font-serif italic text-rose-gold-gradient">Excellence</span>
+              Curated for <span className="font-serif italic text-rose-gold-gradient">Everyday Elegance</span>
             </h2>
             <p className="text-xs sm:text-sm text-[#755B55] font-light">
-              Every creation is forged to withstand daily wear while maintaining radiant brilliance.
+              Every piece is thoughtfully selected to bring lasting style, everyday comfort and effortless elegance to your jewellery collection.
             </p>
           </div>
 
@@ -401,7 +349,7 @@ export const Dashboard: React.FC = () => {
               </div>
               <h4 className="font-heading text-sm sm:text-base font-semibold text-[#2A1C19]">18K PVD Waterproof Gold</h4>
               <p className="text-xs text-[#755B55] leading-relaxed font-light">
-                Physical vapor deposition coating resisting perfumes, moisture, and daily wear without tarnishing.
+                PVD-coated jewellery designed to withstand everyday wear, moisture and regular use while maintaining its finish.
               </p>
             </div>
 
@@ -409,9 +357,9 @@ export const Dashboard: React.FC = () => {
               <div className="w-10 h-10 rounded-xl bg-[#FAF5EB] border border-[#DFC598]/50 flex items-center justify-center text-[#DFC598] mx-auto">
                 <Award className="w-4.5 h-4.5 text-[#7A223B]" />
               </div>
-              <h4 className="font-heading text-sm sm:text-base font-semibold text-[#2A1C19]">Korean Minimalist Craft</h4>
+              <h4 className="font-heading text-sm sm:text-base font-semibold text-[#2A1C19]">Korean-Inspired Designs</h4>
               <p className="text-xs text-[#755B55] leading-relaxed font-light">
-                Featherlight silhouettes balancing modern delicate curves with lasting structural durability.
+                Lightweight and stylish designs featuring modern silhouettes, delicate details and effortless everyday appeal.
               </p>
             </div>
 
@@ -421,7 +369,7 @@ export const Dashboard: React.FC = () => {
               </div>
               <h4 className="font-heading text-sm sm:text-base font-semibold text-[#2A1C19]">Hypoallergenic 316L</h4>
               <p className="text-xs text-[#755B55] leading-relaxed font-light">
-                Surgical-grade stainless steel base ensuring 100% skin safety, nickel-free and lead-free comfort.
+                Selected pieces made with 316L stainless steel, known for its durability and skin-friendly properties.
               </p>
             </div>
 
@@ -431,44 +379,9 @@ export const Dashboard: React.FC = () => {
               </div>
               <h4 className="font-heading text-sm sm:text-base font-semibold text-[#2A1C19]">Pan-India Insured Dispatch</h4>
               <p className="text-xs text-[#755B55] leading-relaxed font-light">
-                Tamper-evident luxury packaging and insured courier tracking directly to your doorstep.
+                Securely packed and carefully dispatched across India with courier tracking for a smooth delivery experience.
               </p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================ */}
-      {/* 6. CONCIERGE ASSISTANCE (WhatsApp & Phone)                   */}
-      {/* ============================================================ */}
-      <section className="py-12 sm:py-16 bg-white border-b border-[#E8DCCF]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3">
-          <span className="text-[10px] uppercase tracking-[0.24em] text-[#7A223B] font-semibold block">
-            Atelier Concierge
-          </span>
-          <h2 className="font-heading text-2xl sm:text-3xl text-[#2A1C19] font-normal">
-            Need Guidance on a <span className="font-serif italic text-rose-gold-gradient">Creation?</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-[#755B55] font-light max-w-lg mx-auto">
-            Our jewellery consultants in Coonoor and Coimbatore are available to answer your sizing questions, styling enquiries, or bespoke requests.
-          </p>
-          <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
-            <a
-              href="https://wa.me/919789325964?text=Hello%20Sunbloom%20Adorn%20Team%2C%20I%20would%20like%20to%20enquire%20about%20your%20jewellery%20collection."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#25D366] text-white text-xs uppercase tracking-wider font-semibold hover:bg-[#20ba5a] transition-all shadow-2xs cursor-pointer"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>WhatsApp Concierge</span>
-            </a>
-            <a
-              href="tel:+919789325964"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl btn-rose-primary text-xs uppercase tracking-wider font-semibold transition-all shadow-2xs cursor-pointer"
-            >
-              <Phone className="w-4 h-4 text-[#DFC598]" />
-              <span>+91 97893 25964</span>
-            </a>
           </div>
         </div>
       </section>

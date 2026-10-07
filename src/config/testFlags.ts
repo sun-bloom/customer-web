@@ -25,4 +25,4 @@
  *   Change the line below to:  export const ENFORCE_MIN_PAYMENT_LIMIT = true;
  *   Must match backend config/testFlags.js setting.
  */
-export const ENFORCE_MIN_PAYMENT_LIMIT = false; // ← SET TO true TO RE-ENABLE ₹200 MINIMUM
+export const ENFORCE_MIN_PAYMENT_LIMIT = true;

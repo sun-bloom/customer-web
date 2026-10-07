@@ -100,19 +100,6 @@ export const Products: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* Page Header */}
-        <div className="text-center max-w-3xl mx-auto mb-10 md:mb-12">
-          <span className="text-[11px] uppercase tracking-[0.3em] text-[#7A223B] font-semibold block mb-2">
-            The Complete Atelier Collection
-          </span>
-          <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl font-normal text-[#2A1C19]">
-            Fine <span className="font-serif italic text-rose-gold-gradient">Jewellery</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-[#7D6460] font-light mt-3 max-w-xl mx-auto leading-relaxed">
-            Discover handcrafted Korean minimalist pieces. Anti-tarnish, waterproof, and designed with enduring 18K golden radiance.
-          </p>
-        </div>
-
         {/* Filter & Search Bar */}
         <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#E8DCCF] p-4 sm:p-6 mb-10 shadow-xs space-y-4">
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
@@ -137,7 +124,7 @@ export const Products: React.FC = () => {
                 onChange={(e: any) => setSortBy(e.target.value)}
                 className="px-4 py-2 rounded-xl bg-[#FAF6F0]/70 border border-[#E8DCCF] text-xs font-medium text-[#2A1C19] focus:outline-none focus:border-[#7A223B] cursor-pointer"
               >
-                <option value="featured">Featured Curations</option>
+                <option value="featured">Featured Collections</option>
                 <option value="price-asc">Price: Low to High</option>
                 <option value="price-desc">Price: High to Low</option>
                 <option value="newest">Newest Arrivals</option>

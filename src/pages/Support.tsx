@@ -305,13 +305,13 @@ export const Support: React.FC = () => {
         {/* Header Banner */}
         <div className="text-center max-w-2xl mx-auto mb-8">
           <span className="text-[10px] uppercase tracking-[0.3em] text-[#7A223B] font-semibold block mb-2">
-            Atelier Concierge & Support
+            SUNBLOOM SUPPORT
           </span>
           <h1 className="font-heading text-3xl sm:text-4xl font-normal text-[#2A1C19]">
-            Customer <span className="font-serif italic text-rose-gold-gradient">Support & Queries</span>
+            Need Help With Your <span className="font-serif italic text-rose-gold-gradient">Order?</span>
           </h1>
           <p className="text-xs sm:text-sm text-[#7D6460] font-light mt-2">
-            Track inquiries, get direct assistance from our jewellery concierge, or submit an order issue.
+            From product queries to order updates, we’re here to help you every step of the way.
           </p>
         </div>
 

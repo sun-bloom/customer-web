@@ -107,7 +107,6 @@ export default function CustomerDashboard({ apiUrl }: Props) {
   // Data states
   const [products, setProducts] = useState<Product[]>([]);
   const [recentProducts, setRecentProducts] = useState<Product[]>([]);
-  const [topSellingProducts, setTopSellingProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
@@ -212,11 +211,10 @@ export default function CustomerDashboard({ apiUrl }: Props) {
 
   const fetchCatalogData = async () => {
     try {
-      const [prodRes, catRes, recentRes, topRes] = await Promise.all([
+      const [prodRes, catRes, recentRes] = await Promise.all([
         fetch(`${apiUrl}/api/products`).catch(() => null),
         fetch(`${apiUrl}/api/categories`).catch(() => null),
         fetch(`${apiUrl}/api/products/featured/recent`).catch(() => null),
-        fetch(`${apiUrl}/api/products/featured/top-selling`).catch(() => null),
       ]);
 
       if (prodRes && prodRes.ok) {
@@ -231,10 +229,6 @@ export default function CustomerDashboard({ apiUrl }: Props) {
       if (recentRes && recentRes.ok) {
         const rData = await recentRes.json();
         setRecentProducts(rData.products || []);
-      }
-      if (topRes && topRes.ok) {
-        const tData = await topRes.json();
-        setTopSellingProducts(tData.products || []);
       }
     } catch (err) {
       console.error('[Dashboard] Error fetching catalog:', err);
@@ -863,60 +857,6 @@ export default function CustomerDashboard({ apiUrl }: Props) {
                 </div>
               </section>
 
-              {/* 2. TOP SELLING ITEMS */}
-              <section className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-[#C5A059] font-semibold block">Client Favorites</span>
-                    <h2 className="font-serif text-xl sm:text-2xl font-normal text-stone-900">Top Selling Creations</h2>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('products')}
-                    className="text-xs uppercase tracking-wider text-[#C5A059] hover:text-stone-900 transition-colors font-medium cursor-pointer"
-                  >
-                    Explore Shop →
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-                  {(topSellingProducts.length > 0 ? topSellingProducts : products.slice(0, 3)).map((prod) => (
-                    <div
-                      key={prod.id}
-                      className="bg-white rounded-2xl border border-[#E8E2D8] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
-                    >
-                      <div className="relative aspect-square overflow-hidden bg-stone-100">
-                        <img
-                          src={prod.images?.[0] || '/logo.png'}
-                          alt={prod.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-stone-900/80 text-amber-200 text-[9px] uppercase tracking-wider backdrop-blur-xs">
-                          Popular
-                        </span>
-                      </div>
-                      <div className="p-4 flex flex-col justify-between flex-1">
-                        <div>
-                          <span className="text-[9px] uppercase tracking-widest text-[#C5A059] font-medium block mb-1">
-                            {prod.categoryDetails?.name || prod.category || 'Haute Jewellery'}
-                          </span>
-                          <h3 className="font-serif text-sm font-normal text-stone-900 line-clamp-1 mb-1">
-                            {prod.name}
-                          </h3>
-                          <p className="text-xs font-semibold text-stone-900">₹{prod.basePrice}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleAddToCartClick(prod)}
-                          className="mt-3 w-full py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-amber-200 text-[11px] uppercase tracking-wider font-medium transition-colors cursor-pointer"
-                        >
-                          Add to Bag
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
 
               {/* 3. CATEGORIES SUMMARY */}
               <section className="space-y-4">
